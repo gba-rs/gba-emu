@@ -15,7 +15,6 @@ build:
     - rustc --version
     - cargo --version
     - rustup --version
-    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     - cargo build --all --verbose
 
 test:
@@ -27,6 +26,7 @@ wasm-check:
   stage: wasm-check
   before_script:
     - cargo check
+    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     - wasm-pack build
   script:
     - cargo check --target wasm32-unknown-unknown
