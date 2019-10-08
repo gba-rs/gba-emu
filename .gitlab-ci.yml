@@ -8,8 +8,6 @@ stages:
 build:
   stage: build
   cache:
-    script:
-    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     paths:
       - cargo/
       - target/
@@ -17,6 +15,7 @@ build:
     - rustc --version
     - cargo --version
     - rustup --version
+    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     - cargo build --all --verbose
 
 test:
