@@ -24,11 +24,9 @@ test:
 
 wasm-check:
   stage: wasm-check
-  before_script:
-    - cargo check
-    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-    - wasm-pack build
   script:
+    - cargo check
+    - wasm-pack build
     - cargo check --target wasm32-unknown-unknown
     - cargo check --target wasm32-unknown-unknown --no-default-features --features "console_error_panic_hook wee_alloc"
     - wasm-pack test --node
