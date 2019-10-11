@@ -13,24 +13,3 @@ use crate::operations;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-// #[wasm_bindgen]
-// extern {
-//     fn alert(s: &str);
-// }
-
-// #[wasm_bindgen]
-// pub fn greet() {
-//     alert("Hello, gba-emulator!");
-// }
-
-pub fn decode(instruction: u32) {
-    let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
-    match opcode {
-        0x080 => { // ADD lli
-            let format: DataProcessing = DataProcessing::from(instruction);
-            
-        },
-        _ => {},
-    }
-}
