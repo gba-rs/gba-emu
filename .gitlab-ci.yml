@@ -30,15 +30,16 @@ wasm-check:
 
   before_script:
     - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh -s -- -f
+    - rustup target add wasm32-unknown-unknown --toolchain
     - mkdir -pv $APT_CACHE_DIR && apt-get -qq update
     - apt-get -qq -o dir::cache::archives="$APT_CACHE_DIR" install -y firefox-esr
     - firefox --version
   script:
-    - cargo check
-    - cargo check --target wasm32-unknown-unknown
-    - cargo check --target wasm32-unknown-unknown --no-default-features --features "console_error_panic_hook wee_alloc"
+#    - cargo check
     - wasm-pack build
-    - wasm-pack test --firefox --headless
+    - wasm-pack test --firefox --headless --verbose
+#    - cargo check --target wasm32-unknown-unknown
+#    - cargo check --target wasm32-unknown-unknown --no-default-features --features "console_error_panic_hook wee_alloc"
   cache:
     paths:
       - apt-cache
