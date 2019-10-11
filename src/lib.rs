@@ -2,10 +2,10 @@ mod utils;
 pub mod formats;
 pub mod operations;
 pub mod cpu;
+pub mod memory;
 
 use wasm_bindgen::prelude::*;
 use crate::formats::{data_processing::DataProcessing};
-use crate::operations;
 
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -29,7 +29,7 @@ pub fn decode(instruction: u32) {
     match opcode {
         0x080 => { // ADD lli
             let format: DataProcessing = DataProcessing::from(instruction);
-            
+
         },
         _ => {},
     }
