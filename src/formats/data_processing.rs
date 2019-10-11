@@ -1,4 +1,4 @@
-use super::{common::Condition};
+use super::{common::Condition, common::ShiftType, common::Shift};
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -40,45 +40,6 @@ impl From<u32> for DataProcessingOperand {
             rotate: ((value & 0xF00) >> 8) as u8,
             immediate_value: (value & 0xFF) as u8,
             immediate: ((value & 0x200_0000) >> 25) != 0
-        }
-    }
-}
-
-pub enum ShiftType {
-    LogicalLeft = 0b00,
-    LogicalRight = 0b01,
-    ArithmeticRight = 0b10,
-    RotateRight = 0b11,
-    Error
-}
-
-impl From<u32> for ShiftType {
-    fn from(value: u32) -> ShiftType {
-        match value {
-            0b00 => ShiftType::LogicalLeft,
-            0b01 => ShiftType::LogicalRight,
-            0b10 => ShiftType::ArithmeticRight,
-            0b11 => ShiftType::RotateRight,
-            _ => ShiftType::Error
-        }
-    }
-}
-
-pub struct Shift {
-    pub shift_type: ShiftType,
-    pub shift_amount: u8,
-    pub shift_register: u8,
-    pub immediate: bool
-}
-
-
-impl From<u32> for Shift {
-    fn from(value: u32) -> Shift {
-        return Shift {
-            shift_type: ShiftType::from((value & 0x60) >> 5),
-            shift_amount: ((value & 0xF80) >> 7) as u8,
-            shift_register: ((value & 0xF00) >> 8) as u8,
-            immediate: ((value & 0x10) >> 5) != 0
         }
     }
 }
