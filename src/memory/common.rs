@@ -11,8 +11,3 @@ impl Range {
         };
     }
 }
-
-trait MemoryBlock {
-    fn getMemoryBlock(&self) -> Vec<u8>;
-    fn getMemoryRange(&self) -> Range;
-}
