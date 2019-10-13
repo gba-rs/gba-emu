@@ -3,7 +3,7 @@ struct cpu() {
 }
 
 impl cpu {
-    pub fn decode(instruction: u32) {
+    pub fn decode(&mut self, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         match opcode {
             0x080 => { // ADD lli
