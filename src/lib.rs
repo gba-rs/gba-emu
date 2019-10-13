@@ -6,6 +6,7 @@ pub mod memory;
 
 use wasm_bindgen::prelude::*;
 use crate::formats::{data_processing::DataProcessing};
+//use crate::operations;
 
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
