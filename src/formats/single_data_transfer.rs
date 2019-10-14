@@ -34,7 +34,6 @@ impl From<u32> for SingleDataTransfer {
 pub struct SingleDataTransferOperand {
     pub shift: Shift,
     pub rm: u8,
-    pub rotate: u8,
     pub immediate_value: u8,
     pub immediate: bool
 }
@@ -44,9 +43,37 @@ impl From<u32> for SingleDataTransferOperand {
         return SingleDataTransferOperand {
             shift: Shift::from(value),
             rm: (value & 0xF) as u8,
-            rotate: ((value & 0xF00) >> 8) as u8,
             immediate_value: (value & 0xFF) as u8,
             immediate: ((value & 0x200_0000) >> 25) != 0
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn singledatatransfer_zero() {
+        let a: SingleDataTransfer = SingleDataTransfer::from(0x00000000);
+        assert_eq!(a.destination_register, 0);
+        assert_eq!(a.op1_register, 0);
+        assert_eq!(a.pre_post_indexing, false);
+        assert_eq!(a.up_down, false);
+        assert_eq!(a.byte_word, false);
+        assert_eq!(a.load_store, false);
+    }
+
+    #[test]
+    fn singledatatransfer_max() {
+        let a: SingleDataTransfer = SingleDataTransfer::from(0xFFFFFFFF);
+        assert_eq!(a.destination_register, 0b1111);
+        assert_eq!(a.op1_register, 0b1111);
+        assert_eq!(a.condition, Condition::Error);
+        assert_eq!(a.immediate_operand, true);
+        assert_eq!(a.pre_post_indexing, true);
+        assert_eq!(a.up_down, true);
+        assert_eq!(a.byte_word, true);
+        assert_eq!(a.load_store, true);
     }
 }
