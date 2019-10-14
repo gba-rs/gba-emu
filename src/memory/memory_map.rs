@@ -108,6 +108,7 @@ impl MemoryMap {
 mod tests {
     use super::*;
     use crate::memory::work_ram::WorkRam;
+    use crate::memory::mock_memory::MockMemory;
     
     #[test]
     fn test_memory_map_read() {
@@ -130,6 +131,23 @@ mod tests {
         assert_eq!(map.read_u16(0x02000000), 0x1234);
         map.write_u32(0x02000000, 0x12345678);
         assert_eq!(map.read_u32(0x02000000), 0x12345678);
+    }
+
+    #[test]
+    fn test_memory_map_multiple() {
+        let mut map = MemoryMap::new();
+        let wram = WorkRam::new(10);
+        let mut mock_mem = MockMemory::new(0xFF);
+        map.register_memory(0x02000000, 0x0203FFFF, &wram.memory);
+        map.register_memory(0x0, 0x0003FFFF, &mock_mem.memory);
+
+        mock_mem.set_mock_field(100);
+        assert_eq!(map.read_u8(0x00000064), 100);
+        assert_eq!(mock_mem.get_mock_field(), 100);
+
+        map.write_u8(0x02000000, 0xFF);
+        assert_eq!(map.read_u8(0x02000000), 0xFF);
+
     }
 
     #[test]
