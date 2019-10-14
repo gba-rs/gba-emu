@@ -1,4 +1,5 @@
 use crate::{formats::data_processing};
+use crate::{memory::MemoryMap};
 
 struct CPU {   
     pub registers: [u32; 16]
@@ -14,7 +15,10 @@ impl CPU {
             _ => {},
             }
     }
-    pub fn fetch() -> u32 {
+    pub fn fetch(&mut self, map: memory::MemoryMap) -> u32 {
+        let instruction: u32 = map.readU32(self.registers[15]);
+        self.decode(instruction);
+        self.registers[15] += 0x100000;
         return 0;
     }
 
