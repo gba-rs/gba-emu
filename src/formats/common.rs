@@ -41,6 +41,9 @@ impl From<u32> for Condition {
     }
 }
 
+pub trait Instruction {
+    fn execute(&self);
+}
 
 pub enum ShiftType {
     LogicalLeft = 0b00,
