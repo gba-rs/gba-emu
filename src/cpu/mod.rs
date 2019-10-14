@@ -1,3 +1,5 @@
+pub mod cpu;
+
 #[derive(Clone)]
 pub struct Flags {
     pub negative: bool,
