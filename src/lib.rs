@@ -2,6 +2,7 @@ mod utils;
 pub mod formats;
 pub mod operations;
 pub mod cpu;
+pub mod memory;
 
 use wasm_bindgen::prelude::*;
 use crate::formats::{data_processing::DataProcessing};

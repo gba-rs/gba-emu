@@ -1,8 +1,20 @@
-struct cpu() {   
-    let registers: [u32: 16] = [0:16];
+use crate::formats::{data_processing::DataProcessing};
+use crate::memory::{work_ram::WorkRam};
+
+struct cpu {   
+    registers: [u32; 16],
+    wram: WorkRam
 }
 
 impl cpu {
+
+    pub fn new() -> cpu {
+        return cpu {
+            registers: [0; 16],
+            wram: WorkRam::new(0)
+        };
+    }
+
     pub fn decode(&mut self, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         match opcode {
