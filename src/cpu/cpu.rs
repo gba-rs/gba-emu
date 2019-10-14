@@ -1,14 +1,17 @@
 use crate::formats::{data_processing::DataProcessing};
+use crate::memory::{work_ram::WorkRam};
 
 struct cpu {   
     registers: [u32; 16],
+    wram: WorkRam
 }
 
 impl cpu {
 
     pub fn new() -> cpu {
         return cpu {
-            registers: [0; 16]
+            registers: [0; 16],
+            wram: WorkRam::new(0)
         };
     }
 
