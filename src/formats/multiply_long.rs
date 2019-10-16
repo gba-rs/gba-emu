@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn multiply_long_zero() {
         let a: MultiplyLong = MultiplyLong::from(0x00000000);
-        assert_eq!(a.condition, Condition::Error);
+        assert_eq!(a.condition, Condition::EQ);
         assert_eq!(a.unsigned, true);
         assert_eq!(a.accumulate, false);
         assert_eq!(a.set_condition, false);

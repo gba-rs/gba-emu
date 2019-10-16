@@ -34,7 +34,7 @@ mod tests {
     #[test]
     fn multiply_zero() {
         let a: Multiply = Multiply::from(0x00000000);
-        assert_eq!(a.condition, Condition::Error);
+        assert_eq!(a.condition, Condition::EQ);
         assert_eq!(a.accumulate, false);
         assert_eq!(a.set_condition, false);
         assert_eq!(a.destination_register, 0);
