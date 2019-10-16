@@ -54,7 +54,7 @@ mod tests {
     fn test_decode_unimplemented(){
         let testram = WorkRam::new(10);
         let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
-        cpu.decode(0xE3A01002);
+        cpu.decode(0xE3000000);
     }
 
     #[test]
