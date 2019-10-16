@@ -1,6 +1,6 @@
 use super::{common::Condition};
 
-struct MultiplyLong {
+pub struct MultiplyLong {
     pub condition: Condition,        // Cond
     pub unsigned: bool,              // U
     pub accumulate: bool,            // A

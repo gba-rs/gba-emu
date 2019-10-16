@@ -1,6 +1,6 @@
 use super::{common::Condition};
 
-struct Multiply {
+pub struct Multiply {
     pub condition: Condition,     // Cond
     pub accumulate: bool,         // A
     pub set_condition: bool,      // S
