@@ -21,14 +21,15 @@ impl CPU {
             0x080 => { // ADD lli
                 let format: DataProcessing = DataProcessing::from(instruction);
             },
-            _ => {},
-            }
+            _ => {
+                panic!("Not implemented");
+            },
+        }
     }
-    pub fn fetch(&mut self, map: &mut MemoryMap) -> u32 {
-        let instruction: u32 = map.readU32(self.registers[15]);
+    pub fn fetch(&mut self, map: &mut MemoryMap) {
+        let instruction: u32 = map.read_u32(self.registers[15]);
         self.decode(instruction);
         self.registers[15] += 0x100000;
-        return 0;
     }
 
 }
@@ -41,11 +42,26 @@ mod tests {
 
     #[test]
     fn test_access_registers(){
-        let cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: 10};
+        let testram = WorkRam::new(10);
+        let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
         let _empty_registers: [u32; 16] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
+        
         assert_eq!(_empty_registers, cpu.registers);
+    }
 
+    #[test]
+    #[should_panic(expected = "Not implemented")]
+    fn test_decode_unimplemented(){
+        let testram = WorkRam::new(10);
+        let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
+        cpu.decode(0xE3A01002);
+    }
+
+    #[test]
+    fn test_decode(){
+        let testram = WorkRam::new(10);
+        let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
+        cpu.decode(0xE0812001);
     }
 
 }
