@@ -1,3 +1,6 @@
+use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu;
+
 #[derive(Debug, PartialEq)]
 pub enum Condition {
     EQ = 0b0000,
@@ -42,7 +45,7 @@ impl From<u32> for Condition {
 }
 
 pub trait Instruction {
-    fn execute(&self);
+    fn execute(&self, cpu: &mut cpu, mem_map: &mut MemoryMap);
 }
 
 pub enum ShiftType {
