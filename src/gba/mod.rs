@@ -1,16 +1,16 @@
-use crate::cpu::cpu::Cpu;
+use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 
 
 pub struct GBA {
-    pub cpu: Cpu,
+    pub cpu: CPU,
     pub mem_map: MemoryMap
 }
 
 impl GBA {
     pub fn new(pc_address: u32) -> GBA {
         let mut temp: GBA = GBA {
-            cpu: Cpu::new(),
+            cpu: CPU::new(),
             mem_map: MemoryMap::new()
         };
 
@@ -26,7 +26,7 @@ impl GBA {
 
     pub fn run(&mut self) {
         loop {
-            
+            self.cpu.fetch(&mut self.mem_map);
         }
     }
 }
