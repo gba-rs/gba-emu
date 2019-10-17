@@ -2,7 +2,7 @@ use crate::formats::{data_processing::DataProcessing, common::Instruction};
 use crate::memory::{work_ram::WorkRam};
 use crate::memory::{memory_map::MemoryMap};
 
-struct cpu {
+pub struct cpu {
     registers: [u32; 16],
     wram: WorkRam
 }
@@ -21,11 +21,11 @@ impl cpu {
         match opcode {
             0x080  => { // ADD lli
                 let format: DataProcessing = DataProcessing::from(instruction);
-                format.execute();
+                format.execute(self, mem_map);
                 },
             0x1A0 => { //mov lli
                 let format: DataProcessing = DataProcessing::from(instruction);
-                format.execute();
+                format.execute(self, mem_map);
             }
                 _ => {},
             }

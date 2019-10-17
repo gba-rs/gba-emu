@@ -1,5 +1,5 @@
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu;
+use crate::cpu::cpu::cpu;
 
 #[derive(Debug, PartialEq)]
 pub enum Condition {
