@@ -46,6 +46,7 @@ impl From<u32> for DataProcessingOperand {
 
 impl Instruction for DataProcessing {
     fn execute(&self) {
+        
         println!("Hello this is a trait");
     }
 }

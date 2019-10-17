@@ -19,8 +19,8 @@ impl cpu {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         match opcode {
             0x080  => { // ADD lli
-                let format: DataProcessing = DataProcessing::from(instruction);
-                format.execute();
+                    let format: DataProcessing = DataProcessing::from(instruction);
+                    format.execute();
                 },
                 _ => {},
             }
