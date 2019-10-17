@@ -1,15 +1,15 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction};
 use crate::memory::{work_ram::WorkRam};
 
-struct cpu {   
-    registers: [u32; 16],
-    wram: WorkRam
+pub struct Cpu {   
+    pub registers: [u32; 16],
+    pub wram: WorkRam
 }
 
-impl cpu {
+impl Cpu {
 
-    pub fn new() -> cpu {
-        return cpu {
+    pub fn new() -> Cpu {
+        return Cpu {
             registers: [0; 16],
             wram: WorkRam::new(0)
         };
