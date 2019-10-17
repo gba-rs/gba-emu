@@ -1,4 +1,6 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
+use crate::cpu::cpu::CPU;
+use crate::memory::memory_map::MemoryMap;
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -45,7 +47,7 @@ impl From<u32> for DataProcessingOperand {
 }
 
 impl Instruction for DataProcessing {
-    fn execute(&self) {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         println!("Hello this is a trait");
     }
 }

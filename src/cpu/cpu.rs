@@ -22,7 +22,7 @@ impl CPU {
         match opcode {
             0x080  => { // ADD lli
                 let format: DataProcessing = DataProcessing::from(instruction);
-                format.execute();
+//                format.execute();
             },
             _ => {
                 panic!("Not implemented");
