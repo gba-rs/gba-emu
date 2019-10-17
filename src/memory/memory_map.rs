@@ -60,6 +60,18 @@ impl MemoryMap {
         memory[(index as usize) + 3] = ((value & 0xFF000000) >> 24) as u8;
     }
 
+    pub fn write_block(&mut self, address: u32, block: Vec<u8>) {
+        let (lower, _, mem) = self.get_memory(address);
+        let index: u32 = address - lower;
+        let mut memory = mem.borrow_mut();
+
+        let mut offset: usize = 0;
+        for byte in block {
+            memory[(index as usize) + offset] = byte;
+            offset += 1;
+        }
+    }
+
     pub fn read_u32(&mut self, address: u32) -> u32 {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;

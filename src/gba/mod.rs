@@ -19,4 +19,14 @@ impl GBA {
 
         return temp;
     }
+
+    pub fn load(&mut self, address: u32, bytes: Vec<u8>) {
+        self.mem_map.write_block(address, bytes);
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            
+        }
+    }
 }
