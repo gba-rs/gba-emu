@@ -1,7 +1,9 @@
 use crate::formats::{data_processing::DataProcessing};
-use crate::memory::{work_ram::WorkRam, memory_map::MemoryMap };
+use crate::memory::{work_ram::WorkRam, memory_map::MemoryMap, memory_map::MemoryBlock };
+use std::cell::RefCell;
+use std::rc::Rc;
 
-struct CPU {   
+pub struct CPU {   
     pub registers: [u32; 16],
     wram: WorkRam
 }
@@ -22,14 +24,15 @@ impl CPU {
                 let format: DataProcessing = DataProcessing::from(instruction);
             },
             _ => {
-                panic!("Not implemented");
+                panic!("Not Implemented");
             },
         }
     }
     pub fn fetch(&mut self, map: &mut MemoryMap) {
-        let instruction: u32 = map.read_u32(self.registers[15]);
-        self.decode(instruction);
-        self.registers[15] += 0x100000;
+            let instruction: u32 = map.read_u32(self.registers[15]);
+            panic!("{}", instruction);
+            self.decode(instruction);
+            self.registers[15] += 0x20;
     }
 
 }
@@ -62,6 +65,17 @@ mod tests {
         let testram = WorkRam::new(10);
         let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
         cpu.decode(0xE0812001);
+    }
+
+    #[test]
+    fn test_fetch(){
+        let testram = WorkRam::new(10);
+        let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0x02000001], wram: testram};
+        let mut map = MemoryMap::new();
+        let wram = WorkRam::new(10);
+        map.register_memory(0x02000000, 0x0203FFFF, &wram.memory);
+        map.write_u32(0x02000000, 0xE0812001);
+        cpu.fetch(&mut map);
     }
 
 }
