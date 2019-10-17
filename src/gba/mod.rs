@@ -15,7 +15,7 @@ impl GBA {
         };
 
         temp.cpu.registers[15] = pc_address;
-        temp.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
+        temp.mem_map.register_memory(0x00000000, 0x0003FFFF, &temp.cpu.wram.memory);
 
         return temp;
     }
