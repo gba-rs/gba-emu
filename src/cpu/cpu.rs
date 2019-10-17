@@ -3,7 +3,7 @@ use crate::memory::{work_ram::WorkRam};
 use crate::memory::{memory_map::MemoryMap};
 
 pub struct cpu {
-    registers: [u32; 16],
+    pub registers: [u32; 16],
     wram: WorkRam
 }
 
@@ -25,7 +25,7 @@ impl cpu {
                 },
             0x1A0 => { //mov lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
-                format.execute(self, mem_map);
+//                format.destination_register = format.
             }
                 _ => {},
             }

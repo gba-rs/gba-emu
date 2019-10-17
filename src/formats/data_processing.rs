@@ -27,6 +27,45 @@ impl From<u32> for DataProcessing {
     }
 }
 
+impl DataProcessing {
+    pub fn barrel_shifter(&mut self, cpu: &mut cpu) -> u32 {
+        let mut op2: u32;
+
+        if self.operand2.immediate {
+            op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
+        } else {
+            op2 = cpu.registers[self.operand2.rm as usize];
+            let shift_amount: u32;
+            if self.operand2.shift.immediate {
+                shift_amount = self.operand2.shift.shift_amount as u32;
+            } else {
+                shift_amount = cpu.registers[self.operand2.shift.shift_register as usize];
+            }
+
+            match self.operand2.shift.shift_type {
+                ShiftType::LogicalLeft => {
+                    op2 = op2 << shift_amount;
+                    // todo: make sure flags aren't a thing
+                },
+                ShiftType::LogicalRight => {
+                    op2 = op2 >> shift_amount;
+                    // todo: make sure flags aren't a thing
+                },
+                ShiftType::ArithmeticRight => {
+                    op2 = ((op2 as i32) >> shift_amount) as u32;
+                    // make sure this isn't truncating
+                },
+                ShiftType::RotateRight => {
+                    op2 = op2.rotate_right(shift_amount);
+                },
+                _ => panic!("Shift type fucked up")
+            }
+        }
+
+        return op2;
+    }
+}
+
 pub struct DataProcessingOperand {
     pub shift: Shift,
     pub rm: u8,
@@ -51,13 +90,8 @@ impl Instruction for DataProcessing {
     fn execute(&mut self, cpu: &mut cpu, mem_map: &mut MemoryMap) {
         // for a move method:
         //set rd = op2
-        // I have no idea if I have to do this
-        if self.operand2.immediate {
-            self.destination_register = self.operand2.shift.shift_amount + self.operand2.rm;
-        }
-        else {
-            self.destination_register = self.operand2.rotate + self.operand2.immediate_value;
-        }
+        let op2 = self.barrel_shifter(cpu);
+        self.destination_register = op2 as u8;
     }
 }
 
