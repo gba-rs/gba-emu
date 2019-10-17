@@ -24,7 +24,7 @@ impl CPU {
                 let format: DataProcessing = DataProcessing::from(instruction);
             },
             _ => {
-                panic!("Not Implemented");
+                panic!("Not implemented");
             },
         }
     }
