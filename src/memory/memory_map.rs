@@ -24,7 +24,7 @@ pub struct MemoryBlock {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
 
-struct MemoryMap {
+pub struct MemoryMap {
     memory_mapping: Vec<MemoryBlock>
 }
 
