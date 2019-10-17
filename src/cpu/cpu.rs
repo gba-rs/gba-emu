@@ -25,7 +25,8 @@ impl cpu {
                 },
             0x1A0 => { //mov lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
-//                format.destination_register = format.
+                format.execute(self, mem_map);
+
             }
                 _ => {},
             }
