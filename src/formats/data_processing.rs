@@ -1,4 +1,4 @@
-use super::{common::Condition, common::ShiftType, common::Shift};
+use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -41,6 +41,12 @@ impl From<u32> for DataProcessingOperand {
             immediate_value: (value & 0xFF) as u8,
             immediate: ((value & 0x200_0000) >> 25) != 0
         }
+    }
+}
+
+impl Instruction for DataProcessing {
+    fn execute(&self) {
+        println!("Hello this is a trait");
     }
 }
 
