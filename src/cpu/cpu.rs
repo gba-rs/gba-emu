@@ -30,9 +30,8 @@ impl CPU {
     }
     pub fn fetch(&mut self, map: &mut MemoryMap) {
             let instruction: u32 = map.read_u32(self.registers[15]);
-            panic!("{}", instruction);
             self.decode(instruction);
-            self.registers[15] += 0x20;
+            self.registers[15] += 4;
     }
 
 }
@@ -70,11 +69,13 @@ mod tests {
     #[test]
     fn test_fetch(){
         let testram = WorkRam::new(10);
-        let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0x02000001], wram: testram};
+        let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0x02000000], wram: testram};
         let mut map = MemoryMap::new();
         let wram = WorkRam::new(10);
         map.register_memory(0x02000000, 0x0203FFFF, &wram.memory);
         map.write_u32(0x02000000, 0xE0812001);
+        map.write_u32(0x02000004, 0xE0812001);
+        cpu.fetch(&mut map);
         cpu.fetch(&mut map);
     }
 
