@@ -45,7 +45,7 @@ impl From<u32> for Condition {
 }
 
 pub trait Instruction {
-    fn execute(&self, cpu: &mut cpu, mem_map: &mut MemoryMap);
+    fn execute(&mut self, cpu: &mut cpu, mem_map: &mut MemoryMap);
 }
 
 pub enum ShiftType {

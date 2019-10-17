@@ -1,6 +1,7 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::cpu;
+use wasm_bindgen::__rt::core::intrinsics::write_bytes;
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -47,10 +48,16 @@ impl From<u32> for DataProcessingOperand {
 }
 
 impl Instruction for DataProcessing {
-    fn execute(&self, cpu: &mut cpu, mem_map: &mut MemoryMap) {
-        // cpu: &mut cpu looks awful
-        println!("Hello this is a trait");
-        //if mov then go
+    fn execute(&mut self, cpu: &mut cpu, mem_map: &mut MemoryMap) {
+        // for a move method:
+        //set rd = op2
+        // I have no idea if I have to do this
+        if self.operand2.immediate {
+            self.destination_register = self.operand2.shift.shift_amount + self.operand2.rm;
+        }
+        else {
+            self.destination_register = self.operand2.rotate + self.operand2.immediate_value;
+        }
     }
 }
 
