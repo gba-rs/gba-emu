@@ -1,6 +1,7 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
-use crate::cpu::cpu::CPU;
+use crate::{operations::arithmatic};
 use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::CPU;
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -26,6 +27,45 @@ impl From<u32> for DataProcessing {
     }
 }
 
+impl DataProcessing {
+    pub fn barrel_shifter(&mut self, cpu: &mut CPU) -> u32 {
+        let mut op2: u32;
+
+        if self.operand2.immediate {
+            op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
+        } else {
+            op2 = cpu.registers[self.operand2.rm as usize];
+            let shift_amount: u32;
+            if self.operand2.shift.immediate {
+                shift_amount = self.operand2.shift.shift_amount as u32;
+            } else {
+                shift_amount = cpu.registers[self.operand2.shift.shift_register as usize];
+            }
+
+            match self.operand2.shift.shift_type {
+                ShiftType::LogicalLeft => {
+                    op2 = op2 << shift_amount;
+                    // todo: make sure flags aren't a thing
+                },
+                ShiftType::LogicalRight => {
+                    op2 = op2 >> shift_amount;
+                    // todo: make sure flags aren't a thing
+                },
+                ShiftType::ArithmeticRight => {
+                    op2 = ((op2 as i32) >> shift_amount) as u32;
+                    // make sure this isn't truncating
+                },
+                ShiftType::RotateRight => {
+                    op2 = op2.rotate_right(shift_amount);
+                },
+                _ => panic!("Shift type fucked up")
+            }
+        }
+
+        return op2;
+    }
+}
+
 pub struct DataProcessingOperand {
     pub shift: Shift,
     pub rm: u8,
@@ -48,7 +88,23 @@ impl From<u32> for DataProcessingOperand {
 
 impl Instruction for DataProcessing {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        println!("Hello this is a trait");
+        let op2 = self.barrel_shifter(cpu);
+        //self.destination_register = op2 as u8;
+        match self.opcode {
+            0b0100 => {
+                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
+                let (value, flags) =
+                    arithmatic::add(cpu.registers[self.op1_register as usize], op2);
+                cpu.registers[self.destination_register as usize] = value;
+            },
+            0b1101 => {
+                println!("Moving {:X} = {:X}", self.destination_register, op2);
+                cpu.registers[self.destination_register as usize] = op2;
+            },
+            _ => {
+                panic!("{:X}", self.opcode);
+            }
+        }
     }
 }
 

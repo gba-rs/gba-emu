@@ -5,3 +5,12 @@ bin/
 pkg/
 wasm-pack.log
 .idea/
+
+
+*/target
+**/*.rs.bk
+*/Cargo.lock
+*/bin/
+*/pkg/
+*/wasm-pack.log
+.idea/
