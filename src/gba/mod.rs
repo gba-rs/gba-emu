@@ -29,4 +29,8 @@ impl GBA {
             self.cpu.fetch(&mut self.mem_map);
         }
     }
+
+    pub fn step(&mut self) {
+        self.cpu.fetch(&mut self.mem_map);
+    }
 }

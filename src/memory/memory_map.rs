@@ -70,7 +70,6 @@ impl MemoryMap {
 
         let mut offset: usize = 0;
         for byte in block {
-            println!("Byte {:X} index {:X}", byte, index + (offset as u32));
             memory[(index as usize) + offset] = byte;
             offset += 1;
         }
@@ -82,7 +81,6 @@ impl MemoryMap {
         let mut result: u32 = 0;
         let memory = mem.borrow_mut();
         for i in 0..4 {
-            println!("Mem {:X}", (memory[(index + i) as usize] as u32) << ((3-i) * 8));
             result |= (memory[(index + i) as usize] as u32) <<  ((3 - i) * 8);
         }
         return result;
