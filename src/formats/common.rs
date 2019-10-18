@@ -1,5 +1,5 @@
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::cpu;
+use crate::cpu::cpu::CPU;
 
 #[derive(Debug, PartialEq)]
 pub enum Condition {
@@ -45,7 +45,7 @@ impl From<u32> for Condition {
 }
 
 pub trait Instruction {
-    fn execute(&mut self, cpu: &mut cpu, mem_map: &mut MemoryMap);
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap);
 }
 
 pub enum ShiftType {

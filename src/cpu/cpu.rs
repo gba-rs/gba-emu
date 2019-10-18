@@ -33,9 +33,9 @@ impl CPU {
     }
     
     pub fn fetch(&mut self, map: &mut MemoryMap) {
-            let instruction: u32 = map.read_u32(self.registers[15]);
-            self.decode(instruction);
-            self.registers[15] += 4;
+        let instruction: u32 = map.read_u32(self.registers[15]);
+        self.decode(map, instruction);
+        self.registers[15] += 4;
     }
 
 }

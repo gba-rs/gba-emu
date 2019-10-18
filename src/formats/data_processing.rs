@@ -1,7 +1,7 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
 use crate::{operations::arithmatic};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::cpu;
+use crate::cpu::cpu::CPU;
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -28,7 +28,7 @@ impl From<u32> for DataProcessing {
 }
 
 impl DataProcessing {
-    pub fn barrel_shifter(&mut self, cpu: &mut cpu) -> u32 {
+    pub fn barrel_shifter(&mut self, cpu: &mut CPU) -> u32 {
         let mut op2: u32;
 
         if self.operand2.immediate {
@@ -87,7 +87,7 @@ impl From<u32> for DataProcessingOperand {
 }
 
 impl Instruction for DataProcessing {
-    fn execute(&mut self, cpu: &mut cpu, mem_map: &mut MemoryMap) {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let op2 = self.barrel_shifter(cpu);
         //self.destination_register = op2 as u8;
         match self.opcode {
