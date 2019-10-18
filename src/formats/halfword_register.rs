@@ -20,7 +20,7 @@ pub struct HalfwordCommon {
     pub pre_post_indexing_bit: bool,
     pub up_down_bit: bool,
     pub write_back: bool,
-    pub load_store: bool,
+    pub load: bool,
     pub base_register: u8,
     pub destination: u8,
     pub is_signed: bool,
@@ -34,7 +34,7 @@ impl From<u32> for HalfwordCommon {
             pre_post_indexing_bit: ((value & 0x0100_0000) >> 24) != 0,
             up_down_bit: ((value & 0x80_0000) >> 23) != 0,
             write_back: ((value & 0x20_0000) >> 21) != 0,
-            load_store: ((value & 0x10_0000) >> 20) != 0,
+            load: ((value & 0x10_0000) >> 20) != 0,
             base_register: ((value & 0xF_0000) >> 16) as u8,
             destination: ((value & 0xF000) >> 12) as u8,
             is_signed: ((value & 0x40) >> 6) != 0,
@@ -65,21 +65,18 @@ impl Instruction for HalfwordImmediateOffset {
             address = base - offset as u32;
         }
 
+        let value_from_memory = mem_map.read_u32(address);
 
-        if !self.halfword_common.is_signed && ! self.halfword_common.is_halfword {
-
-        } else if !self.halfword_common.is_signed && self.halfword_common.is_halfword {
-
-        } else if self.halfword_common.is_signed && !self.halfword_common.is_halfword {
-
-        } else if self.halfword_common.is_signed && !self.halfword_common.is_halfword {
-
+        if self.halfword_common.load {
+            load(&self.halfword_common, cpu, value_from_memory, address);
+        } else {
+            store();
         }
 
-        if self.halfword_common.pre_post_indexing_bit  || self.halfword_common.write_back{
+
+        if self.halfword_common.pre_post_indexing_bit || self.halfword_common.write_back {
             cpu.registers[self.halfword_common.base_register as usize] = address;
         }
-
     }
 }
 
@@ -93,19 +90,49 @@ impl From<u32> for HalfwordImmediateOffset {
     }
 }
 
-fn LDRH(destination: u8, base_value: u32, cpu: &mut CPU ) {
-    let halfword = ((base_value & 0xFFFF) >> 16) as u16;
-    cpu.registers[destination as usize] = halfword as u32;
+fn load(halfword_common: &HalfwordCommon, cpu: &mut CPU, value_from_memory: u32, address: u32) {
+    if !halfword_common.is_signed && !halfword_common.is_halfword {
+        load_byte();
+    } else if halfword_common.is_signed && !halfword_common.is_halfword {
+        load_byte();
+    } else if !halfword_common.is_signed && halfword_common.is_halfword {
+        load_halfword(halfword_common.destination, value_from_memory, cpu, address, false);
+    } else if halfword_common.is_signed && halfword_common.is_halfword {
+        load_halfword(halfword_common.destination, value_from_memory, cpu, address, true);
+    }
 }
 
-fn LDRSH(destination: u8, base_value: u32, cpu: &mut CPU) {
-    let halfword = ((base_value & 0xFFFF) >> 16) as u16;
-    let sign_bit = ((0x8000 & halfword) >> 15) != 0;
-    if sign_bit {
-        cpu.registers[destination as usize] = 0xFFFFFFFF & (halfword as u32) ;
-    } else {
-        cpu.registers[destination as usize] = 0x0000FFFF & (halfword as u32);
+fn store() {
+    // TODO
+}
+
+//LDRB
+fn load_byte() {
+    // TODO
+}
+
+/*
+*   Pulls an unsigned halfword out the base_value and stores it in the
+*   specified destination register (LDRH)
+*/
+fn load_halfword(destination: u8, base_value: u32, cpu: &mut CPU, address: u32, signed: bool) {
+    let mut data: u16 = 0;
+    if (address & 0x2) != 0 { // word aligned
+        data = ((base_value & 0xFFFF0000) >> 16) as u16;
+    } else if (address & 0x1) != 0 { // halfword aligned
+        data = ((base_value & 0x0000FFFF) >> 16) as u16;
+    } else { // byte aligned
+        panic!("Halfword is not correctly aligned");
     }
+
+    let halfword: u32;
+    if !signed || (data & 0x8000) == 0 { // if not signed or sign bit is 0
+        halfword = data as u32;
+    } else {
+        halfword = 0xFFFF0000 | (data as u32);
+    }
+
+    cpu.registers[destination as usize] = halfword;
 }
 
 #[cfg(test)]
@@ -118,7 +145,7 @@ mod tests {
         assert_eq!(h.pre_post_indexing_bit, false);
         assert_eq!(h.up_down_bit, false);
         assert_eq!(h.write_back, false);
-        assert_eq!(h.load_store, false);
+        assert_eq!(h.load, false);
         assert_eq!(h.base_register, 0);
         assert_eq!(h.destination, 0);
         assert_eFFFq!(h.is_signed, false);
@@ -132,7 +159,7 @@ mod tests {
         assert_eq!(h.pre_post_indexing_bit, true);
         assert_eq!(h.up_down_bit, false);
         assert_eq!(h.write_back, true);
-        assert_eq!(h.load_store, false);
+        assert_eq!(h.load, false);
         assert_eq!(h.base_register, 3);
         assert_eq!(h.destination, 7);
         assert_eq!(h.is_signed, true);
@@ -146,7 +173,7 @@ mod tests {
         assert_eq!(h.pre_post_indexing_bit, true);
         assert_eq!(h.up_down_bit, true);
         assert_eq!(h.write_back, true);
-        assert_eq!(h.load_store, true);
+        assert_eq!(h.load, true);
         assert_eq!(h.base_register, 0xF);
         assert_eq!(h.destination, 0xF);
         assert_eq!(h.is_signed, true);
