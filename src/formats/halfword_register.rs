@@ -113,11 +113,11 @@ fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     let mut data: u8 = 0;
     if (address & 0x3) == 0 { // word aligned (multiple of 4)
         data = ((base_value & 0xFF000000) >> 24) as u8;
-    } else if (address & 0x1) == 0 { // word + 1 byte aligned (1 more than mult of 4)
+    } else if (address & 0x3) == 1 { // word + 1 byte aligned (1 more than mult of 4)
         data = ((base_value & 0x00FF0000) >> 16) as u8;
-    } else if (address & 0x2) == 0 { // word + 2 byte algined (2 more than mult of 4)
+    } else if (address & 0x3) == 2 { // word + 2 byte aligned (2 more than mult of 4)
         data = ((base_value & 0x0000FF00) >> 8) as u8;
-    } else {
+    } else { // word + 3 byte aligned (3 more than mult of 4)
         data = (base_value & 0x000000FF) as u8;
     }
 
@@ -140,8 +140,8 @@ fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     let mut data: u16 = 0;
     if (address & 0x3) == 0 { // word aligned
         data = ((base_value & 0xFFFF0000) >> 16) as u16;
-    } else if (address & 0x2) == 0 { // halfword aligned
-        data = ((base_value & 0x0000FFFF) >> 16) as u16;
+    } else if (address & 0x2) == 2 { // halfword aligned
+        data = (base_value & 0x0000_FFFF) as u16;
     } else { // byte aligned
         panic!("Halfword is not correctly aligned");
     }
@@ -169,7 +169,7 @@ mod tests {
         assert_eq!(h.load, false);
         assert_eq!(h.base_register, 0);
         assert_eq!(h.destination, 0);
-        assert_eFFFq!(h.is_signed, false);
+        assert_eq!(h.is_signed, false);
         assert_eq!(h.is_halfword, false);
         assert_eq!(h.condition, Condition::EQ);
     }
@@ -242,4 +242,33 @@ mod tests {
         assert_eq!(h.offset_high_nibble, 0xF);
         assert_eq!(h.offset_low_nibble, 0xF);
     }
+
+    #[test]
+    fn test_get_halfword_to_load() {
+        assert_eq!(get_halfword_to_load(0x8000_0000, 0x1000, true), 0xFFFF_8000);
+        assert_eq!(get_halfword_to_load(0x9997_1122, 0x1000, false), 0x0000_9997);
+        assert_eq!(get_halfword_to_load(0x9997_1122, 0x1002, false), 0x0000_1122);
+        assert_eq!(get_halfword_to_load(0x9997_1122, 0x1002, true), 0x0000_1122);
+    }
+
+    #[test]
+    #[should_panic(expected = "Halfword is not correctly aligned")]
+    fn test_get_halfword_to_load_byte_aligned() {
+        get_halfword_to_load(0x9997_1122, 0x1001, true);
+    }
+
+    #[test]
+    fn test_get_byte_to_load() {
+        assert_eq!(get_byte_to_load(0x8000_0000, 0x1000, true), 0xFFFF_FF80);
+        assert_eq!(get_byte_to_load(0x0080_0000, 0x1001, true), 0xFFFF_FF80);
+        assert_eq!(get_byte_to_load(0x0000_8000, 0x1002, true), 0xFFFF_FF80);
+        assert_eq!(get_byte_to_load(0x0000_0080, 0x1003, true), 0xFFFF_FF80);
+        assert_eq!(get_byte_to_load(0xFF00_0080, 0x1000, false), 0x0000_00FF);
+        assert_eq!(get_byte_to_load(0x00FF_0080, 0x1001, false), 0x0000_00FF);
+        assert_eq!(get_byte_to_load(0x0000_FF80, 0x1002, false), 0x0000_00FF);
+        assert_eq!(get_byte_to_load(0x0000_FF80, 0x1003, false), 0x0000_0080);
+
+    }
 }
+
+
