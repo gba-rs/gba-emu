@@ -1,7 +1,7 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
+use crate::{operations::arithmatic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::cpu;
-use wasm_bindgen::__rt::core::intrinsics::write_bytes;
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -88,10 +88,20 @@ impl From<u32> for DataProcessingOperand {
 
 impl Instruction for DataProcessing {
     fn execute(&mut self, cpu: &mut cpu, mem_map: &mut MemoryMap) {
-        // for a move method:
-        //set rd = op2
         let op2 = self.barrel_shifter(cpu);
-        self.destination_register = op2 as u8;
+        //self.destination_register = op2 as u8;
+        match self.opcode {
+            0b0100 => {
+                let (value, flags) =
+                    arithmatic::add(cpu.registers[self.op1_register as usize], op2);
+            },
+            0b1101 => {
+                    cpu.registers[self.op1_register as usize] = op2;
+            },
+            _ => {
+                panic!("{:X}", self.opcode);
+            }
+        }
     }
 }
 
