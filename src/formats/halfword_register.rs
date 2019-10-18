@@ -73,7 +73,6 @@ impl Instruction for HalfwordImmediateOffset {
             store();
         }
 
-
         if self.halfword_common.pre_post_indexing_bit || self.halfword_common.write_back {
             cpu.registers[self.halfword_common.base_register as usize] = address;
         }
@@ -91,15 +90,18 @@ impl From<u32> for HalfwordImmediateOffset {
 }
 
 fn load(halfword_common: &HalfwordCommon, cpu: &mut CPU, value_from_memory: u32, address: u32) {
+    let mut value_to_load = 0;
     if !halfword_common.is_signed && !halfword_common.is_halfword {
-        load_byte();
+        value_to_load = get_byte_to_load(value_from_memory, address, false);
     } else if halfword_common.is_signed && !halfword_common.is_halfword {
-        load_byte();
+        value_to_load = get_byte_to_load(value_from_memory, address, true);
     } else if !halfword_common.is_signed && halfword_common.is_halfword {
-        load_halfword(halfword_common.destination, value_from_memory, cpu, address, false);
-    } else if halfword_common.is_signed && halfword_common.is_halfword {
-        load_halfword(halfword_common.destination, value_from_memory, cpu, address, true);
+        value_to_load = get_halfword_to_load(value_from_memory, address, false);
+    } else {
+        value_to_load = get_halfword_to_load(value_from_memory, address, true);
     }
+
+    cpu.registers[halfword_common.destination as usize] = value_to_load;
 }
 
 fn store() {
@@ -107,19 +109,38 @@ fn store() {
 }
 
 //LDRB
-fn load_byte() {
-    // TODO
+fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
+    let mut data: u8 = 0;
+    if (address & 0x3) == 0 { // word aligned (multiple of 4)
+        data = ((base_value & 0xFF000000) >> 24) as u8;
+    } else if (address & 0x1) == 0 { // word + 1 byte aligned (1 more than mult of 4)
+        data = ((base_value & 0x00FF0000) >> 16) as u8;
+    } else if (address & 0x2) == 0 { // word + 2 byte algined (2 more than mult of 4)
+        data = ((base_value & 0x0000FF00) >> 8) as u8;
+    } else {
+        data = (base_value & 0x000000FF) as u8;
+    }
+
+    let byte_to_load: u32;
+
+    if !signed || (data & 0x80) == 0 { // if not signed or sign bit is 0
+        byte_to_load = data as u32;
+    } else {
+        byte_to_load = 0xFFFFFF00 | (data as u32);
+    }
+
+    return byte_to_load as u32;
 }
 
 /*
 *   Pulls an unsigned halfword out the base_value and stores it in the
 *   specified destination register (LDRH)
 */
-fn load_halfword(destination: u8, base_value: u32, cpu: &mut CPU, address: u32, signed: bool) {
+fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     let mut data: u16 = 0;
-    if (address & 0x2) != 0 { // word aligned
+    if (address & 0x3) == 0 { // word aligned
         data = ((base_value & 0xFFFF0000) >> 16) as u16;
-    } else if (address & 0x1) != 0 { // halfword aligned
+    } else if (address & 0x2) == 0 { // halfword aligned
         data = ((base_value & 0x0000FFFF) >> 16) as u16;
     } else { // byte aligned
         panic!("Halfword is not correctly aligned");
@@ -132,7 +153,7 @@ fn load_halfword(destination: u8, base_value: u32, cpu: &mut CPU, address: u32, 
         halfword = 0xFFFF0000 | (data as u32);
     }
 
-    cpu.registers[destination as usize] = halfword;
+    return halfword;
 }
 
 #[cfg(test)]
