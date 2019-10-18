@@ -17,23 +17,25 @@ impl CPU {
         };
     }
 
-    pub fn decode(&mut self, instruction: u32) {
+    pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         match opcode {
             0x080  => { // ADD lli
-                let format: DataProcessing = DataProcessing::from(instruction);
-                format.execute();
+                let mut format: DataProcessing = DataProcessing::from(instruction);
+                format.execute(self, mem_map);
             },
-            _ => {
-                panic!("Not implemented");
-            },
+            0x1A0 => { //mov lli
+                let mut format: DataProcessing = DataProcessing::from(instruction);
+                format.execute(self, mem_map);
+            }
+            _ => panic!("Could not decode {:X}", opcode),
         }
     }
     
     pub fn fetch(&mut self, map: &mut MemoryMap) {
-            let instruction: u32 = map.read_u32(self.registers[15]);
-            self.decode(instruction);
-            self.registers[15] += 4;
+        let instruction: u32 = map.read_u32(self.registers[15]);
+        self.decode(map, instruction);
+        self.registers[15] += 4;
     }
 
 }
@@ -54,18 +56,23 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Not implemented")]
+    #[should_panic]
     fn test_decode_unimplemented(){
         let testram = WorkRam::new(10);
+        let mut map = MemoryMap::new();
+        map.register_memory(0x02000000, 0x0203FFFF, &testram.memory);
         let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
-        cpu.decode(0xE3000000);
+        
+        cpu.decode(&mut map, 0xE3000000);
     }
 
     #[test]
     fn test_decode(){
+        let mut map = MemoryMap::new();
         let testram = WorkRam::new(10);
+        map.register_memory(0x02000000, 0x0203FFFF, &testram.memory);
         let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
-        cpu.decode(0xE0812001);
+        cpu.decode(&mut map, 0xE0812001);
     }
 
     #[test]
