@@ -56,18 +56,23 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Not implemented")]
+    #[should_panic]
     fn test_decode_unimplemented(){
         let testram = WorkRam::new(10);
+        let mut map = MemoryMap::new();
+        map.register_memory(0x02000000, 0x0203FFFF, &testram.memory);
         let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
-        cpu.decode(0xE3000000);
+        
+        cpu.decode(&mut map, 0xE3000000);
     }
 
     #[test]
     fn test_decode(){
+        let mut map = MemoryMap::new();
         let testram = WorkRam::new(10);
+        map.register_memory(0x02000000, 0x0203FFFF, &testram.memory);
         let mut cpu = CPU{registers: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], wram: testram};
-        cpu.decode(0xE0812001);
+        cpu.decode(&mut map, 0xE0812001);
     }
 
     #[test]
