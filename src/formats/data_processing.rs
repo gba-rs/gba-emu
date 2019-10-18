@@ -92,11 +92,14 @@ impl Instruction for DataProcessing {
         //self.destination_register = op2 as u8;
         match self.opcode {
             0b0100 => {
+                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
                 let (value, flags) =
                     arithmatic::add(cpu.registers[self.op1_register as usize], op2);
+                cpu.registers[self.destination_register as usize] = value;
             },
             0b1101 => {
-                    cpu.registers[self.op1_register as usize] = op2;
+                println!("Moving {:X} = {:X}", self.destination_register, op2);
+                cpu.registers[self.destination_register as usize] = op2;
             },
             _ => {
                 panic!("{:X}", self.opcode);

@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 pub struct CPU {   
     pub registers: [u32; 16],
-    wram: WorkRam
+    pub wram: WorkRam
 }
 
 impl CPU {
@@ -19,12 +19,9 @@ impl CPU {
 
     pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
+        println!("Decoding: {:X}", opcode);
         match opcode {
-            0x080  => { // ADD lli
-                let mut format: DataProcessing = DataProcessing::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x1A0 => { //mov lli
+            0x080 | 0x3A0  => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             }
@@ -34,10 +31,9 @@ impl CPU {
     
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
-        self.decode(map, instruction);
         self.registers[15] += 4;
+        self.decode(map, instruction);
     }
-
 }
 
 // Unit Tests
