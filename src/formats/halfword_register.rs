@@ -45,6 +45,16 @@ impl From<u32> for HalfwordCommon {
     }
 }
 
+impl Instruction for HalfwordRegisterOffset {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+        let base = cpu.registers[self.halfword_common.base_register as usize];
+        let offset = cpu.registers[self.offset_register];
+        let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit);
+
+        common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
+    }
+}
+
 impl From<u32> for HalfwordRegisterOffset {
     fn from(value: u32) -> HalfwordRegisterOffset {
         return HalfwordRegisterOffset {
@@ -58,35 +68,9 @@ impl Instruction for HalfwordImmediateOffset {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.registers[self.halfword_common.base_register as usize];
         let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
-        let address;
-        let address_with_offset;
+        let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit);
 
-        if self.halfword_common.up_down_bit {
-            address_with_offset = base + offset as u32;
-        } else {
-            address_with_offset = base - offset as u32;
-        }
-
-        // if pre-index, apply offset to the address that is used
-        if self.halfword_common.is_pre_indexed {
-            address = address_with_offset;
-        } else {
-            address = base;
-        }
-
-        if self.halfword_common.load {
-            let value_from_memory = mem_map.read_u32(address);
-            load(self.halfword_common.is_signed, self.halfword_common.is_halfword,
-                 self.halfword_common.destination, cpu, value_from_memory, address);
-        } else {
-            let value_to_store = cpu.registers[self.halfword_common.destination as usize];
-            store(self.halfword_common.is_halfword, value_to_store, address, mem_map);
-        }
-
-        // if post-indexed or write back bit is true, update the base register
-        if !self.halfword_common.is_pre_indexed || self.halfword_common.write_back {
-            cpu.registers[self.halfword_common.base_register as usize] = address_with_offset;
-        }
+        common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
     }
 }
 
@@ -100,6 +84,39 @@ impl From<u32> for HalfwordImmediateOffset {
     }
 }
 
+/*
+* Handles the actual execution of the loading or storing operation. Either loads a value from memory
+* into a register or loads a value from a register into a memory location.
+*/
+fn common_execute(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_map: &mut MemoryMap,
+                  base_address: u32, address_with_offset: u32) {
+    let address;
+
+    // if pre-index, apply offset to the address that is used
+    if halfword_common.is_pre_indexed {
+        address = address_with_offset;
+    } else {
+        address = base_address;
+    }
+
+    if halfword_common.load {
+        let value_from_memory = mem_map.read_u32(address);
+        load(halfword_common.is_signed, halfword_common.is_halfword,
+             halfword_common.destination, cpu, value_from_memory, address);
+    } else {
+        let value_to_store = cpu.registers[halfword_common.destination as usize];
+        store(halfword_common.is_halfword, value_to_store, address, mem_map);
+    }
+
+    // if post-indexed or write back bit is true, update the base register
+    if !halfword_common.is_pre_indexed || halfword_common.write_back {
+        cpu.registers[halfword_common.base_register as usize] = address_with_offset;
+    }
+}
+
+/*
+* Extracts a byte or a halfword from a value stored in memory and put it into a CPU register
+*/
 fn load(is_signed: bool, is_halfword: bool, destination: u8, cpu: &mut CPU,
         value_from_memory: u32, address: u32) {
     let mut value_to_load = 0;
@@ -116,6 +133,9 @@ fn load(is_signed: bool, is_halfword: bool, destination: u8, cpu: &mut CPU,
     cpu.registers[destination as usize] = value_to_load;
 }
 
+/*
+* Formats a value from a register and stores it in a given memory address
+*/
 fn store(is_halfword: bool, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
     let formatted_value;
     if is_halfword {
@@ -126,6 +146,7 @@ fn store(is_halfword: bool, value_to_store: u32, memory_address: u32, mem_map: &
     mem_map.write_u32(memory_address, formatted_value);
 }
 
+// Repeats a 16-bit halfword over 32-bits
 fn format_halfword_to_store(value_to_store: u16) -> u32 {
     // repeat the bottom 16 bits over a 32-bit value
     let repeat = value_to_store & 0x0000_FFFF;
@@ -133,6 +154,7 @@ fn format_halfword_to_store(value_to_store: u16) -> u32 {
     return top | (repeat as u32);
 }
 
+// Repeats an 8-bit halfword over 32-bits
 fn format_byte_to_store(value_to_store: u8) -> u32 {
     // repeat the bottom 8 bits over a 32-bit value
     let bits_31_24 = (value_to_store as u32) << 24;
@@ -201,6 +223,13 @@ fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     }
 
     return halfword;
+}
+
+fn apply_offset(base_value: u32, offset: u8, add: bool) -> u32 {
+    if add {
+        return base_value + (offset as u32);
+    }
+    return base_value - (offset as u32);
 }
 
 #[cfg(test)]
