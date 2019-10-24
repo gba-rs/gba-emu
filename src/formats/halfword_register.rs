@@ -65,12 +65,11 @@ impl Instruction for HalfwordImmediateOffset {
             address = base - offset as u32;
         }
 
-        let value_from_memory = mem_map.read_u32(address);
-
         if self.halfword_common.load {
+            let value_from_memory = mem_map.read_u32(address);
             load(&self.halfword_common, cpu, value_from_memory, address);
         } else {
-            store();
+            store(&self.halfword_common, address);
         }
 
         if self.halfword_common.pre_post_indexing_bit || self.halfword_common.write_back {
@@ -104,8 +103,38 @@ fn load(halfword_common: &HalfwordCommon, cpu: &mut CPU, value_from_memory: u32,
     cpu.registers[halfword_common.destination as usize] = value_to_load;
 }
 
-fn store() {
-    // TODO
+fn store(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    let value_to_store = cpu.registers[halfword_common.destination as usize];
+    let memory_address = cpu.registers[halfword_common.base_register as usize];
+
+    let formatted_value;
+    if halfword_common.is_halfword {
+        formatted_value = format_halfword_to_store(value_to_store);
+    } else {
+        formatted_value = format_byte_to_store(value_to_store);s
+    }
+    mem_map.write_u32(memory_address, formatted_value);
+
+//    if (halfword_common.pre_post_indexing_bit) {
+//
+//    }
+}
+
+fn format_halfword_to_store(value_to_store: u32) -> u32 {
+    // repeat the bottom 16 bits over a 32-bit value
+    let repeat = value_to_store & 0x0000_FFFF;
+    let top = repeat << 16;
+    return repeat | top;
+}
+
+fn format_byte_to_store(value_to_store: u32) -> u32 {
+    // repeat the bottom 8 bits over a 32-bit value
+    let repeat = value_to_store & 0x0000_00FF;
+    let bits_31_24 = value_to_store << 24;
+    let bits_23_16 = value_to_store << 16;
+    let bits_15_8 = value_to_store << 8;
+
+    return bits_31_24 | bits_23_16 | bits_15_8 | repeat;
 }
 
 //LDRB
@@ -267,7 +296,6 @@ mod tests {
         assert_eq!(get_byte_to_load(0x00FF_0080, 0x1001, false), 0x0000_00FF);
         assert_eq!(get_byte_to_load(0x0000_FF80, 0x1002, false), 0x0000_00FF);
         assert_eq!(get_byte_to_load(0x0000_FF80, 0x1003, false), 0x0000_0080);
-
     }
 }
 
