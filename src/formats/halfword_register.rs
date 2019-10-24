@@ -1,6 +1,7 @@
 use super::{common::Condition, common::Instruction};
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
+use crate::operations::arithmatic::add;
 
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
@@ -17,7 +18,7 @@ pub struct HalfwordImmediateOffset {
    and halfword immediate offset
 */
 pub struct HalfwordCommon {
-    pub pre_post_indexing_bit: bool,
+    pub is_pre_indexed: bool,
     pub up_down_bit: bool,
     pub write_back: bool,
     pub load: bool,
@@ -31,7 +32,7 @@ pub struct HalfwordCommon {
 impl From<u32> for HalfwordCommon {
     fn from(value: u32) -> HalfwordCommon {
         return HalfwordCommon {
-            pre_post_indexing_bit: ((value & 0x0100_0000) >> 24) != 0,
+            is_pre_indexed: ((value & 0x0100_0000) >> 24) != 0,
             up_down_bit: ((value & 0x80_0000) >> 23) != 0,
             write_back: ((value & 0x20_0000) >> 21) != 0,
             load: ((value & 0x10_0000) >> 20) != 0,
@@ -58,22 +59,33 @@ impl Instruction for HalfwordImmediateOffset {
         let base = cpu.registers[self.halfword_common.base_register as usize];
         let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
         let address;
+        let address_with_offset;
 
         if self.halfword_common.up_down_bit {
-            address = base + offset as u32;
+            address_with_offset = base + offset as u32;
         } else {
-            address = base - offset as u32;
+            address_with_offset = base - offset as u32;
+        }
+
+        // if pre-index, apply offset to the address that is used
+        if self.halfword_common.is_pre_indexed {
+            address = address_with_offset;
+        } else {
+            address = base;
         }
 
         if self.halfword_common.load {
             let value_from_memory = mem_map.read_u32(address);
-            load(&self.halfword_common, cpu, value_from_memory, address);
+            load(self.halfword_common.is_signed, self.halfword_common.is_halfword,
+                 self.halfword_common.destination, cpu, value_from_memory, address);
         } else {
-            store(&self.halfword_common, address);
+            let value_to_store = cpu.registers[self.halfword_common.destination as usize];
+            store(self.halfword_common.is_halfword, value_to_store, address, mem_map);
         }
 
-        if self.halfword_common.pre_post_indexing_bit || self.halfword_common.write_back {
-            cpu.registers[self.halfword_common.base_register as usize] = address;
+        // if post-indexed or write back bit is true, update the base register
+        if !self.halfword_common.is_pre_indexed || self.halfword_common.write_back {
+            cpu.registers[self.halfword_common.base_register as usize] = address_with_offset;
         }
     }
 }
@@ -88,56 +100,57 @@ impl From<u32> for HalfwordImmediateOffset {
     }
 }
 
-fn load(halfword_common: &HalfwordCommon, cpu: &mut CPU, value_from_memory: u32, address: u32) {
+fn load(is_signed: bool, is_halfword: bool, destination: u8, cpu: &mut CPU,
+        value_from_memory: u32, address: u32) {
     let mut value_to_load = 0;
-    if !halfword_common.is_signed && !halfword_common.is_halfword {
+    if !is_signed && !is_halfword {
         value_to_load = get_byte_to_load(value_from_memory, address, false);
-    } else if halfword_common.is_signed && !halfword_common.is_halfword {
+    } else if is_signed && !is_halfword {
         value_to_load = get_byte_to_load(value_from_memory, address, true);
-    } else if !halfword_common.is_signed && halfword_common.is_halfword {
+    } else if !is_signed && is_halfword {
         value_to_load = get_halfword_to_load(value_from_memory, address, false);
     } else {
         value_to_load = get_halfword_to_load(value_from_memory, address, true);
     }
 
-    cpu.registers[halfword_common.destination as usize] = value_to_load;
+    cpu.registers[destination as usize] = value_to_load;
 }
 
-fn store(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-    let value_to_store = cpu.registers[halfword_common.destination as usize];
-    let memory_address = cpu.registers[halfword_common.base_register as usize];
-
+fn store(is_halfword: bool, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
     let formatted_value;
-    if halfword_common.is_halfword {
-        formatted_value = format_halfword_to_store(value_to_store);
+    if is_halfword {
+        formatted_value = format_halfword_to_store(value_to_store as u16);
     } else {
-        formatted_value = format_byte_to_store(value_to_store);s
+        formatted_value = format_byte_to_store(value_to_store as u8);
     }
     mem_map.write_u32(memory_address, formatted_value);
-
-//    if (halfword_common.pre_post_indexing_bit) {
-//
-//    }
 }
 
-fn format_halfword_to_store(value_to_store: u32) -> u32 {
+fn format_halfword_to_store(value_to_store: u16) -> u32 {
     // repeat the bottom 16 bits over a 32-bit value
     let repeat = value_to_store & 0x0000_FFFF;
-    let top = repeat << 16;
-    return repeat | top;
+    let top = (repeat as u32) << 16;
+    return top | (repeat as u32);
 }
 
-fn format_byte_to_store(value_to_store: u32) -> u32 {
+fn format_byte_to_store(value_to_store: u8) -> u32 {
     // repeat the bottom 8 bits over a 32-bit value
-    let repeat = value_to_store & 0x0000_00FF;
-    let bits_31_24 = value_to_store << 24;
-    let bits_23_16 = value_to_store << 16;
-    let bits_15_8 = value_to_store << 8;
+    let bits_31_24 = (value_to_store as u32) << 24;
+    let bits_23_16 = (value_to_store as u32) << 16;
+    let bits_15_8 = (value_to_store as u32) << 8;
 
-    return bits_31_24 | bits_23_16 | bits_15_8 | repeat;
+    return bits_31_24 | bits_23_16 | bits_15_8 | (value_to_store as u32);
 }
 
-//LDRB
+/*
+* Pulls a byte value out of a 32-bit value pulled from memory based on memory alignment
+* If word aligned: byte pulled from bits 31-24
+* If word + 1 byte aligned: byte pulled from bits 23-16 and so on...
+
+* Returns u32 where bits 7-0 is the value of the byte
+* If signed, the top bits 31-8 are the sign beat repeated
+* If not signed, the bits 31-8 are 0s
+*/
 fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     let mut data: u8 = 0;
     if (address & 0x3) == 0 { // word aligned (multiple of 4)
@@ -162,8 +175,13 @@ fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
 }
 
 /*
-*   Pulls an unsigned halfword out the base_value and stores it in the
-*   specified destination register (LDRH)
+* Pulls a halfword value out of a 32-bit value pulled from memory based on memory alignment
+* If word aligned: halfword pulled from bits 31-16
+* If halfword aligned: halfword pulled from bits 15-0
+
+* Returns u32 where bits 7-0 is the value of the byte
+* If signed, the top bits 31-16 are the sign beat repeated
+* If not signed, the bits 31-16 are 0s
 */
 fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     let mut data: u16 = 0;
@@ -192,7 +210,7 @@ mod tests {
     #[test]
     fn test_halfword_common_creation_min() {
         let h: HalfwordCommon = HalfwordCommon::from(0 as u32);
-        assert_eq!(h.pre_post_indexing_bit, false);
+        assert_eq!(h.is_pre_indexed, false);
         assert_eq!(h.up_down_bit, false);
         assert_eq!(h.write_back, false);
         assert_eq!(h.load, false);
@@ -206,7 +224,7 @@ mod tests {
     #[test]
     fn test_halfword_common_creation_mid() {
         let h: HalfwordCommon = HalfwordCommon::from(0x11237062);
-        assert_eq!(h.pre_post_indexing_bit, true);
+        assert_eq!(h.is_pre_indexed, true);
         assert_eq!(h.up_down_bit, false);
         assert_eq!(h.write_back, true);
         assert_eq!(h.load, false);
@@ -220,7 +238,7 @@ mod tests {
     #[test]
     fn test_halfword_common_creation_max() {
         let h: HalfwordCommon = HalfwordCommon::from(0xEFFF_FFFF);
-        assert_eq!(h.pre_post_indexing_bit, true);
+        assert_eq!(h.is_pre_indexed, true);
         assert_eq!(h.up_down_bit, true);
         assert_eq!(h.write_back, true);
         assert_eq!(h.load, true);
