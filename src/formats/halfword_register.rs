@@ -48,8 +48,8 @@ impl From<u32> for HalfwordCommon {
 impl Instruction for HalfwordRegisterOffset {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.registers[self.halfword_common.base_register as usize];
-        let offset = cpu.registers[self.offset_register];
-        let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit);
+        let offset = cpu.registers[self.offset_register as usize];
+        let address_with_offset = apply_offset(base, offset as u8, self.halfword_common.up_down_bit);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
     }
@@ -343,6 +343,26 @@ mod tests {
         assert_eq!(get_byte_to_load(0x00FF_0080, 0x1001, false), 0x0000_00FF);
         assert_eq!(get_byte_to_load(0x0000_FF80, 0x1002, false), 0x0000_00FF);
         assert_eq!(get_byte_to_load(0x0000_FF80, 0x1003, false), 0x0000_0080);
+    }
+
+    #[test]
+    fn test_apply_offset() {
+        assert_eq!(apply_offset(0x0004, 0x0002, true),  0x0006);
+        assert_eq!(apply_offset(0x0004, 0x0002, false),  0x0002);
+    }
+
+    #[test]
+    fn test_format_byte_to_store() {
+        assert_eq!(format_byte_to_store(0xF0), 0xF0F0_F0F0);
+        assert_eq!(format_byte_to_store(0xFF), 0xFFFF_FFFF);
+        assert_eq!(format_byte_to_store(0x00), 0x0000_0000);
+    }
+
+    #[test]
+    fn test_format_halfword_to_store() {
+        assert_eq!(format_halfword_to_store(0xFF00), 0xFF00_FF00);
+        assert_eq!(format_halfword_to_store(0xF0F0), 0xF0F0_F0F0);
+        assert_eq!(format_halfword_to_store(0), 0x0);
     }
 }
 
