@@ -1,7 +1,7 @@
 use super::{common::Condition, common::Instruction};
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::arithmatic::add;
+use crate::memory::work_ram::WorkRam;
 
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
@@ -363,6 +363,31 @@ mod tests {
         assert_eq!(format_halfword_to_store(0xFF00), 0xFF00_FF00);
         assert_eq!(format_halfword_to_store(0xF0F0), 0xF0F0_F0F0);
         assert_eq!(format_halfword_to_store(0), 0x0);
+    }
+
+    #[test]
+    fn test_load_unsigned_byte_word_aligned() {
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        let wram = WorkRam::new(10);
+        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        let memory_address = 0x0004;
+        let value_from_memory = 0x8000_0000;
+        let destination = 0;
+        mem_map.write_u32(memory_address, value_from_memory);
+
+        cpu.registers[0x002] = memory_address;
+
+        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.registers[destination as usize], 0x80);
+
+    }
+
+
+    #[test]
+    fn test_load_unsigned_halfword() {
+
     }
 }
 
