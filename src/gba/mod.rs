@@ -14,7 +14,7 @@ impl GBA {
             mem_map: MemoryMap::new()
         };
 
-        temp.cpu.registers[15] = pc_address;
+        temp.cpu.set_register(15, pc_address);
         temp.mem_map.register_memory(0x00000000, 0x0003FFFF, &temp.cpu.wram.memory);
 
         return temp;
