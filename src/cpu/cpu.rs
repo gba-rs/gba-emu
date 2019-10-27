@@ -1,21 +1,8 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction};
 use crate::memory::{work_ram::WorkRam, memory_map::MemoryMap};
 
-const ARM_FIQ_OFFSET: usize = 8;
-const ARM_SVC_OFFSET: usize = 10;
-const ARM_ABT_OFFSET: usize = 12;
-const ARM_IRQ_OFFSET: usize = 14;
-const ARM_UND_OFFSET: usize = 16;
-
-const THUMB_FIQ_OFFSET: usize = 8;
-const THUMB_SVC_OFFSET: usize = 10;
-const THUMB_ABT_OFFSET: usize = 12;
-const THUMB_IRQ_OFFSET: usize = 14;
-const THUMB_UND_OFFSET: usize = 16;
-
-const ARM_SP: usize = 13;
-const ARM_LR: usize = 14;
-const ARM_PC: usize = 15;
+const ARM_PC: u8 = 15;
+const THUMB_PC: u8 = 10;
 
 const REG_MAP: [[[u8; 16]; 7]; 2] = [
     // arm
@@ -41,7 +28,7 @@ const REG_MAP: [[[u8; 16]; 7]; 2] = [
 ];
 
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum OperatingMode {
     System = 0,
     User = 1,
@@ -53,7 +40,7 @@ pub enum OperatingMode {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum InstrcutionSet {
     Arm,
     Thumb
@@ -90,15 +77,35 @@ impl CPU {
     
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
-        self.registers[15] += 4;
+        let current_pc = if self.current_instruction_set == InstrcutionSet::Arm { ARM_PC } else { THUMB_PC };
+        let pc_contents = self.get_register(current_pc); 
+        self.set_register(current_pc, pc_contents + 4);
         self.decode(map, instruction);
     }
 
     pub fn get_register(&mut self, reg_num: u8) -> u32 {
+        if self.current_instruction_set == InstrcutionSet::Thumb {
+            if reg_num > 10 {
+                panic!("Attempting to get register out of range for Thumb: {}", reg_num);
+            }
+        } else {
+            if reg_num > 15 {
+                panic!("Attempting to get register out of range for Arm: {}", reg_num);
+            }
+        }
         return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize] as usize];
     }
 
     pub fn set_register(&mut self, reg_num: u8, value: u32) {
+        if self.current_instruction_set == InstrcutionSet::Thumb {
+            if reg_num > 10 {
+                panic!("Attempting to set register out of range for Thumb: {}", reg_num);
+            }
+        } else {
+            if reg_num > 15 {
+                panic!("Attempting to set register out of range for Arm: {}", reg_num);
+            }
+        }
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize] as usize] = value;
     }
 }
