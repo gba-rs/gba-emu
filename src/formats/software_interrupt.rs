@@ -20,6 +20,8 @@ impl From<u32> for SoftwareInterrupt {
 
 impl Instruction for SoftwareInterrupt {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-
+        // Enter supervisor mode
+        // set the pc to 0x08
+        // Save the CPSR to spsr_svc
     }
 }

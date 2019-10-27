@@ -1,5 +1,5 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction};
-use crate::memory::{work_ram::WorkRam, memory_map::MemoryMap};
+use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 
 const ARM_PC: u8 = 15;
 const THUMB_PC: u8 = 10;
@@ -49,6 +49,7 @@ pub enum InstrcutionSet {
 pub struct CPU {   
     registers: [u32; 31],
     pub wram: WorkRam,
+    pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
     pub current_instruction_set: InstrcutionSet
 }
@@ -58,6 +59,7 @@ impl CPU {
         return CPU {
             registers: [0; 31],
             wram: WorkRam::new(0),
+            bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::User,
             current_instruction_set: InstrcutionSet::Arm
         };
@@ -118,8 +120,7 @@ mod tests {
 
     #[test]
     fn test_access_registers(){
-        let testram = WorkRam::new(10);
-        let mut cpu = CPU{registers: [0; 31], wram: testram, operating_mode: OperatingMode::User, current_instruction_set: InstrcutionSet::Arm};
+        let mut cpu = CPU::new();
         let _empty_registers: [u32; 31] = [0; 31];
         
         assert_eq!(_empty_registers, cpu.registers);
@@ -128,10 +129,9 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_decode_unimplemented(){
-        let testram = WorkRam::new(10);
+        let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
-        map.register_memory(0x02000000, 0x0203FFFF, &testram.memory);
-        let mut cpu = CPU{registers: [0; 31], wram: testram, operating_mode: OperatingMode::User, current_instruction_set: InstrcutionSet::Arm};
+        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         
         cpu.decode(&mut map, 0xE3000000);
     }
@@ -139,20 +139,17 @@ mod tests {
     #[test]
     fn test_decode(){
         let mut map = MemoryMap::new();
-        let testram = WorkRam::new(10);
-        map.register_memory(0x02000000, 0x0203FFFF, &testram.memory);
-        let mut cpu = CPU{registers: [0; 31], wram: testram, operating_mode: OperatingMode::User, current_instruction_set: InstrcutionSet::Arm};
+        let mut cpu = CPU::new();
+        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         cpu.decode(&mut map, 0xE0812001);
     }
 
     #[test]
     fn test_fetch(){
-        let testram = WorkRam::new(10);
-        let mut cpu = CPU{registers: [0; 31], wram: testram, operating_mode: OperatingMode::User, current_instruction_set: InstrcutionSet::Arm};
+        let mut cpu = CPU::new();
         cpu.set_register(15, 0x02000000);
         let mut map = MemoryMap::new();
-        let wram = WorkRam::new(10);
-        map.register_memory(0x02000000, 0x0203FFFF, &wram.memory);
+        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         map.write_u32(0x02000000, 0xE0812001);
         map.write_u32(0x02000004, 0xE0812001);
         cpu.fetch(&mut map);
