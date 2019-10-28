@@ -1,4 +1,4 @@
-use super::{common::Condition, common::ShiftType, common::Shift};
+use super::{common::Condition, common::Shift};
 
 struct SingleDataTransfer {
     pub offset: SingleDataTransferOperand,

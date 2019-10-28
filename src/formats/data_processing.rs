@@ -34,12 +34,12 @@ impl DataProcessing {
         if self.operand2.immediate {
             op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
         } else {
-            op2 = cpu.registers[self.operand2.rm as usize];
+            op2 = cpu.get_register(self.operand2.rm);
             let shift_amount: u32;
             if self.operand2.shift.immediate {
                 shift_amount = self.operand2.shift.shift_amount as u32;
             } else {
-                shift_amount = cpu.registers[self.operand2.shift.shift_register as usize];
+                shift_amount = cpu.get_register(self.operand2.shift.shift_register);
             }
 
             match self.operand2.shift.shift_type {
@@ -92,14 +92,14 @@ impl Instruction for DataProcessing {
         //self.destination_register = op2 as u8;
         match self.opcode {
             0b0100 => {
-                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
+                println!("Adding {:X} + {:X}", cpu.get_register(self.op1_register), op2);
                 let (value, flags) =
-                    arithmatic::add(cpu.registers[self.op1_register as usize], op2);
-                cpu.registers[self.destination_register as usize] = value;
+                    arithmatic::add(cpu.get_register(self.op1_register), op2);
+                cpu.set_register(self.destination_register, value);
             },
             0b1101 => {
                 println!("Moving {:X} = {:X}", self.destination_register, op2);
-                cpu.registers[self.destination_register as usize] = op2;
+                cpu.set_register(self.destination_register, op2);
             },
             _ => {
                 panic!("{:X}", self.opcode);
