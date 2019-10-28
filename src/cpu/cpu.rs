@@ -4,7 +4,7 @@ use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap}
 const ARM_PC: u8 = 15;
 const THUMB_PC: u8 = 10;
 
-const REG_MAP: [[[u8; 16]; 7]; 2] = [
+const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
     [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],     // System
@@ -95,7 +95,7 @@ impl CPU {
                 panic!("Attempting to get register out of range for Arm: {}", reg_num);
             }
         }
-        return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize] as usize];
+        return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]];
     }
 
     pub fn set_register(&mut self, reg_num: u8, value: u32) {
@@ -108,7 +108,7 @@ impl CPU {
                 panic!("Attempting to set register out of range for Arm: {}", reg_num);
             }
         }
-        self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize] as usize] = value;
+        self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 }
 
