@@ -47,8 +47,8 @@ impl From<u32> for HalfwordCommon {
 
 impl Instruction for HalfwordRegisterOffset {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        let base = cpu.registers[self.halfword_common.base_register as usize];
-        let offset = cpu.registers[self.offset_register as usize];
+        let base = cpu.get_register(self.halfword_common.base_register);
+        let offset = cpu.get_register(self.offset_register);
         let address_with_offset = apply_offset(base, offset as u8, self.halfword_common.up_down_bit);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
@@ -66,7 +66,7 @@ impl From<u32> for HalfwordRegisterOffset {
 
 impl Instruction for HalfwordImmediateOffset {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        let base = cpu.registers[self.halfword_common.base_register as usize];
+        let base = cpu.get_register(self.halfword_common.base_register);
         let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
         let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit);
 
@@ -104,13 +104,13 @@ fn common_execute(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_map: &mut
         load(halfword_common.is_signed, halfword_common.is_halfword,
              halfword_common.destination, cpu, value_from_memory, address);
     } else {
-        let value_to_store = cpu.registers[halfword_common.destination as usize];
+        let value_to_store = cpu.get_register(halfword_common.destination);
         store(halfword_common.is_halfword, value_to_store, address, mem_map);
     }
 
     // if post-indexed or write back bit is true, update the base register
     if !halfword_common.is_pre_indexed || halfword_common.write_back {
-        cpu.registers[halfword_common.base_register as usize] = address_with_offset;
+        cpu.set_register(halfword_common.base_register, address_with_offset);
     }
 }
 
@@ -130,7 +130,7 @@ fn load(is_signed: bool, is_halfword: bool, destination: u8, cpu: &mut CPU,
         value_to_load = get_halfword_to_load(value_from_memory, address, true);
     }
 
-    cpu.registers[destination as usize] = value_to_load;
+    cpu.set_register(destination, value_to_load);
 }
 
 /*
@@ -347,8 +347,8 @@ mod tests {
 
     #[test]
     fn test_apply_offset() {
-        assert_eq!(apply_offset(0x0004, 0x0002, true),  0x0006);
-        assert_eq!(apply_offset(0x0004, 0x0002, false),  0x0002);
+        assert_eq!(apply_offset(0x0004, 0x0002, true), 0x0006);
+        assert_eq!(apply_offset(0x0004, 0x0002, false), 0x0002);
     }
 
     #[test]
@@ -367,27 +367,57 @@ mod tests {
 
     #[test]
     fn test_load_unsigned_byte_word_aligned() {
+        let value_from_memory = 0x8000_0000;
+        let memory_address= 0x0004;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+
+        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0x80);
+    }
+
+    #[test]
+    fn test_load_unsigned_byte_word_plus_1_aligned() {
+        let value_from_memory = 0x0080_0000;
+        let memory_address= 0x0005;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+
+        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0x80);
+    }
+
+    #[test]
+    fn test_load_unsigned_byte_word_plus_2_aligned() {
+        let value_from_memory = 0x0000_8000;
+        let memory_address= 0x0006;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+
+        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0x80);
+    }
+
+    #[test]
+    fn test_load_unsigned_byte_word_plus_3_aligned() {
+        let value_from_memory = 0x0000_0080;
+        let memory_address= 0x0007;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0x80);
+    }
+
+    fn load_set_up(destination: u8, value_from_memory: u32, memory_address: u32) -> CPU {
         let mut cpu = CPU::new();
         let mut mem_map = MemoryMap::new();
         let wram = WorkRam::new(10);
         mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
-        let memory_address = 0x0004;
-        let value_from_memory = 0x8000_0000;
-        let destination = 0;
         mem_map.write_u32(memory_address, value_from_memory);
 
-        cpu.registers[0x002] = memory_address;
+        cpu.set_register(0x002, memory_address);
 
-        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
-
-        assert_eq!(cpu.registers[destination as usize], 0x80);
-
-    }
-
-
-    #[test]
-    fn test_load_unsigned_halfword() {
-
+        return cpu;
     }
 }
 
