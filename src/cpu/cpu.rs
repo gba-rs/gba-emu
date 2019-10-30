@@ -30,7 +30,7 @@ const REG_MAP: [[[usize; 16]; 7]; 2] = [
 ];
 
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum OperatingMode {
     System = 0,
     User = 1,
@@ -48,18 +48,9 @@ pub enum InstructionSet {
     Thumb
 }
 
-pub struct ProgramStatusRegisters {
-    pub cpsr: ProgramStatusRegister,
-    pub spsr_fiq: ProgramStatusRegister,
-    pub spsr_irq: ProgramStatusRegister,
-    pub spsr_svc: ProgramStatusRegister,
-    pub spsr_abt: ProgramStatusRegister,
-    pub spsr_und: ProgramStatusRegister
-}
-
 pub struct CPU {   
     registers: [u32; 31],
-    spsr: [ProgramStatusRegister; 5],
+    spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
     pub wram: WorkRam,
     pub bios_ram: BiosRam,
@@ -71,6 +62,8 @@ impl CPU {
     pub fn new() -> CPU {
         return CPU {
             registers: [0; 31],
+            spsr: [ProgramStatusRegister::from(0); 7],
+            cpsr: ProgramStatusRegister::from(0),
             wram: WorkRam::new(0),
             bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::User,
@@ -122,6 +115,20 @@ impl CPU {
             }
         }
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
+    }
+
+    pub fn get_spsr(&mut self, op_mode: OperatingMode) -> ProgramStatusRegister {
+        if op_mode == OperatingMode::System || op_mode == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", op_mode);
+        }
+        return self.spsr[op_mode as usize];
+    }
+
+    pub fn set_spsr(&mut self, op_mode: OperatingMode, value: u32) {
+        if op_mode == OperatingMode::System || op_mode == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", op_mode);
+        }
+        self.spsr[op_mode as usize] = ProgramStatusRegister::from(value);
     }
 }
 
