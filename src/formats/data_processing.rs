@@ -1,4 +1,7 @@
-use super::{common::Condition};
+use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
+use crate::{operations::arithmatic};
+use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::CPU;
 
 pub struct DataProcessing {
     pub op1_register: u8,
@@ -24,6 +27,45 @@ impl From<u32> for DataProcessing {
     }
 }
 
+impl DataProcessing {
+    pub fn barrel_shifter(&mut self, cpu: &mut CPU) -> u32 {
+        let mut op2: u32;
+
+        if self.operand2.immediate {
+            op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
+        } else {
+            op2 = cpu.get_register(self.operand2.rm);
+            let shift_amount: u32;
+            if self.operand2.shift.immediate {
+                shift_amount = self.operand2.shift.shift_amount as u32;
+            } else {
+                shift_amount = cpu.get_register(self.operand2.shift.shift_register);
+            }
+
+            match self.operand2.shift.shift_type {
+                ShiftType::LogicalLeft => {
+                    op2 = op2 << shift_amount;
+                    // todo: make sure flags aren't a thing
+                },
+                ShiftType::LogicalRight => {
+                    op2 = op2 >> shift_amount;
+                    // todo: make sure flags aren't a thing
+                },
+                ShiftType::ArithmeticRight => {
+                    op2 = ((op2 as i32) >> shift_amount) as u32;
+                    // make sure this isn't truncating
+                },
+                ShiftType::RotateRight => {
+                    op2 = op2.rotate_right(shift_amount);
+                },
+                _ => panic!("Shift type fucked up")
+            }
+        }
+
+        return op2;
+    }
+}
+
 pub struct DataProcessingOperand {
     pub shift: Shift,
     pub rm: u8,
@@ -44,41 +86,24 @@ impl From<u32> for DataProcessingOperand {
     }
 }
 
-pub enum ShiftType {
-    LogicalLeft = 0b00,
-    LogicalRight = 0b01,
-    ArithmeticRight = 0b10,
-    RotateRight = 0b11,
-    Error
-}
-
-impl From<u32> for ShiftType {
-    fn from(value: u32) -> ShiftType {
-        match value {
-            0b00 => ShiftType::LogicalLeft,
-            0b01 => ShiftType::LogicalRight,
-            0b10 => ShiftType::ArithmeticRight,
-            0b11 => ShiftType::RotateRight,
-            _ => ShiftType::Error
-        }
-    }
-}
-
-pub struct Shift {
-    pub shift_type: ShiftType,
-    pub shift_amount: u8,
-    pub shift_register: u8,
-    pub immediate: bool
-}
-
-
-impl From<u32> for Shift {
-    fn from(value: u32) -> Shift {
-        return Shift {
-            shift_type: ShiftType::from((value & 0x60) >> 5),
-            shift_amount: ((value & 0xF80) >> 7) as u8,
-            shift_register: ((value & 0xF00) >> 8) as u8,
-            immediate: ((value & 0x10) >> 5) != 0
+impl Instruction for DataProcessing {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+        let op2 = self.barrel_shifter(cpu);
+        //self.destination_register = op2 as u8;
+        match self.opcode {
+            0b0100 => {
+                println!("Adding {:X} + {:X}", cpu.get_register(self.op1_register), op2);
+                let (value, flags) =
+                    arithmatic::add(cpu.get_register(self.op1_register), op2);
+                cpu.set_register(self.destination_register, value);
+            },
+            0b1101 => {
+                println!("Moving {:X} = {:X}", self.destination_register, op2);
+                cpu.set_register(self.destination_register, op2);
+            },
+            _ => {
+                panic!("{:X}", self.opcode);
+            }
         }
     }
 }

@@ -1,3 +1,6 @@
+use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::CPU;
+
 #[derive(Debug, PartialEq)]
 pub enum Condition {
     EQ = 0b0000,
@@ -37,6 +40,49 @@ impl From<u32> for Condition {
             0b1101 => return Condition::LE,
             0b1110 => return Condition::AL,
             _ => return Condition::Error
+        }
+    }
+}
+
+pub trait Instruction {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap);
+}
+
+pub enum ShiftType {
+    LogicalLeft = 0b00,
+    LogicalRight = 0b01,
+    ArithmeticRight = 0b10,
+    RotateRight = 0b11,
+    Error
+}
+
+impl From<u32> for ShiftType {
+    fn from(value: u32) -> ShiftType {
+        match value {
+            0b00 => ShiftType::LogicalLeft,
+            0b01 => ShiftType::LogicalRight,
+            0b10 => ShiftType::ArithmeticRight,
+            0b11 => ShiftType::RotateRight,
+            _ => ShiftType::Error
+        }
+    }
+}
+
+pub struct Shift {
+    pub shift_type: ShiftType,
+    pub shift_amount: u8,
+    pub shift_register: u8,
+    pub immediate: bool
+}
+
+
+impl From<u32> for Shift {
+    fn from(value: u32) -> Shift {
+        return Shift {
+            shift_type: ShiftType::from((value & 0x60) >> 5),
+            shift_amount: ((value & 0xF80) >> 7) as u8,
+            shift_register: ((value & 0xF00) >> 8) as u8,
+            immediate: ((value & 0x10) >> 5) != 0
         }
     }
 }

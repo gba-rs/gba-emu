@@ -2,9 +2,10 @@ mod utils;
 pub mod formats;
 pub mod operations;
 pub mod cpu;
+pub mod memory;
+pub mod gba;
 
 use wasm_bindgen::prelude::*;
-use crate::formats::{data_processing::DataProcessing};
 
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
