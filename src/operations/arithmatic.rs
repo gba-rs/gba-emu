@@ -1,6 +1,6 @@
-use crate::{cpu::Flags};
+use crate::{cpu::program_status_register::ConditionFlags};
 
-fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, Flags) {
+fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, ConditionFlags) {
     let output: u64 = (op1 as u64) + (op2 as u64) + (carry_in as u64);
     let carryout: bool = (output >> 32) != 0;
 
@@ -10,44 +10,44 @@ fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, Flags) {
     let op2_sign: bool = (op2 >> 31) != 0;
     let output_sign: bool = ((output >> 31) & 0x01) != 0; 
 
-    return (real_output, Flags{
+    return (real_output, ConditionFlags{
         negative: false,
         zero: output == 0,
         carry: carryout,
-        signed_overflow: (op1_sign == op2_sign) && (op1_sign != output_sign) 
+        signed_overflow: (op1_sign == op2_sign) && (op1_sign != output_sign)
     });
 }
 
-pub fn add(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn add(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, op2, false);
 }
 
-pub fn sub(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn sub(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, !op2, true);
 }
 
-pub fn rsb(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn rsb(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(!op1, op2, true);
 }
 
-pub fn sbc(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn sbc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, !op2, false);
 }
 
-pub fn rsc(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn rsc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(!op1, op2, false);
 }
 
-pub fn adc(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn adc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, op2, true);
 }
 
-pub fn cmp(op1: u32, op2: u32) -> Flags {
+pub fn cmp(op1: u32, op2: u32) -> ConditionFlags {
     let (_, flags) = sub(op1, op2);
     return flags;
 }
 
-pub fn cmn(op1: u32, op2: u32) -> Flags {
+pub fn cmn(op1: u32, op2: u32) -> ConditionFlags {
     let (_, flags) = add(op1, op2);
     return flags;
 }

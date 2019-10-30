@@ -1,5 +1,7 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
+use super::{program_status_register::ProgramStatusRegister};
+
 
 const ARM_PC: u8 = 15;
 const THUMB_PC: u8 = 10;
@@ -36,22 +38,33 @@ pub enum OperatingMode {
     Supervisor = 3,
     Abort = 4,
     Interrupt = 5,
-    Undefiend = 6
+    Undefined = 6
 }
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq)]
-pub enum InstrcutionSet {
+pub enum InstructionSet {
     Arm,
     Thumb
 }
 
+pub struct ProgramStatusRegisters {
+    pub cpsr: ProgramStatusRegister,
+    pub spsr_fiq: ProgramStatusRegister,
+    pub spsr_irq: ProgramStatusRegister,
+    pub spsr_svc: ProgramStatusRegister,
+    pub spsr_abt: ProgramStatusRegister,
+    pub spsr_und: ProgramStatusRegister
+}
+
 pub struct CPU {   
     registers: [u32; 31],
+    spsr: [ProgramStatusRegister; 5],
+    pub cpsr: ProgramStatusRegister,
     pub wram: WorkRam,
     pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
-    pub current_instruction_set: InstrcutionSet
+    pub current_instruction_set: InstructionSet
 }
 
 impl CPU {
@@ -61,7 +74,7 @@ impl CPU {
             wram: WorkRam::new(0),
             bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::User,
-            current_instruction_set: InstrcutionSet::Arm
+            current_instruction_set: InstructionSet::Arm
         };
     }
 
@@ -79,14 +92,14 @@ impl CPU {
     
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
-        let current_pc = if self.current_instruction_set == InstrcutionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc); 
         self.set_register(current_pc, pc_contents + 4);
         self.decode(map, instruction);
     }
 
     pub fn get_register(&mut self, reg_num: u8) -> u32 {
-        if self.current_instruction_set == InstrcutionSet::Thumb {
+        if self.current_instruction_set == InstructionSet::Thumb {
             if reg_num > 10 {
                 panic!("Attempting to get register out of range for Thumb: {}", reg_num);
             }
@@ -99,7 +112,7 @@ impl CPU {
     }
 
     pub fn set_register(&mut self, reg_num: u8, value: u32) {
-        if self.current_instruction_set == InstrcutionSet::Thumb {
+        if self.current_instruction_set == InstructionSet::Thumb {
             if reg_num > 10 {
                 panic!("Attempting to set register out of range for Thumb: {}", reg_num);
             }
