@@ -2,6 +2,7 @@ use super::{common::Condition, common::Instruction};
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::memory::work_ram::WorkRam;
+use crate::operations::arithmatic::add;
 
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
@@ -137,6 +138,10 @@ fn load(is_signed: bool, is_halfword: bool, destination: u8, cpu: &mut CPU,
 * Formats a value from a register and stores it in a given memory address
 */
 fn store(is_halfword: bool, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
+    if is_halfword && !is_halfword_aligned(memory_address) && !is_word_aligned(memory_address) {
+        panic!("Attempting to store halfword in a memory location that is not word aligned or halfword aligned!");
+    }
+
     let formatted_value;
     if is_halfword {
         formatted_value = format_halfword_to_store(value_to_store as u16);
@@ -154,7 +159,7 @@ fn format_halfword_to_store(value_to_store: u16) -> u32 {
     return top | (repeat as u32);
 }
 
-// Repeats an 8-bit halfword over 32-bits
+// Repeats an 8-bit byte over 32-bits
 fn format_byte_to_store(value_to_store: u8) -> u32 {
     // repeat the bottom 8 bits over a 32-bit value
     let bits_31_24 = (value_to_store as u32) << 24;
@@ -175,11 +180,11 @@ fn format_byte_to_store(value_to_store: u8) -> u32 {
 */
 fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     let mut data: u8 = 0;
-    if (address & 0x3) == 0 { // word aligned (multiple of 4)
+    if is_word_aligned(address) {
         data = ((base_value & 0xFF000000) >> 24) as u8;
-    } else if (address & 0x3) == 1 { // word + 1 byte aligned (1 more than mult of 4)
+    } else if is_word_plus_1_aligned(address) {
         data = ((base_value & 0x00FF0000) >> 16) as u8;
-    } else if (address & 0x3) == 2 { // word + 2 byte aligned (2 more than mult of 4)
+    } else if is_halfword_aligned(address) {
         data = ((base_value & 0x0000FF00) >> 8) as u8;
     } else { // word + 3 byte aligned (3 more than mult of 4)
         data = (base_value & 0x000000FF) as u8;
@@ -230,6 +235,18 @@ fn apply_offset(base_value: u32, offset: u8, add: bool) -> u32 {
         return base_value + (offset as u32);
     }
     return base_value - (offset as u32);
+}
+
+fn is_word_aligned(memory_address: u32) -> bool {
+    return (memory_address & 0x3) == 0; // mult of 4s
+}
+
+fn is_word_plus_1_aligned(memory_address: u32) -> bool {
+    return (memory_address & 0x3) == 1; // 1 more than mult. of 4
+}
+
+fn is_halfword_aligned(memory_address: u32) -> bool {
+    return (memory_address & 0x3) == 2; // 2 more than mult. of 4
 }
 
 #[cfg(test)]
@@ -366,9 +383,20 @@ mod tests {
     }
 
     #[test]
+    fn test_load_signed_byte_word_aligned() {
+        let value_from_memory = 0x8000_0000;
+        let memory_address = 0x0004;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+
+        load(true, false, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0xFFFF_FF80);
+    }
+
+    #[test]
     fn test_load_unsigned_byte_word_aligned() {
         let value_from_memory = 0x8000_0000;
-        let memory_address= 0x0004;
+        let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
         load(false, false, 0, &mut cpu, value_from_memory, memory_address);
@@ -379,7 +407,7 @@ mod tests {
     #[test]
     fn test_load_unsigned_byte_word_plus_1_aligned() {
         let value_from_memory = 0x0080_0000;
-        let memory_address= 0x0005;
+        let memory_address = 0x0005;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
         load(false, false, 0, &mut cpu, value_from_memory, memory_address);
@@ -390,7 +418,7 @@ mod tests {
     #[test]
     fn test_load_unsigned_byte_word_plus_2_aligned() {
         let value_from_memory = 0x0000_8000;
-        let memory_address= 0x0006;
+        let memory_address = 0x0006;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
         load(false, false, 0, &mut cpu, value_from_memory, memory_address);
@@ -401,11 +429,83 @@ mod tests {
     #[test]
     fn test_load_unsigned_byte_word_plus_3_aligned() {
         let value_from_memory = 0x0000_0080;
-        let memory_address= 0x0007;
+        let memory_address = 0x0007;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
         load(false, false, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x80);
+    }
+
+    #[test]
+    fn test_load_unsigned_halfword_word_aligned() {
+        let value_from_memory = 0x8080_0000;
+        let memory_address = 0x0004;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+        load(false, true, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0x8080);
+    }
+
+
+    #[test]
+    fn test_load_unsigned_halfword_word_plus_2_aligned() {
+        let value_from_memory = 0x0000_8080;
+        let memory_address = 0x0006;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+        load(false, true, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0x8080);
+    }
+
+    #[test]
+    fn test_load_signed_halfword_word_aligned() {
+        let value_from_memory = 0x8080_0000;
+        let memory_address = 0x0004;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+        load(true, true, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0xFFFF_8080);
+    }
+
+    #[test]
+    fn test_load_signed_halfword_word_aligned_positive() {
+        let value_from_memory = 0x7080_0000;
+        let memory_address = 0x0004;
+        let mut cpu = load_set_up(0, value_from_memory, memory_address);
+        load(true, true, 0, &mut cpu, value_from_memory, memory_address);
+
+        assert_eq!(cpu.get_register(0), 0x0000_7080);
+    }
+
+    #[test]
+    fn test_store_halfword() {
+        let memory_address = 0x04;
+        let value_to_store = 0x8080;
+        let mut mem_map = store_set_up();
+        store(true, value_to_store, memory_address, &mut mem_map);
+
+        assert_eq!(0x8080_8080, mem_map.read_u32(memory_address));
+    }
+
+    #[test]
+    fn test_store_byte() {
+        let memory_address = 0x04;
+        let value_to_store = 0x80;
+        let mut mem_map = store_set_up();
+        store(false, value_to_store, memory_address, &mut mem_map);
+
+        assert_eq!(0x8080_8080, mem_map.read_u32(memory_address));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_store_halfword_improper_alignment() {
+        let memory_address = 0x05;
+        let value_to_store = 0x80;
+        let mut mem_map = store_set_up();
+
+        store(true, value_to_store, memory_address, &mut mem_map);
+
     }
 
     fn load_set_up(destination: u8, value_from_memory: u32, memory_address: u32) -> CPU {
@@ -418,6 +518,13 @@ mod tests {
         cpu.set_register(0x002, memory_address);
 
         return cpu;
+    }
+
+    fn store_set_up() -> MemoryMap {
+        let mut mem_map = MemoryMap::new();
+        let wram = WorkRam::new(10);
+        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        return mem_map;
     }
 }
 
