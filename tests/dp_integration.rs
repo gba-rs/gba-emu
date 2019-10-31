@@ -9,7 +9,7 @@ use gba_emulator::*;
 #[cfg(test)]
 mod tests {
 //    use gba_emulator::formats::data_processing::DataProcessing;
-    use gba_emulator::cpu::cpu::{CPU, InstrcutionSet, OperatingMode};
+    use gba_emulator::cpu::cpu::{CPU, InstructionSet, OperatingMode};
     use gba_emulator::formats::data_processing::DataProcessing;
     use gba_emulator::formats::common::Instruction;
     use gba_emulator::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
