@@ -1,6 +1,6 @@
 use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::{cpu::CPU, cpu::InstrcutionSet};
+use crate::cpu::{cpu::CPU, cpu::InstructionSet};
 
 pub struct SoftwareInterrupt {
     pub comment_field_arm: u32,
@@ -20,7 +20,7 @@ impl From<u32> for SoftwareInterrupt {
 
 impl Instruction for SoftwareInterrupt {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        cpu.current_instruction_set = InstrcutionSet::Arm;
+        cpu.current_instruction_set = InstructionSet::Arm;
         // Enter arm mode
         // Enter supervisor mode
         // Save the CPSR to spsr_svc

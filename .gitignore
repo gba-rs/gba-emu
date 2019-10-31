@@ -14,3 +14,4 @@ wasm-pack.log
 */pkg/
 */wasm-pack.log
 .idea/
+*.BIOS

@@ -1,8 +1,8 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 
-const ARM_PC: u8 = 15;
-const THUMB_PC: u8 = 10;
+pub const ARM_PC: u8 = 15;
+pub const THUMB_PC: u8 = 10;
 
 const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
@@ -40,8 +40,8 @@ pub enum OperatingMode {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq)]
-pub enum InstrcutionSet {
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum InstructionSet {
     Arm,
     Thumb
 }
@@ -51,7 +51,7 @@ pub struct CPU {
     pub wram: WorkRam,
     pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
-    pub current_instruction_set: InstrcutionSet
+    pub current_instruction_set: InstructionSet
 }
 
 impl CPU {
@@ -61,7 +61,7 @@ impl CPU {
             wram: WorkRam::new(0),
             bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::User,
-            current_instruction_set: InstrcutionSet::Arm
+            current_instruction_set: InstructionSet::Arm
         };
     }
 
@@ -73,20 +73,24 @@ impl CPU {
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             }
+            0x121 => { //Believe this should be Branch & Exchange
+                let mut format: BranchExchange = BranchExchange::from(instruction);
+                format.execute(self, mem_map)
+            }
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
     
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
-        let current_pc = if self.current_instruction_set == InstrcutionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc); 
         self.set_register(current_pc, pc_contents + 4);
         self.decode(map, instruction);
     }
 
     pub fn get_register(&mut self, reg_num: u8) -> u32 {
-        if self.current_instruction_set == InstrcutionSet::Thumb {
+        if self.current_instruction_set == InstructionSet::Thumb {
             if reg_num > 10 {
                 panic!("Attempting to get register out of range for Thumb: {}", reg_num);
             }
@@ -99,7 +103,7 @@ impl CPU {
     }
 
     pub fn set_register(&mut self, reg_num: u8, value: u32) {
-        if self.current_instruction_set == InstrcutionSet::Thumb {
+        if self.current_instruction_set == InstructionSet::Thumb {
             if reg_num > 10 {
                 panic!("Attempting to set register out of range for Thumb: {}", reg_num);
             }
@@ -156,4 +160,14 @@ mod tests {
         cpu.fetch(&mut map);
     }
 
+    #[test]
+    fn test_branch_exchange(){
+        let mut cpu = CPU::new();
+        cpu.set_register(15, 0x02000000);
+        let mut map = MemoryMap::new();
+        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
+        map.write_u32(0x02000000, 0xD12F_FF1F);
+        cpu.fetch(&mut map);
+        assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
+    }
 }
