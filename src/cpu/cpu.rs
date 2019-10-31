@@ -69,7 +69,7 @@ impl CPU {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
         match opcode {
-            0x080 | 0x3A0  => { // ADD lli
+            0x080 | 0x3A0 | 0x0600  => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             }
