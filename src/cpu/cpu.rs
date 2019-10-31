@@ -1,10 +1,11 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, software_interrupt::SoftwareInterrupt};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
 
-const ARM_PC: u8 = 15;
-const THUMB_PC: u8 = 10;
+pub const ARM_PC: u8 = 15;
+pub const ARM_LR: u8 = 14;
+pub const THUMB_PC: u8 = 10;
 
 const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
@@ -78,7 +79,11 @@ impl CPU {
             0x080 | 0x3A0  => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
-            }
+            },
+            0xF00...0xFFF => {
+                let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
+                format.execute(self, mem_map);
+            },
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
@@ -117,18 +122,18 @@ impl CPU {
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
-    pub fn get_spsr(&mut self, op_mode: OperatingMode) -> ProgramStatusRegister {
-        if op_mode == OperatingMode::System || op_mode == OperatingMode::User {
-            panic!("Invalid operating mode {:?}", op_mode);
+    pub fn get_spsr(&mut self) -> ProgramStatusRegister {
+        if self.operating_mode == OperatingMode::System || self.operating_mode == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", self.operating_mode);
         }
-        return self.spsr[op_mode as usize];
+        return self.spsr[self.operating_mode as usize];
     }
 
-    pub fn set_spsr(&mut self, op_mode: OperatingMode, value: u32) {
-        if op_mode == OperatingMode::System || op_mode == OperatingMode::User {
-            panic!("Invalid operating mode {:?}", op_mode);
+    pub fn set_spsr(&mut self, psr: ProgramStatusRegister) {
+        if self.operating_mode == OperatingMode::System || self.operating_mode == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", self.operating_mode);
         }
-        self.spsr[op_mode as usize] = ProgramStatusRegister::from(value);
+        self.spsr[self.operating_mode as usize] = psr;
     }
 }
 
