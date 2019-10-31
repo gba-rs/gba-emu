@@ -5,10 +5,11 @@ pub struct WorkRam {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
 
+// 256000
 impl WorkRam {
-    pub fn new(init_value: u8) -> WorkRam {
+    pub fn new(size: usize, init_value: u8) -> WorkRam {
         return WorkRam {
-            memory: Rc::new(RefCell::new(vec![init_value; 256000]))
+            memory: Rc::new(RefCell::new(vec![init_value; size]))
         }
     }
 }

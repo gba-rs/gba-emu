@@ -1,7 +1,11 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
+use super::{program_status_register::ProgramStatusRegister};
+
 
 pub const ARM_PC: u8 = 15;
+pub const ARM_LR: u8 = 14;
+pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
 
 const REG_MAP: [[[usize; 16]; 7]; 2] = [
@@ -28,7 +32,7 @@ const REG_MAP: [[[usize; 16]; 7]; 2] = [
 ];
 
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum OperatingMode {
     System = 0,
     User = 1,
@@ -36,7 +40,7 @@ pub enum OperatingMode {
     Supervisor = 3,
     Abort = 4,
     Interrupt = 5,
-    Undefiend = 6
+    Undefined = 6
 }
 
 #[repr(u8)]
@@ -48,7 +52,10 @@ pub enum InstructionSet {
 
 pub struct CPU {   
     registers: [u32; 31],
+    spsr: [ProgramStatusRegister; 7],
+    pub cpsr: ProgramStatusRegister,
     pub wram: WorkRam,
+    pub onchip_wram: WorkRam,
     pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
     pub current_instruction_set: InstructionSet
@@ -58,9 +65,12 @@ impl CPU {
     pub fn new() -> CPU {
         return CPU {
             registers: [0; 31],
-            wram: WorkRam::new(0),
+            spsr: [ProgramStatusRegister::from(0); 7],
+            cpsr: ProgramStatusRegister::from(0),
+            wram: WorkRam::new(256000, 0),
+            onchip_wram: WorkRam::new(0x7FFF, 0),
             bios_ram: BiosRam::new(0),
-            operating_mode: OperatingMode::User,
+            operating_mode: OperatingMode::Supervisor,
             current_instruction_set: InstructionSet::Arm
         };
     }
@@ -72,11 +82,15 @@ impl CPU {
             0x080 | 0x3A0 | 0x0600  => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
-            }
+            },
+            0xF00...0xFFF => {
+                let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
+                format.execute(self, mem_map);
+            },
             0x121 => { //Believe this should be Branch & Exchange
                 let mut format: BranchExchange = BranchExchange::from(instruction);
                 format.execute(self, mem_map)
-            }
+            },
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
@@ -113,6 +127,20 @@ impl CPU {
             }
         }
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
+    }
+
+    pub fn get_spsr(&mut self) -> ProgramStatusRegister {
+        if self.operating_mode == OperatingMode::System || self.operating_mode == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", self.operating_mode);
+        }
+        return self.spsr[self.operating_mode as usize];
+    }
+
+    pub fn set_spsr(&mut self, psr: ProgramStatusRegister) {
+        if self.operating_mode == OperatingMode::System || self.operating_mode == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", self.operating_mode);
+        }
+        self.spsr[self.operating_mode as usize] = psr;
     }
 }
 
@@ -158,6 +186,28 @@ mod tests {
         map.write_u32(0x02000004, 0xE0812001);
         cpu.fetch(&mut map);
         cpu.fetch(&mut map);
+    }
+
+    #[test]
+    fn test_register_access() {
+        let mut cpu = CPU::new();
+        cpu.set_register(10, 15);
+        let spv_reg_10 = cpu.get_register(10);
+        cpu.operating_mode = OperatingMode::User;
+        cpu.set_register(10, 200);
+        let usr_reg_10 = cpu.get_register(10);
+
+        assert_eq!(spv_reg_10, 15);
+        assert_eq!(usr_reg_10, 200);
+        assert!(spv_reg_10 != usr_reg_10);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_register_access_invalid() {
+        let mut cpu = CPU::new();
+        cpu.current_instruction_set = InstructionSet::Thumb;
+        let should_fail = cpu.get_register(11);
     }
 
     #[test]
