@@ -1,4 +1,4 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, software_interrupt::SoftwareInterrupt};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -44,7 +44,7 @@ pub enum OperatingMode {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum InstructionSet {
     Arm,
     Thumb
@@ -79,13 +79,17 @@ impl CPU {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
         match opcode {
-            0x080 | 0x3A0  => { // ADD lli
+            0x080 | 0x3A0 | 0x0600  => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             },
             0xF00...0xFFF => {
                 let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
                 format.execute(self, mem_map);
+            },
+            0x121 => { //Believe this should be Branch & Exchange
+                let mut format: BranchExchange = BranchExchange::from(instruction);
+                format.execute(self, mem_map)
             },
             _ => panic!("Could not decode {:X}", opcode),
         }
@@ -206,4 +210,14 @@ mod tests {
         let should_fail = cpu.get_register(11);
     }
 
+    #[test]
+    fn test_branch_exchange(){
+        let mut cpu = CPU::new();
+        cpu.set_register(15, 0x02000000);
+        let mut map = MemoryMap::new();
+        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
+        map.write_u32(0x02000000, 0xD12F_FF1F);
+        cpu.fetch(&mut map);
+        assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
+    }
 }
