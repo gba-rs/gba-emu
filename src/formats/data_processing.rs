@@ -3,6 +3,53 @@ use crate::{operations::arithmatic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::CPU;
 
+
+#[derive(Debug, PartialEq)]
+pub enum OpCodes {
+    AND = 0b0000,
+    EOR = 0b0001,
+    SUB = 0b0010,
+    RSB = 0b0011,
+    ADD = 0b0100,
+    ADC = 0b0101,
+    SBC = 0b0110,
+    RSC = 0b0111,
+    TST = 0b1000,
+    TEQ = 0b1001,
+    CMP = 0b1010,
+    CMN = 0b1011,
+    ORR = 0b1100,
+    MOV = 0b1101,
+    BIC = 0b1110,
+    MVN = 0b1111,
+    Error
+}
+
+impl From<u8> for OpCodes {
+    fn from(value: u8) -> OpCodes {
+        match value {
+            0b0000 => return OpCodes::AND,
+            0b0001 => return OpCodes::EOR,
+            0b0010 => return OpCodes::SUB,
+            0b0011 => return OpCodes::RSB,
+            0b0100 => return OpCodes::ADD,
+            0b0101 => return OpCodes::ADC,
+            0b0110 => return OpCodes::SBC,
+            0b0111 => return OpCodes::RSC,
+            0b1000 => return OpCodes::TST,
+            0b1001 => return OpCodes::TEQ,
+            0b1010 => return OpCodes::CMP,
+            0b1011 => return OpCodes::CMN,
+            0b1100 => return OpCodes::ORR,
+            0b1101 => return OpCodes::MOV,
+            0b1110 => return OpCodes::BIC,
+            0b1111 => return OpCodes::MVN,
+            _ => return panic!("ahh")
+        }
+    }
+}
+
+
 pub struct DataProcessing {
     pub op1_register: u8,
     pub destination_register: u8,
@@ -89,17 +136,67 @@ impl From<u32> for DataProcessingOperand {
 impl Instruction for DataProcessing {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let op2 = self.barrel_shifter(cpu);
-        //self.destination_register = op2 as u8;
-        match self.opcode {
-            0b0100 => {
-                println!("Adding {:X} + {:X}", cpu.get_register(self.op1_register), op2);
+        match OpCodes::from(self.opcode) {
+            OpCodes::AND => { //and
+                let value = cpu.get_register(self.op1_register) & op2;
+                cpu.set_register(self.destination_register, value);
+            }
+            OpCodes::EOR => { //eor
+                let value = cpu.get_register(self.op1_register) ^ op2;
+                cpu.set_register(self.destination_register, value);
+            }
+            OpCodes::SUB  => { //sub
+                let (value, flags) =
+                    arithmatic::sub(cpu.get_register(self.op1_register), op2);
+                cpu.set_register(self.destination_register, value);
+            },
+            OpCodes::RSB => { //rsb
+                let (value, flags) =
+                    arithmatic::rsb(cpu.get_register(self.op1_register), op2);
+                cpu.set_register(self.destination_register, value);
+            },
+            OpCodes::ADD => { //add
+//                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
                 let (value, flags) =
                     arithmatic::add(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
-            0b1101 => {
-                println!("Moving {:X} = {:X}", self.destination_register, op2);
+            OpCodes::ADC => { //ADC
+                let (value, flags) =
+                    arithmatic::adc(cpu.get_register(self.op1_register), op2);
+                cpu.set_register(self.destination_register, value);
+            },
+            OpCodes::SBC => { //SBC
+                let (value, flags) =
+                    arithmatic::sbc(cpu.get_register(self.op1_register), op2);
+                cpu.set_register(self.destination_register, value);
+            },
+            OpCodes::RSC => { //RSC
+                let (value, flags) =
+                    arithmatic::rsc(cpu.get_register(self.op1_register), op2);
+                cpu.set_register(self.destination_register, value);
+            },
+            OpCodes::TST => { //TST
+                //todo: when flags are in set it equal to flags return
+            },
+            OpCodes::TEQ => { //TEQ
+                //todo: when flags are in set it equal to flags return
+            },
+            OpCodes::CMP => { //cmp
+
+                //todo: when flags are in set it equal to flags return
+            },
+            OpCodes::CMN => { //cmn
+                //todo: when flags are in set it equal to flags return
+            },
+            OpCodes::MOV => { //mov
                 cpu.set_register(self.destination_register, op2);
+            },
+            OpCodes::BIC => { // bic
+                cpu.set_register(self.destination_register,(!op2 & self.op1_register as u32));
+            },
+            OpCodes::MVN => { // MVN
+                cpu.set_register(self.destination_register,!op2);
             },
             _ => {
                 panic!("{:X}", self.opcode);
@@ -131,4 +228,5 @@ mod tests {
         assert_eq!(a.immediate_operand, true);
         assert_eq!(a.set_condition, true);
     }
+
 }
