@@ -8,18 +8,19 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     println!("{:?}", args);
 
-    let file = File::open(&args[1]);
+    let rom_file = File::open(&args[1]);
     let mut rom = Vec::new();
-    file.unwrap().read_to_end(&mut rom);
+    rom_file.unwrap().read_to_end(&mut rom);
 
-    let step_count = args[2].parse().unwrap();
+    let bios_file = File::open(&args[2]);
+    let mut bios = Vec::new();
+    bios_file.unwrap().read_to_end(&mut bios);
 
-    let mut gba: GBA = GBA::new(0x00000000);
-    gba.load(0x00000000, rom);
+    let step_count = args[3].parse().unwrap();
+
+    let mut gba: GBA = GBA::new(0x08000000, bios, rom);
 
     for i in 0..step_count {
         gba.step();
     }
-
-    println!("{:?}", gba.cpu.registers);
 }

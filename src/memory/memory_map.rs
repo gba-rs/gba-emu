@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn test_memory_map_read() {
         let mut map = MemoryMap::new();
-        let wram = WorkRam::new(10);
+        let wram = WorkRam::new(256000, 10);
         map.register_memory(0x02000000, 0x0203FFFF, &wram.memory);
         assert_eq!(map.read_u8(0x02000000), 0x0A);
         assert_eq!(map.read_u16(0x02000000), 0x0A0A);
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn test_memory_map_write() {
         let mut map = MemoryMap::new();
-        let wram = WorkRam::new(10);
+        let wram = WorkRam::new(256000, 10);
         map.register_memory(0x02000000, 0x0203FFFF, &wram.memory);
         map.write_u8(0x02000000, 0x30);
         assert_eq!(map.read_u8(0x02000000), 0x30);
@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn test_memory_map_multiple() {
         let mut map = MemoryMap::new();
-        let wram = WorkRam::new(10);
+        let wram = WorkRam::new(256000, 10);
         let mut mock_mem = MockMemory::new(0xFF);
         map.register_memory(0x02000000, 0x0203FFFF, &wram.memory);
         map.register_memory(0x0, 0x0003FFFF, &mock_mem.memory);

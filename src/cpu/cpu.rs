@@ -5,6 +5,7 @@ use super::{program_status_register::ProgramStatusRegister};
 
 pub const ARM_PC: u8 = 15;
 pub const ARM_LR: u8 = 14;
+pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
 
 const REG_MAP: [[[usize; 16]; 7]; 2] = [
@@ -54,6 +55,7 @@ pub struct CPU {
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
     pub wram: WorkRam,
+    pub onchip_wram: WorkRam,
     pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
     pub current_instruction_set: InstructionSet
@@ -65,9 +67,10 @@ impl CPU {
             registers: [0; 31],
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0),
-            wram: WorkRam::new(0),
+            wram: WorkRam::new(256000, 0),
+            onchip_wram: WorkRam::new(0x7FFF, 0),
             bios_ram: BiosRam::new(0),
-            operating_mode: OperatingMode::User,
+            operating_mode: OperatingMode::Supervisor,
             current_instruction_set: InstructionSet::Arm
         };
     }
@@ -179,6 +182,28 @@ mod tests {
         map.write_u32(0x02000004, 0xE0812001);
         cpu.fetch(&mut map);
         cpu.fetch(&mut map);
+    }
+
+    #[test]
+    fn test_register_access() {
+        let mut cpu = CPU::new();
+        cpu.set_register(10, 15);
+        let spv_reg_10 = cpu.get_register(10);
+        cpu.operating_mode = OperatingMode::User;
+        cpu.set_register(10, 200);
+        let usr_reg_10 = cpu.get_register(10);
+
+        assert_eq!(spv_reg_10, 15);
+        assert_eq!(usr_reg_10, 200);
+        assert!(spv_reg_10 != usr_reg_10);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_register_access_invalid() {
+        let mut cpu = CPU::new();
+        cpu.current_instruction_set = InstructionSet::Thumb;
+        let should_fail = cpu.get_register(11);
     }
 
 }
