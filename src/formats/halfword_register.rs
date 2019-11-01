@@ -511,7 +511,7 @@ mod tests {
     fn load_set_up(destination: u8, value_from_memory: u32, memory_address: u32) -> CPU {
         let mut cpu = CPU::new();
         let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(10);
+        let wram = WorkRam::new(256000, 0);
         mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         mem_map.write_u32(memory_address, value_from_memory);
 
@@ -522,7 +522,7 @@ mod tests {
 
     fn store_set_up() -> MemoryMap {
         let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(10);
+        let wram = WorkRam::new(256000, 0);
         mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         return mem_map;
     }
