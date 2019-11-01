@@ -16,6 +16,41 @@ fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, Flags) {
     });
 }
 
+fn _mul(op1: u32, op2: u32) -> (u32, Flags) {
+    let result = op1.overflowing_mul(op2);
+    let product = result.0;
+    return (product, Flags{
+        negative: (product << 31) != 0,
+        zero: product == 0,
+        carry: false,
+        signed_overflow: result.1
+    });
+}
+
+fn _mull(op1: u32, op2: u32) -> (u32, Flags) {
+    //TODO implement
+    return (product, Flags{
+        //TODO set flags
+    });
+}
+
+pub fn mla(op1: u32, op2: u32, op3: u32) -> (u32, Flags) {
+    let product = _mul(op1, op2);
+    //TODO figure out how to do
+    return output;
+}
+
+pub fn mlal(op1: u32, op2: u32, op3: u32) -> (u32, Flags) {
+    let product = _mull(op1, op2);
+    let output = (add(product.0, op3).0, product.1);
+    return output;
+}
+
+
+pub fn mul(op1: u32, op2: u32) -> (u32, Flags) { return _mul(op1, op2) }
+
+pub fn mull(op1: u32, op2: u32) -> (u32, Flags) { return _mull(op1, op2) }
+
 pub fn add(op1: u32, op2: u32) -> (u32, Flags) {
     return _add(op1, op2, false);
 }

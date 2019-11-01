@@ -1,4 +1,4 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, multiply::Multiply, multiply_long::MultiplyLong};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 
 pub const ARM_PC: u8 = 15;
@@ -69,13 +69,21 @@ impl CPU {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
         match opcode {
-            0x080 | 0x3A0 | 0x0600  => { // ADD lli
+            0x080 | 0x3A0 | 0x0600 => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             }
             0x121 => { //Believe this should be Branch & Exchange
                 let mut format: BranchExchange = BranchExchange::from(instruction);
-                format.execute(self, mem_map)
+                format.execute(self, mem_map);
+            }
+            0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
+                let mut format: Multiply = Multiply::from(instruction);
+                format.execute(self, mem_map);
+            }
+            0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
+                let mut format: MultiplyLong = MultiplyLong::from(instruction);
+                format.execute(self, mem_map);
             }
             _ => panic!("Could not decode {:X}", opcode),
         }
