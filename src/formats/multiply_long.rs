@@ -32,17 +32,32 @@ impl From<u32> for MultiplyLong {
 
 impl Instruction for MultiplyLong {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        if self.accumulate { // MLA
-            let (value, flags) = arithmatic::mlal(
-                cpu.get_register(self.op1_register),
-                cpu.get_register(self.op2_register),
-                cpu.get_register(self.op3_register));
-            cpu.set_register(self.destination_register, value);
-        }else{ // MUL
-            let (value, flags) = arithmatic::mull(
-                cpu.get_register(self.op1_register),
-                cpu.get_register(self.op2_register));
-            cpu.set_register(self.destination_register, value);
+        let (rdhi, rdlo, flags) = arithmatic::mull(
+            cpu.get_register(self.op1_register),
+            cpu.get_register(self.op2_register), self.unsigned);
+        if self.accumulate {
+            let mut vals = (0, 0);
+            if self.unsigned {
+                let product = arithmatic::u64_from_u32(rdhi, rdlo);
+                let number = arithmatic::u64_from_u32(
+                    cpu.get_register(self.destination_register_hi),
+                    cpu.get_register(self.destination_register_hi));
+                let sum = product.overflowing_add(number).0;
+                vals = arithmatic::u32_from_u64(sum);
+            }
+            else{
+                let product = arithmatic::i64_from_u32(rdhi, rdlo);
+                let number = arithmatic::i64_from_u32(
+                    cpu.get_register(self.destination_register_hi),
+                    cpu.get_register(self.destination_register_hi));
+                let sum = product.overflowing_add(number).0;
+                vals = arithmatic::u32_from_i64(sum);
+            }
+            cpu.set_register(self.destination_register_hi, vals.0);
+            cpu.set_register(self.destination_register_hi, vals.1);
+        }else{
+            cpu.set_register(self.destination_register_hi, rdhi);
+            cpu.set_register(self.destination_register_hi, rdlo);
         }
     }
 }
