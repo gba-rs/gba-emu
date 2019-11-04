@@ -51,14 +51,14 @@ pub fn mull(op1: u32, op2: u32, unsigned: bool) -> (u32, u32, Flags) {
 }
 
 pub fn u32_from_u64(num: u64) -> (u32, u32) {
-    let rd_hi = ((product >> 32) as u32);
-    let rd_lo = ((product & 0x0000_0000_FFFF_FFFF) as u32);
+    let rd_hi = ((num >> 32) as u32);
+    let rd_lo = ((num & 0x0000_0000_FFFF_FFFF) as u32);
     return (rd_hi, rd_lo);
 }
 
 pub fn u32_from_i64(num: i64) -> (u32, u32) {
-    let rd_hi = ((product >> 32) as u32);
-    let rd_lo = ((product & 0x0000_0000_FFFF_FFFF) as u32);
+    let rd_hi = ((num >> 32) as u32);
+    let rd_lo = ((num & 0x0000_0000_FFFF_FFFF) as u32);
     return (rd_hi, rd_lo);
 }
 
