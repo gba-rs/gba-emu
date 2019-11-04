@@ -8,7 +8,7 @@ pub const ARM_LR: u8 = 14;
 pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
 
-const REG_MAP: [[[usize; 16]; 7]; 2] = [
+pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
     [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],     // System
