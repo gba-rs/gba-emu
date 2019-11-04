@@ -28,29 +28,26 @@ pub fn mul(op1: u32, op2: u32) -> (u32, Flags) {
     });
 }
 
+pub fn mla(op1: u32, op2: u32, op3: u32) -> (u32, Flags) {
+    let product = mul(op1, op2);
+    let output = (add(product.0, op3).0, product.1);
+    return output;
+}
+
 pub fn mull(op1: u32, op2: u32, unsigned: bool) -> (u32, u32, Flags) {
-    if !unsigned {
-        let mask = (0xFFFF_FFFF_0000_0000u64 as i64);
-        let product = ((op1 as i64) | mask) * (op2 as i64);
-        let rd_hi = ((product >> 32) as u32);
-        let rd_lo = ((product & 0x0000_0000_FFFF_FFFF) as u32);
-        return (rd_hi, rd_lo, Flags{
-            negative: (rd_hi >> 31) != 0,
-            zero: product == 0,
-            carry: false,
-            signed_overflow: false
-        });
-    } else{
-        let product = (op1 as u64) * (op2 as u64);
-        let rd_hi = ((product >> 32) as u32);
-        let rd_lo = ((product & 0x0000_0000_FFFF_FFFF) as u32);
-        return (rd_hi, rd_lo, Flags{
-            negative: (rd_hi >> 31) != 0,
-            zero: product == 0,
-            carry: false,
-            signed_overflow: false
-        });
-    }
+//    let mask1 = if op1 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 };
+//    let mask2 = if op2 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 };
+//    let product= if !unsigned { (((op1 as i64) | mask1) * ((op2 as i64) | mask2)) as u64 } else { (op1 as u64) * (op2 as u64) };
+    // Unreadable AF and you love it
+    let product = if !unsigned {(((op1 as i64) | (if op1 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 })) * ((op2 as i64) | (if op2 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 }))) as u64 } else { (op1 as u64) * (op2 as u64) };
+    let rd_hi = ((product >> 32) as u32);
+    let rd_lo = ((product & 0x0000_0000_FFFF_FFFF) as u32);
+    return (rd_hi, rd_lo, Flags{
+        negative: (rd_hi >> 31) != 0,
+        zero: product == 0,
+        carry: false,
+        signed_overflow: false
+    });
 }
 
 pub fn u32_from_u64(num: u64) -> (u32, u32) {
@@ -71,12 +68,6 @@ pub fn u64_from_u32(rhi: u32, rlo: u32) -> u64 {
 
 pub fn i64_from_u32(rhi: u32, rlo: u32) -> i64 {
     return ((rhi as i64) << 32) + (rlo as i64);
-}
-
-pub fn mla(op1: u32, op2: u32, op3: u32) -> (u32, Flags) {
-    let product = mul(op1, op2);
-    let output = (add(product.0, op3).0, product.1);
-    return output;
 }
 
 pub fn add(op1: u32, op2: u32) -> (u32, Flags) {
