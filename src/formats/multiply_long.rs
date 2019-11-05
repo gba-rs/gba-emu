@@ -41,7 +41,7 @@ impl Instruction for MultiplyLong {
                 let product = arithmatic::u64_from_u32(rdhi, rdlo);
                 let number = arithmatic::u64_from_u32(
                     cpu.get_register(self.destination_register_hi),
-                    cpu.get_register(self.destination_register_hi));
+                    cpu.get_register(self.destination_register_lo));
                 let sum = product.overflowing_add(number).0;
                 vals = arithmatic::u32_from_u64(sum);
             }
@@ -49,15 +49,15 @@ impl Instruction for MultiplyLong {
                 let product = arithmatic::i64_from_u32(rdhi, rdlo);
                 let number = arithmatic::i64_from_u32(
                     cpu.get_register(self.destination_register_hi),
-                    cpu.get_register(self.destination_register_hi));
+                    cpu.get_register(self.destination_register_lo));
                 let sum = product.overflowing_add(number).0;
                 vals = arithmatic::u32_from_i64(sum);
             }
             cpu.set_register(self.destination_register_hi, vals.0);
-            cpu.set_register(self.destination_register_hi, vals.1);
+            cpu.set_register(self.destination_register_lo, vals.1);
         }else{
             cpu.set_register(self.destination_register_hi, rdhi);
-            cpu.set_register(self.destination_register_hi, rdlo);
+            cpu.set_register(self.destination_register_lo, rdlo);
         }
     }
 }
@@ -92,5 +92,18 @@ mod tests {
         assert_eq!(a.destination_register_lo, 0b1111);
         assert_eq!(a.op2_register, 0b1111);
         assert_eq!(a.op1_register, 0b1111);
+    }
+
+    #[test]
+    fn multiply_long_example() {
+        let a: MultiplyLong = MultiplyLong::from(0xE09_432_91);
+        assert_eq!(a.condition, Condition::AL);
+        assert_eq!(a.unsigned, true);
+        assert_eq!(a.accumulate, false);
+        assert_eq!(a.set_condition, true);
+        assert_eq!(a.destination_register_hi, 4);
+        assert_eq!(a.destination_register_lo, 3);
+        assert_eq!(a.op2_register, 2);
+        assert_eq!(a.op1_register, 1);
     }
 }
