@@ -1,4 +1,5 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
+use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -50,7 +51,7 @@ pub enum InstructionSet {
     Thumb
 }
 
-pub struct CPU {   
+pub struct CPU {
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
@@ -91,14 +92,23 @@ impl CPU {
                 let mut format: BranchExchange = BranchExchange::from(instruction);
                 format.execute(self, mem_map)
             },
+            0x9...0x1F9 => {
+                if opcode & 0x40 == 0 {
+                    let mut format = HalfwordRegisterOffset::from(instruction);
+                    format.execute(self, mem_map);
+                } else {
+                    let mut format = HalfwordImmediateOffset::from(instruction);
+                    format.execute(self, mem_map);
+                }
+            },
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
-    
+
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
-        let pc_contents = self.get_register(current_pc); 
+        let pc_contents = self.get_register(current_pc);
         self.set_register(current_pc, pc_contents + 4);
         self.decode(map, instruction);
     }
@@ -154,7 +164,7 @@ mod tests {
     fn test_access_registers(){
         let mut cpu = CPU::new();
         let _empty_registers: [u32; 31] = [0; 31];
-        
+
         assert_eq!(_empty_registers, cpu.registers);
     }
 
@@ -164,7 +174,7 @@ mod tests {
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        
+
         cpu.decode(&mut map, 0xE3000000);
     }
 
