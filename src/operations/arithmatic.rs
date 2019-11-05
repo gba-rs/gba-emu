@@ -1,6 +1,6 @@
-use crate::{cpu::Flags};
+use crate::{cpu::program_status_register::ConditionFlags};
 
-fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, Flags) {
+fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, ConditionFlags) {
     let output: u64 = (op1 as u64) + (op2 as u64) + (carry_in as u64);
     let carryout: bool = (output >> 32) != 0;
     let real_output: u32 = (output & 0xFFFFFFFF) as u32;
@@ -8,7 +8,7 @@ fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, Flags) {
     let op2_sign: bool = (op2 >> 31) != 0;
     let output_sign: bool = ((output >> 31) & 0x01) != 0;
 
-    return (real_output, Flags{
+    return (real_output, ConditionFlags{
         negative: (output & (0x1 << 31)) != 0,
         zero: output == 0,
         carry: carryout,
@@ -16,7 +16,7 @@ fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, Flags) {
     });
 }
 
-pub fn mul(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn mul(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     let result = op1.overflowing_mul(op2);
     let product = result.0;
 
@@ -28,17 +28,13 @@ pub fn mul(op1: u32, op2: u32) -> (u32, Flags) {
     });
 }
 
-pub fn mla(op1: u32, op2: u32, op3: u32) -> (u32, Flags) {
+pub fn mla(op1: u32, op2: u32, op3: u32) -> (u32, ConditionFlags) {
     let product = mul(op1, op2);
     let output = (add(product.0, op3).0, product.1);
     return output;
 }
 
-pub fn mull(op1: u32, op2: u32, unsigned: bool) -> (u32, u32, Flags) {
-//    let mask1 = if op1 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 };
-//    let mask2 = if op2 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 };
-//    let product= if !unsigned { (((op1 as i64) | mask1) * ((op2 as i64) | mask2)) as u64 } else { (op1 as u64) * (op2 as u64) };
-    // Unreadable AF and you love it
+pub fn mull(op1: u32, op2: u32, unsigned: bool) -> (u32, u32, ConditionFlags) {
     let product = if !unsigned {(((op1 as i64) | (if op1 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 })) * ((op2 as i64) | (if op2 >> 31 != 0 { 0xFFFF_FFFF_0000_0000u64 as i64 } else { 0u64 as i64 }))) as u64 } else { (op1 as u64) * (op2 as u64) };
     let rd_hi = ((product >> 32) as u32);
     let rd_lo = ((product & 0x0000_0000_FFFF_FFFF) as u32);
@@ -70,36 +66,36 @@ pub fn i64_from_u32(rhi: u32, rlo: u32) -> i64 {
     return ((rhi as i64) << 32) + (rlo as i64);
 }
 
-pub fn add(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn add(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, op2, false);
 }
 
-pub fn sub(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn sub(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, !op2, true);
 }
 
-pub fn rsb(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn rsb(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(!op1, op2, true);
 }
 
-pub fn sbc(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn sbc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, !op2, false);
 }
 
-pub fn rsc(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn rsc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(!op1, op2, false);
 }
 
-pub fn adc(op1: u32, op2: u32) -> (u32, Flags) {
+pub fn adc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(op1, op2, true);
 }
 
-pub fn cmp(op1: u32, op2: u32) -> Flags {
+pub fn cmp(op1: u32, op2: u32) -> ConditionFlags {
     let (_, flags) = sub(op1, op2);
     return flags;
 }
 
-pub fn cmn(op1: u32, op2: u32) -> Flags {
+pub fn cmn(op1: u32, op2: u32) -> ConditionFlags {
     let (_, flags) = add(op1, op2);
     return flags;
 }
