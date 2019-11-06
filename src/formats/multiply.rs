@@ -1,4 +1,7 @@
-use super::{common::Condition};
+use super::{common::Condition, common::Instruction};
+use crate::{operations::arithmatic};
+use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::CPU;
 
 pub struct Multiply {
     pub condition: Condition,     // Cond
@@ -22,6 +25,23 @@ impl From<u32> for Multiply {
             op2_register: ((value & 0xF00) >> 8) as u8,
             op1_register: (value & 0xF) as u8,
         }
+    }
+}
+
+impl Instruction for Multiply {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+            if self.accumulate { // MLA
+                let (value, flags) = arithmatic::mla(
+                        cpu.get_register(self.op1_register),
+                        cpu.get_register(self.op2_register),
+                        cpu.get_register(self.op3_register));
+                cpu.set_register(self.destination_register, value);
+            }else{ // MUL
+                let (value, flags) = arithmatic::mul(
+                        cpu.get_register(self.op1_register),
+                        cpu.get_register(self.op2_register));
+                cpu.set_register(self.destination_register, value);
+            }
     }
 }
 

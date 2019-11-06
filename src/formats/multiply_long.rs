@@ -1,4 +1,7 @@
-use super::{common::Condition};
+use super::{common::Condition, common::Instruction};
+use crate::{operations::arithmatic};
+use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::CPU;
 
 pub struct MultiplyLong {
     pub condition: Condition,        // Cond
@@ -23,6 +26,38 @@ impl From<u32> for MultiplyLong {
             destination_register_lo: ((value & 0xF000) >> 12) as u8,
             op2_register: ((value & 0xF00) >> 8) as u8,
             op1_register: (value & 0xF) as u8,
+        }
+    }
+}
+
+impl Instruction for MultiplyLong {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+        let (rdhi, rdlo, flags) = arithmatic::mull(
+            cpu.get_register(self.op1_register),
+            cpu.get_register(self.op2_register), self.unsigned);
+        if self.accumulate {
+            let mut vals = (0, 0);
+            if self.unsigned {
+                let product = arithmatic::u64_from_u32(rdhi, rdlo);
+                let number = arithmatic::u64_from_u32(
+                    cpu.get_register(self.destination_register_hi),
+                    cpu.get_register(self.destination_register_lo));
+                let sum = product.overflowing_add(number).0;
+                vals = arithmatic::u32_from_u64(sum);
+            }
+            else{
+                let product = arithmatic::i64_from_u32(rdhi, rdlo);
+                let number = arithmatic::i64_from_u32(
+                    cpu.get_register(self.destination_register_hi),
+                    cpu.get_register(self.destination_register_lo));
+                let sum = product.overflowing_add(number).0;
+                vals = arithmatic::u32_from_i64(sum);
+            }
+            cpu.set_register(self.destination_register_hi, vals.0);
+            cpu.set_register(self.destination_register_lo, vals.1);
+        }else{
+            cpu.set_register(self.destination_register_hi, rdhi);
+            cpu.set_register(self.destination_register_lo, rdlo);
         }
     }
 }
@@ -57,5 +92,18 @@ mod tests {
         assert_eq!(a.destination_register_lo, 0b1111);
         assert_eq!(a.op2_register, 0b1111);
         assert_eq!(a.op1_register, 0b1111);
+    }
+
+    #[test]
+    fn multiply_long_example() {
+        let a: MultiplyLong = MultiplyLong::from(0xE09_432_91);
+        assert_eq!(a.condition, Condition::AL);
+        assert_eq!(a.unsigned, true);
+        assert_eq!(a.accumulate, false);
+        assert_eq!(a.set_condition, true);
+        assert_eq!(a.destination_register_hi, 4);
+        assert_eq!(a.destination_register_lo, 3);
+        assert_eq!(a.op2_register, 2);
+        assert_eq!(a.op1_register, 1);
     }
 }
