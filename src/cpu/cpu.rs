@@ -1,4 +1,4 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, multiply::Multiply, multiply_long::MultiplyLong, software_interrupt::SoftwareInterrupt};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, multiply::Multiply, multiply_long::MultiplyLong, software_interrupt::SoftwareInterrupt, common::Condition};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -161,6 +161,27 @@ impl CPU {
             }
         }
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
+    }
+
+    pub fn check_condition(&mut self, cond: Condition) -> bool {
+        match cond {
+            Condition::EQ => return self.cpsr.flags.zero,
+            Condition::NE => return !self.cpsr.flags.zero,
+            Condition::CS => return self.cpsr.flags.carry,
+            Condition::CC => return !self.cpsr.flags.carry,
+            Condition::MI => return self.cpsr.flags.negative,
+            Condition::PL => return !self.cpsr.flags.negative,
+            Condition::VS => return self.cpsr.flags.signed_overflow,
+            Condition::VC => return !self.cpsr.flags.signed_overflow,
+            Condition::HI => return self.cpsr.flags.carry && !self.cpsr.flags.zero,
+            Condition::LS => return !self.cpsr.flags.carry && self.cpsr.flags.zero,
+            Condition::GE => return self.cpsr.flags.negative == self.cpsr.flags.signed_overflow,
+            Condition::LT => return self.cpsr.flags.negative != self.cpsr.flags.signed_overflow,
+            Condition::GT => return !self.cpsr.flags.zero && (self.cpsr.flags.negative == self.cpsr.flags.signed_overflow),
+            Condition::LE => return self.cpsr.flags.zero && (self.cpsr.flags.negative != self.cpsr.flags.signed_overflow),
+            Condition::AL => return true,
+            Condition::Error => panic!("Condition::Error hit"),
+        }
     }
 
     pub fn get_spsr(&mut self) -> ProgramStatusRegister {
