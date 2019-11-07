@@ -99,10 +99,10 @@ impl CPU {
                 let mut format: MultiplyLong = MultiplyLong::from(instruction);
                 format.execute(self, mem_map);
             },
-            // 0x800...0x9FF => {
-            //     let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
-            //     format.execute(self, mem_map);
-            // },
+            0x800...0x9FF => {
+                 let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
+                 format.execute(self, mem_map);
+            },
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
