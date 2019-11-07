@@ -1,7 +1,7 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
 use crate::{operations::arithmatic};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::CPU;
+use crate::{cpu::cpu::CPU, cpu::program_status_register::ConditionFlags};
 
 
 #[derive(Debug, PartialEq)]
@@ -111,6 +111,19 @@ impl DataProcessing {
 
         return op2;
     }
+    
+    fn set_flags(&mut self, cpu: &mut CPU, value: u32, op1: u32, op2: u32) -> ConditionFlags {
+        let carryout: bool = (value >> 32) != 0;
+        let op1_sign: bool = (op1 >> 31) != 0;
+        let op2_sign: bool = (op2 >> 31) != 0;
+        let value_sign: bool = ((value >> 31) & 0x01) != 0;
+        return ConditionFlags {
+            negative: (value & (0x1 << 31)) != 0,
+            zero: value == 0,
+            carry: carryout,
+            signed_overflow: (op1_sign == op2_sign) && (op1_sign != value_sign)
+        };
+    }
 }
 
 pub struct DataProcessingOperand {
@@ -176,24 +189,27 @@ impl Instruction for DataProcessing {
                     arithmatic::rsc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
-            OpCodes::TST => { //TST
-                //todo: when flags are in set it equal to flags return
+            OpCodes::TST => { //TST AND
+                let op1 = cpu.get_register(self.op1_register);
+                let value = op1 & op2;
+                cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
             },
-            OpCodes::TEQ => { //TEQ
-                //todo: when flags are in set it equal to flags return
+            OpCodes::TEQ => { //TEQ EOR
+                let op1 = cpu.get_register(self.op1_register);
+                let value = op1 ^ op2;
+                cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
             },
             OpCodes::CMP => { //cmp
-
-                //todo: when flags are in set it equal to flags return
+                cpu.get_spsr().flags = arithmatic::cmp(cpu.get_register(self.op1_register), op2);
             },
             OpCodes::CMN => { //cmn
-                //todo: when flags are in set it equal to flags return
+                cpu.get_spsr().flags = arithmatic::cmn(cpu.get_register(self.op1_register), op2);
             },
             OpCodes::MOV => { //mov
                 cpu.set_register(self.destination_register, op2);
             },
             OpCodes::BIC => { // bic
-                cpu.set_register(self.destination_register,(!op2 & self.op1_register as u32));
+                cpu.set_register(self.destination_register,!op2 & self.op1_register as u32);
             },
             OpCodes::MVN => { // MVN
                 cpu.set_register(self.destination_register,!op2);
@@ -204,6 +220,7 @@ impl Instruction for DataProcessing {
         }
     }
 }
+
 
 // Unit Tests
 
