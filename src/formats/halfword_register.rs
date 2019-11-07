@@ -212,9 +212,9 @@ fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
 */
 fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     let mut data: u16 = 0;
-    if (address & 0x3) == 0 { // word aligned
+    if is_word_aligned(address) {
         data = ((base_value & 0xFFFF0000) >> 16) as u16;
-    } else if (address & 0x2) == 2 { // halfword aligned
+    } else if is_halfword_aligned(address) {
         data = (base_value & 0x0000_FFFF) as u16;
     } else { // byte aligned
         panic!("Halfword is not correctly aligned");
@@ -234,7 +234,8 @@ fn apply_offset(base_value: u32, offset: u8, add: bool) -> u32 {
     if add {
         return base_value + (offset as u32);
     }
-    return base_value - (offset as u32);
+    let val = base_value - (offset as u32);
+    return val;
 }
 
 fn is_word_aligned(memory_address: u32) -> bool {
@@ -505,7 +506,6 @@ mod tests {
         let mut mem_map = store_set_up();
 
         store(true, value_to_store, memory_address, &mut mem_map);
-
     }
 
     fn load_set_up(destination: u8, value_from_memory: u32, memory_address: u32) -> CPU {
