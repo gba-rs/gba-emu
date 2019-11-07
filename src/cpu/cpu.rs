@@ -1,4 +1,4 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt, branch::Branch};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -91,6 +91,11 @@ impl CPU {
                 let mut format: BranchExchange = BranchExchange::from(instruction);
                 format.execute(self, mem_map)
             },
+            0xA00...0xAFF => {
+                let mut format: Branch = Branch::from(instruction);
+                format.execute(self, mem_map)
+
+            }
             _ => panic!("Could not decode {:X}", opcode),
         }
     }

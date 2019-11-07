@@ -14,15 +14,14 @@ mod tests {
 
     #[test]
     fn check_cpu_branch() {
-//        assert_eq!()
-        let mut a: Branch = Branch::from(0x0A2F_FF1F); //0000 1010 __offset ends here_ 0010 1111 1111 1111 0001 1111‬
+        let mut a: Branch = Branch::from(0xEAFFFFFD);
         let mut cpu = CPU::new();
-        cpu.set_register(1,1);
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
-        println!("Before: {:X}", cpu.get_register(current_pc));
+        cpu.set_register(current_pc, 8);
         a.execute(&mut cpu,&mut map);
-        println!("After: {:X}", cpu.get_register(current_pc));
-        assert_eq!(cpu.get_register(2),0);
+        let reg = cpu.get_register(current_pc);
+        println!("R15: {:X}", reg);
+        assert_eq!(reg, 4);
     }
 }
