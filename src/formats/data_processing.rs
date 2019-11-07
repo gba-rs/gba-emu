@@ -1,7 +1,8 @@
-use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
+use super::{common::Condition, common::Instruction};
 use crate::{operations::arithmatic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::CPU;
+use crate::operations::shift::{ShiftType, Shift, apply_shift};
 
 
 #[derive(Debug, PartialEq)]
@@ -88,25 +89,7 @@ impl DataProcessing {
             } else {
                 shift_amount = cpu.get_register(self.operand2.shift.shift_register);
             }
-
-            match self.operand2.shift.shift_type {
-                ShiftType::LogicalLeft => {
-                    op2 = op2 << shift_amount;
-                    // todo: make sure flags aren't a thing
-                },
-                ShiftType::LogicalRight => {
-                    op2 = op2 >> shift_amount;
-                    // todo: make sure flags aren't a thing
-                },
-                ShiftType::ArithmeticRight => {
-                    op2 = ((op2 as i32) >> shift_amount) as u32;
-                    // make sure this isn't truncating
-                },
-                ShiftType::RotateRight => {
-                    op2 = op2.rotate_right(shift_amount);
-                },
-                _ => panic!("Shift type fucked up")
-            }
+            // TODO apply shift here
         }
 
         return op2;

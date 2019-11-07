@@ -1,4 +1,8 @@
-use super::{common::Condition, common::Shift};
+use super::{common::Condition, common::Instruction};
+use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::CPU;
+use crate::operations::load_store::apply_offset;
+use crate::operations::shift::{ShiftType, Shift, apply_shift};
 
 struct SingleDataTransfer {
     pub offset: SingleDataTransferOperand,
@@ -9,8 +13,8 @@ struct SingleDataTransfer {
     pub byte_word: bool,
     pub up_down: bool,
     pub pre_post_indexing: bool,
-    pub immediate_operand: bool,
-    pub condition: Condition
+    pub offset_is_register: bool,
+    pub condition: Condition,
 }
 
 impl From<u32> for SingleDataTransfer {
@@ -24,9 +28,9 @@ impl From<u32> for SingleDataTransfer {
             byte_word: ((value & 0x40_0000) >> 22) != 0,
             up_down: ((value & 0x80_0000) >> 23) != 0,
             pre_post_indexing: ((value & 0x100_0000) >> 24) != 0,
-            immediate_operand: ((value & 0x200_0000) >> 25) != 0, //offset is an immediate value if = 0
-            condition: Condition::from((value & 0xF000_0000) >> 28)
-        }
+            offset_is_register: ((value & 0x200_0000) >> 25) != 0, //offset is an immediate value if = 0
+            condition: Condition::from((value & 0xF000_0000) >> 28),
+        };
     }
 }
 
@@ -35,7 +39,7 @@ pub struct SingleDataTransferOperand {
     pub shift: Shift,
     pub rm: u8,
     pub immediate_value: u8,
-    pub immediate: bool
+    pub immediate: bool,
 }
 
 impl From<u32> for SingleDataTransferOperand {
@@ -44,7 +48,19 @@ impl From<u32> for SingleDataTransferOperand {
             shift: Shift::from(value),
             rm: (value & 0xF) as u8,
             immediate_value: (value & 0xFF) as u8,
-            immediate: ((value & 0x200_0000) >> 25) != 0
+            immediate: ((value & 0x200_0000) >> 25) != 0,
+        };
+    }
+}
+
+impl Instruction for SingleDataTransfer {
+    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+        let mut address;
+        if !self.offset_is_register {
+            address = apply_offset(self.op1_register as u32, self.offset.immediate_value, self.up_down);
+        } else {
+            let offset_value = cpu.get_register(self.offset.rm);
+            // apply shift
         }
     }
 }
@@ -70,7 +86,7 @@ mod tests {
         assert_eq!(a.destination_register, 0b1111);
         assert_eq!(a.op1_register, 0b1111);
         assert_eq!(a.condition, Condition::Error);
-        assert_eq!(a.immediate_operand, true);
+        assert_eq!(a.offset_is_register, true);
         assert_eq!(a.pre_post_indexing, true);
         assert_eq!(a.up_down, true);
         assert_eq!(a.byte_word, true);

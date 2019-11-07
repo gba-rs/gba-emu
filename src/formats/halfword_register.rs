@@ -3,6 +3,7 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::memory::work_ram::WorkRam;
 use crate::operations::arithmatic::add;
+use crate::operations::load_store::*;
 
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
@@ -230,25 +231,6 @@ fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     return halfword;
 }
 
-fn apply_offset(base_value: u32, offset: u8, add: bool) -> u32 {
-    if add {
-        return base_value + (offset as u32);
-    }
-    let val = base_value - (offset as u32);
-    return val;
-}
-
-fn is_word_aligned(memory_address: u32) -> bool {
-    return (memory_address & 0x3) == 0; // mult of 4s
-}
-
-fn is_word_plus_1_aligned(memory_address: u32) -> bool {
-    return (memory_address & 0x3) == 1; // 1 more than mult. of 4
-}
-
-fn is_halfword_aligned(memory_address: u32) -> bool {
-    return (memory_address & 0x3) == 2; // 2 more than mult. of 4
-}
 
 #[cfg(test)]
 mod tests {
