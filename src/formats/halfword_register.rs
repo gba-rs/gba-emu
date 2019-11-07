@@ -1,7 +1,6 @@
 use super::{common::Condition, common::Instruction};
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::arithmatic::add;
 use crate::operations::load_store::*;
 
 pub struct HalfwordRegisterOffset {
@@ -26,12 +25,20 @@ pub struct HalfwordCommon {
     pub base_register: u8,
     pub destination: u8,
     pub is_signed: bool,
-    pub is_halfword: bool,
     pub condition: Condition,
+    pub data_type: DataType,
 }
 
 impl From<u32> for HalfwordCommon {
     fn from(value: u32) -> HalfwordCommon {
+        let is_halfword = ((value & 0x20) >> 5) != 0;
+        let data_type;
+        if is_halfword {
+            data_type = DataType::Halfword;
+        } else {
+            data_type = DataType::Byte;
+        }
+
         return HalfwordCommon {
             is_pre_indexed: ((value & 0x0100_0000) >> 24) != 0,
             up_down_bit: ((value & 0x80_0000) >> 23) != 0,
@@ -40,8 +47,8 @@ impl From<u32> for HalfwordCommon {
             base_register: ((value & 0xF_0000) >> 16) as u8,
             destination: ((value & 0xF000) >> 12) as u8,
             is_signed: ((value & 0x40) >> 6) != 0,
-            is_halfword: ((value & 0x20) >> 5) != 0,
             condition: Condition::from((value & 0xF000_0000) >> 28),
+            data_type,
         };
     }
 }
@@ -91,31 +98,18 @@ impl From<u32> for HalfwordImmediateOffset {
 */
 fn common_execute(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_map: &mut MemoryMap,
                   base_address: u32, address_with_offset: u32) {
-    let address;
+    let transfer_info = DataTransfer {
+        is_pre_indexed: halfword_common.is_pre_indexed,
+        write_back: halfword_common.write_back,
+        load: halfword_common.load,
+        is_signed: halfword_common.is_signed,
+        data_type: halfword_common.data_type,
+        base_register: halfword_common.base_register,
+        destination: halfword_common.destination,
+    };
 
-    // if pre-index, apply offset to the address that is used
-    if halfword_common.is_pre_indexed {
-        address = address_with_offset;
-    } else {
-        address = base_address;
-    }
-
-    if halfword_common.load {
-        let value_from_memory = mem_map.read_u32(address);
-        load(halfword_common.is_signed, halfword_common.is_halfword,
-             halfword_common.destination, cpu, value_from_memory, address);
-    } else {
-        let value_to_store = cpu.get_register(halfword_common.destination);
-        store(halfword_common.is_halfword, value_to_store, address, mem_map);
-    }
-
-    // if post-indexed or write back bit is true, update the base register
-    if !halfword_common.is_pre_indexed || halfword_common.write_back {
-        cpu.set_register(halfword_common.base_register, address_with_offset);
-    }
+    data_transfer_execute(transfer_info, base_address, address_with_offset, cpu, mem_map);
 }
-
-
 
 
 #[cfg(test)]
@@ -132,7 +126,7 @@ mod tests {
         assert_eq!(h.base_register, 0);
         assert_eq!(h.destination, 0);
         assert_eq!(h.is_signed, false);
-        assert_eq!(h.is_halfword, false);
+        assert_eq!(h.data_type, DataType::Byte);
         assert_eq!(h.condition, Condition::EQ);
     }
 
@@ -146,7 +140,7 @@ mod tests {
         assert_eq!(h.base_register, 3);
         assert_eq!(h.destination, 7);
         assert_eq!(h.is_signed, true);
-        assert_eq!(h.is_halfword, true);
+        assert_eq!(h.data_type, DataType::Halfword);
         assert_eq!(h.condition, Condition::NE);
     }
 
@@ -160,7 +154,7 @@ mod tests {
         assert_eq!(h.base_register, 0xF);
         assert_eq!(h.destination, 0xF);
         assert_eq!(h.is_signed, true);
-        assert_eq!(h.is_halfword, true);
+        assert_eq!(h.data_type, DataType::Halfword);
         assert_eq!(h.condition, Condition::AL);
     }
 

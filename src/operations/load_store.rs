@@ -2,20 +2,38 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::memory::work_ram::WorkRam;
 
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum DataType {
+    Word = 0b00,
+    Halfword = 0b01,
+    Byte = 0b10,
+    Error,
+}
+
+impl From<u32> for DataType {
+    fn from(value: u32) -> DataType {
+        match value {
+            0b00 => DataType::Word,
+            0b01 => DataType::Halfword,
+            0b10 => DataType::Byte,
+            _ => DataType::Error
+        }
+    }
+}
 
 /*
 * Extracts a byte or a halfword from a value stored in memory and put it into a CPU register
 */
-pub fn load(is_signed: bool, is_halfword: bool, destination: u8, cpu: &mut CPU,
-        value_from_memory: u32, address: u32) {
+pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU,
+            value_from_memory: u32, address: u32) {
     let mut value_to_load = 0;
-    if !is_signed && !is_halfword {
+    if !is_signed && data_type == DataType::Byte {
         value_to_load = get_byte_to_load(value_from_memory, address, false);
-    } else if is_signed && !is_halfword {
+    } else if is_signed && data_type == DataType::Byte {
         value_to_load = get_byte_to_load(value_from_memory, address, true);
-    } else if !is_signed && is_halfword {
+    } else if !is_signed && data_type == DataType::Halfword {
         value_to_load = get_halfword_to_load(value_from_memory, address, false);
-    } else {
+    } else if is_signed && data_type == DataType::Halfword {
         value_to_load = get_halfword_to_load(value_from_memory, address, true);
     }
 
@@ -25,16 +43,23 @@ pub fn load(is_signed: bool, is_halfword: bool, destination: u8, cpu: &mut CPU,
 /*
 * Formats a value from a register and stores it in a given memory address
 */
-pub fn store(is_halfword: bool, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
-    if is_halfword && !is_halfword_aligned(memory_address) && !is_word_aligned(memory_address) {
+pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
+    if (data_type == DataType::Halfword) && !is_halfword_aligned(memory_address) && !is_word_aligned(memory_address) {
         panic!("Attempting to store halfword in a memory location that is not word aligned or halfword aligned!");
     }
 
-    let formatted_value;
-    if is_halfword {
-        formatted_value = format_halfword_to_store(value_to_store as u16);
-    } else {
-        formatted_value = format_byte_to_store(value_to_store as u8);
+    let mut formatted_value = 0;
+    match data_type {
+        DataType::Word => {
+            formatted_value = value_to_store;
+        }
+        DataType::Halfword => {
+            formatted_value = format_halfword_to_store(value_to_store as u16);
+        }
+        DataType::Byte => {
+            formatted_value = format_byte_to_store(value_to_store as u8);
+        }
+        _ => panic!("Trying to store invalid data type.")
     }
     mem_map.write_u32(memory_address, formatted_value);
 }
@@ -140,6 +165,41 @@ pub fn format_byte_to_store(value_to_store: u8) -> u32 {
     return bits_31_24 | bits_23_16 | bits_15_8 | (value_to_store as u32);
 }
 
+pub struct DataTransfer {
+    pub is_pre_indexed: bool,
+    pub write_back: bool,
+    pub load: bool,
+    pub is_signed: bool,
+    pub data_type: DataType,
+    pub base_register: u8,
+    pub destination: u8,
+}
+
+pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, address_with_offset: u32,
+                             cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    let address;
+    // if pre-index, apply offset to the address that is used
+    if transfer_info.is_pre_indexed {
+        address = address_with_offset;
+    } else {
+        address = base_address;
+    }
+
+    if transfer_info.load {
+        let value_from_memory = mem_map.read_u32(address);
+        load(transfer_info.is_signed, transfer_info.data_type,
+             transfer_info.destination, cpu, value_from_memory, address);
+    } else {
+        let value_to_store = cpu.get_register(transfer_info.destination);
+        store(transfer_info.data_type, value_to_store, address, mem_map);
+    }
+
+    // if post-indexed or write back bit is true, update the base register
+    if !transfer_info.is_pre_indexed || transfer_info.write_back {
+        cpu.set_register(transfer_info.base_register, address_with_offset);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -196,7 +256,7 @@ mod tests {
         let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
-        load(true, false, 0, &mut cpu, value_from_memory, memory_address);
+        load(true, DataType::Byte, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0xFFFF_FF80);
     }
@@ -207,7 +267,7 @@ mod tests {
         let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
-        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+        load(false, DataType::Byte, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x80);
     }
@@ -218,7 +278,7 @@ mod tests {
         let memory_address = 0x0005;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
-        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+        load(false, DataType::Byte, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x80);
     }
@@ -229,7 +289,7 @@ mod tests {
         let memory_address = 0x0006;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
-        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+        load(false, DataType::Byte, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x80);
     }
@@ -239,7 +299,7 @@ mod tests {
         let value_from_memory = 0x0000_0080;
         let memory_address = 0x0007;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
-        load(false, false, 0, &mut cpu, value_from_memory, memory_address);
+        load(false, DataType::Byte, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x80);
     }
@@ -249,7 +309,7 @@ mod tests {
         let value_from_memory = 0x8080_0000;
         let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
-        load(false, true, 0, &mut cpu, value_from_memory, memory_address);
+        load(false, DataType::Halfword, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x8080);
     }
@@ -260,7 +320,7 @@ mod tests {
         let value_from_memory = 0x0000_8080;
         let memory_address = 0x0006;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
-        load(false, true, 0, &mut cpu, value_from_memory, memory_address);
+        load(false, DataType::Halfword, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x8080);
     }
@@ -270,7 +330,7 @@ mod tests {
         let value_from_memory = 0x8080_0000;
         let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
-        load(true, true, 0, &mut cpu, value_from_memory, memory_address);
+        load(true, DataType::Halfword, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0xFFFF_8080);
     }
@@ -280,7 +340,7 @@ mod tests {
         let value_from_memory = 0x7080_0000;
         let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
-        load(true, true, 0, &mut cpu, value_from_memory, memory_address);
+        load(true, DataType::Halfword, 0, &mut cpu, value_from_memory, memory_address);
 
         assert_eq!(cpu.get_register(0), 0x0000_7080);
     }
@@ -290,7 +350,7 @@ mod tests {
         let memory_address = 0x04;
         let value_to_store = 0x8080;
         let mut mem_map = store_set_up();
-        store(true, value_to_store, memory_address, &mut mem_map);
+        store(DataType::Halfword, value_to_store, memory_address, &mut mem_map);
 
         assert_eq!(0x8080_8080, mem_map.read_u32(memory_address));
     }
@@ -300,7 +360,7 @@ mod tests {
         let memory_address = 0x04;
         let value_to_store = 0x80;
         let mut mem_map = store_set_up();
-        store(false, value_to_store, memory_address, &mut mem_map);
+        store(DataType::Byte, value_to_store, memory_address, &mut mem_map);
 
         assert_eq!(0x8080_8080, mem_map.read_u32(memory_address));
     }
@@ -312,7 +372,7 @@ mod tests {
         let value_to_store = 0x80;
         let mut mem_map = store_set_up();
 
-        store(true, value_to_store, memory_address, &mut mem_map);
+        store(DataType::Halfword, value_to_store, memory_address, &mut mem_map);
     }
 
     fn load_set_up(destination: u8, value_from_memory: u32, memory_address: u32) -> CPU {

@@ -89,7 +89,7 @@ impl DataProcessing {
             } else {
                 shift_amount = cpu.get_register(self.operand2.shift.shift_register);
             }
-            // TODO apply shift here
+            apply_shift(self.operand2.shift.shift_type, shift_amount as u8, op2);
         }
 
         return op2;
