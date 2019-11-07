@@ -1,4 +1,4 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, multiply::Multiply, multiply_long::MultiplyLong, software_interrupt::SoftwareInterrupt, common::Condition};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, multiply::Multiply, multiply_long::MultiplyLong, software_interrupt::SoftwareInterrupt, common::Condition, block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -99,6 +99,10 @@ impl CPU {
                 let mut format: MultiplyLong = MultiplyLong::from(instruction);
                 format.execute(self, mem_map);
             },
+            // 0x800...0x9FF => {
+            //     let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
+            //     format.execute(self, mem_map);
+            // },
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
@@ -237,8 +241,8 @@ mod tests {
         cpu.set_register(15, 0x02000000);
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        map.write_u32(0x02000000, 0xE0812001);
-        map.write_u32(0x02000004, 0xE0812001);
+        map.write_u32(0x02000000, 0x012081E0);
+        map.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut map);
         cpu.fetch(&mut map);
     }
@@ -271,7 +275,7 @@ mod tests {
         cpu.set_register(15, 0x02000000);
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        map.write_u32(0x02000000, 0xD12F_FF1F);
+        map.write_u32(0x02000000, 0x1FFF2FD1);
         cpu.fetch(&mut map);
         assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
     }

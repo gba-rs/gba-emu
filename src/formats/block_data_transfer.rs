@@ -109,4 +109,8 @@ impl BlockDataTransfer {
             panic!("get_start_address_offset: How did we even get here pre: {}, up: {}", self.pre_indexing, self.up);
         }
     }
+
+    fn get_end_address(&mut self, current_address: i64) -> i64 {
+        return 0;
+    }
 }
