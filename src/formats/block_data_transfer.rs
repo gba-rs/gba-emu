@@ -68,7 +68,7 @@ impl BlockDataTransfer {
         }
 
         if self.write_back && !self.register_list.contains(&self.base_register) {
-            // TODO figure out write back
+            cpu.set_register_override(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
         }
     }
 
@@ -92,7 +92,7 @@ impl BlockDataTransfer {
         }
 
         if self.write_back {
-            // todo figure out normal write back stuff
+            cpu.set_register_override(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
         }
     }
 
@@ -111,6 +111,16 @@ impl BlockDataTransfer {
     }
 
     fn get_end_address(&mut self, current_address: i64) -> i64 {
-        return 0;
+        if self.pre_indexing && self.up {
+            return current_address - 4
+        } else if !self.pre_indexing && self.up {
+            return current_address
+        } else if self.pre_indexing && !self.up {
+            return current_address - (4 * ((self.register_list.len() as i64) - 1)) - 4
+        } else if !self.pre_indexing && !self.up {
+            return current_address - (4 * ((self.register_list.len() as i64) - 1)) - 8
+        } else {
+            panic!("get_start_address_offset: How did we even get here pre: {}, up: {}", self.pre_indexing, self.up);
+        }
     }
 }
