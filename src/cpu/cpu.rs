@@ -108,7 +108,7 @@ impl CPU {
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc); 
         self.set_register(current_pc, pc_contents + 4);
-        self.decode(map, instruction);
+        self.decode(map, instruction.to_be());
     }
 
     pub fn get_register(&mut self, reg_num: u8) -> u32 {
