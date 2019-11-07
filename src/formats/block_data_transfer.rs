@@ -2,7 +2,7 @@ use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode};
 
-struct BlockDataTransfer {
+pub struct BlockDataTransfer {
     pub register_list: Vec<u8>,
     pub base_register: u8,
     pub load: bool,
@@ -38,8 +38,10 @@ impl From<u32> for BlockDataTransfer {
 impl Instruction for BlockDataTransfer {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         if self.load {
+            println!("Doing Load");
             self.load_data(cpu, mem_map);
         } else {
+            println!("Doing Store");
             self.save_data(cpu, mem_map);
         }
     }
@@ -86,6 +88,7 @@ impl BlockDataTransfer {
         }
 
         for reg_num in self.register_list.iter() {
+            println!("Storing reg: R{} = {} to {:X}", reg_num, cpu.get_register_override(*reg_num, current_operating_mode), current_address);
             // todo figure out write back with base in reg list
             mem_map.write_u32(current_address as u32, cpu.get_register_override(*reg_num, current_operating_mode));
             current_address += 4;
@@ -101,12 +104,12 @@ impl BlockDataTransfer {
             return current_address + 4
         } else if !self.pre_indexing && self.up {
             return current_address
-        } else if self.pre_indexing && self.up {
-            return current_address - (4 * self.register_list.len() as i64) - 4
-        } else if !self.pre_indexing && self.up {
-            return current_address - (4 * self.register_list.len() as i64)
+        } else if self.pre_indexing && !self.up {
+            return current_address - (4 * ((self.register_list.len() as i64) - 1)) - 4
+        } else if !self.pre_indexing && !self.up {
+            return current_address - (4 * ((self.register_list.len() as i64) - 1))
         } else {
-            panic!("get_start_address_offset: How did we even get here");
+            panic!("get_start_address_offset: How did we even get here pre: {}, up: {}", self.pre_indexing, self.up);
         }
     }
 }
