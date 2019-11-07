@@ -165,6 +165,9 @@ pub fn format_byte_to_store(value_to_store: u8) -> u32 {
     return bits_31_24 | bits_23_16 | bits_15_8 | (value_to_store as u32);
 }
 
+/**
+* Common and generic structure that can be used to execute data transfer commands
+*/
 pub struct DataTransfer {
     pub is_pre_indexed: bool,
     pub write_back: bool,
@@ -175,6 +178,9 @@ pub struct DataTransfer {
     pub destination: u8,
 }
 
+/**
+* Handles loading and storing of a defined DataTransfer structure
+*/
 pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, address_with_offset: u32,
                              cpu: &mut CPU, mem_map: &mut MemoryMap) {
     let address;
