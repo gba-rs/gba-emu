@@ -10,6 +10,7 @@ use gba_emulator::*;
 mod tests {
 //    use gba_emulator::formats::data_processing::DataProcessing;
     use gba_emulator::cpu::cpu::{CPU, InstructionSet, OperatingMode};
+    use gba_emulator::cpu::program_status_register::ProgramStatusRegister;
     use gba_emulator::formats::data_processing::DataProcessing;
     use gba_emulator::formats::common::Instruction;
     use gba_emulator::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
@@ -144,4 +145,53 @@ mod tests {
         a.execute(&mut cpu,&mut map);
         assert_eq!(cpu.get_register(2), !2);
     }
+        #[test]
+        fn correct_operation_called_mrs_cpsr() {
+            let mut a: DataProcessing = DataProcessing::from(0xE10F_1000);
+            let mut cpu = CPU::new();
+            cpu.set_register(1,1);
+            let mut map = MemoryMap::new();
+            a.execute(&mut cpu,&mut map);
+            assert_eq!(cpu.cpsr.control_bits.fiq_disable, ProgramStatusRegister::from(1).control_bits.fiq_disable);
+            assert_eq!(cpu.cpsr.control_bits.irq_disable, ProgramStatusRegister::from(1).control_bits.irq_disable);
+            assert_eq!(cpu.cpsr.control_bits.mode_bits, ProgramStatusRegister::from(1).control_bits.mode_bits);
+            assert_eq!(cpu.cpsr.control_bits.state_bit, ProgramStatusRegister::from(1).control_bits.state_bit);
+        }
+        #[test]
+        fn correct_operation_called_mrs_spsr() {
+            let mut a: DataProcessing = DataProcessing::from(0xE14F_1000);
+            let mut cpu = CPU::new();
+            cpu.set_register(1,1);
+            let mut map = MemoryMap::new();
+            a.execute(&mut cpu,&mut map);
+            assert_eq!(cpu.get_spsr().control_bits.fiq_disable, ProgramStatusRegister::from(1).control_bits.fiq_disable);
+            assert_eq!(cpu.get_spsr().control_bits.irq_disable, ProgramStatusRegister::from(1).control_bits.irq_disable);
+            assert_eq!(cpu.get_spsr().control_bits.mode_bits, ProgramStatusRegister::from(1).control_bits.mode_bits);
+            assert_eq!(cpu.get_spsr().control_bits.state_bit, ProgramStatusRegister::from(1).control_bits.state_bit);
+        }
+        #[test]
+        fn correct_operation_called_msr_cpsr() {
+            let mut a: DataProcessing = DataProcessing::from(0xE12F_F001);
+            let mut cpu = CPU::new();
+            cpu.set_register(1,1);
+            let mut map = MemoryMap::new();
+            a.execute(&mut cpu,&mut map);
+            assert_eq!(cpu.cpsr.control_bits.fiq_disable, ProgramStatusRegister::from(0).control_bits.fiq_disable);
+            assert_eq!(cpu.cpsr.control_bits.irq_disable, ProgramStatusRegister::from(0).control_bits.irq_disable);
+            assert_eq!(cpu.cpsr.control_bits.mode_bits, ProgramStatusRegister::from(0).control_bits.mode_bits);
+            assert_eq!(cpu.cpsr.control_bits.state_bit, ProgramStatusRegister::from(0).control_bits.state_bit);
+        }
+        #[test]
+        fn correct_operation_called_msr_spsr() {
+            let mut a: DataProcessing = DataProcessing::from(0xE16F_F001);
+            let mut cpu = CPU::new();
+            cpu.set_register(1,1);
+            cpu.set_register(2,2);
+            let mut map = MemoryMap::new();
+            a.execute(&mut cpu,&mut map);
+            assert_eq!(cpu.get_spsr().control_bits.fiq_disable, ProgramStatusRegister::from(0).control_bits.fiq_disable);
+            assert_eq!(cpu.get_spsr().control_bits.irq_disable, ProgramStatusRegister::from(0).control_bits.irq_disable);
+            assert_eq!(cpu.get_spsr().control_bits.mode_bits, ProgramStatusRegister::from(0).control_bits.mode_bits);
+            assert_eq!(cpu.get_spsr().control_bits.state_bit, ProgramStatusRegister::from(0).control_bits.state_bit);
+        }
 }
