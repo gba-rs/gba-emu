@@ -89,7 +89,7 @@ impl CPU {
             },
             0x121 => { //Believe this should be Branch & Exchange
                 let mut format: BranchExchange = BranchExchange::from(instruction);
-                format.execute(self, mem_map)
+                format.execute(self, mem_map);
             },
             _ => panic!("Could not decode {:X}", opcode),
         }

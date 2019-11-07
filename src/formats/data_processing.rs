@@ -1,7 +1,7 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
 use crate::{operations::arithmatic};
 use crate::memory::memory_map::MemoryMap;
-use crate::{cpu::cpu::CPU, cpu::program_status_register::ConditionFlags};
+use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
 
 
 #[derive(Debug, PartialEq)]
@@ -105,14 +105,14 @@ impl DataProcessing {
                 ShiftType::RotateRight => {
                     op2 = op2.rotate_right(shift_amount);
                 },
-                _ => panic!("Shift type fucked up")
+                _ => panic!("Shift type messed up")
             }
         }
 
         return op2;
     }
     
-    fn set_flags(&mut self, cpu: &mut CPU, value: u32, op1: u32, op2: u32) -> ConditionFlags {
+    fn set_flags(&mut self, cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
         let carryout: bool = (value >> 32) != 0;
         let op1_sign: bool = (op1 >> 31) != 0;
         let op2_sign: bool = (op2 >> 31) != 0;
@@ -190,20 +190,66 @@ impl Instruction for DataProcessing {
                 cpu.set_register(self.destination_register, value);
             },
             OpCodes::TST => { //TST AND
-                let op1 = cpu.get_register(self.op1_register);
-                let value = op1 & op2;
-                cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                if !self.set_condition { //MRS CPSR
+                    let value = cpu.get_register(self.destination_register);
+                    cpu.cpsr = ProgramStatusRegister::from(value);
+                }
+                else{
+                    let op1 = cpu.get_register(self.op1_register);
+                    let value = (op1 & op2) as u64;
+                    cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                }
             },
             OpCodes::TEQ => { //TEQ EOR
-                let op1 = cpu.get_register(self.op1_register);
-                let value = op1 ^ op2;
-                cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                if !self.set_condition { //MSR CPSR
+                    let negative = if cpu.cpsr.flags.negative {0b1000} else {0};
+                    let zero = if cpu.cpsr.flags.zero {0b0100} else {0};
+                    let carry = if cpu.cpsr.flags.carry {0b0010} else {0};
+                    let overflow = if cpu.cpsr.flags.signed_overflow {0b0001} else {0};
+                    let mut value = (negative + zero + carry + overflow) as u32;
+                    value = value << 26;
+                    let irq = if cpu.cpsr.control_bits.irq_disable {0b10000000} else {0};
+                    let fiq = if cpu.cpsr.control_bits.fiq_disable {0b01000000} else {0};
+                    let state = if cpu.cpsr.control_bits.state_bit {0b00100000} else {0};
+                    value += irq + fiq + state;
+                    value += cpu.cpsr.control_bits.mode_bits as u32;
+                    cpu.set_register(self.op1_register, value);
+                }
+                else{
+                    let op1 = cpu.get_register(self.op1_register);
+                    let value = (op1 ^ op2) as u64;
+                    cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                }
             },
             OpCodes::CMP => { //cmp
-                cpu.get_spsr().flags = arithmatic::cmp(cpu.get_register(self.op1_register), op2);
+                if !self.set_condition { //MRS SPSR
+                    let value = cpu.get_register(self.destination_register);
+                    cpu.set_spsr(ProgramStatusRegister::from(value));
+                }
+                else {
+                    cpu.get_spsr().flags = arithmatic::cmp(cpu.get_register(self.op1_register), op2);
+                }
             },
             OpCodes::CMN => { //cmn
-                cpu.get_spsr().flags = arithmatic::cmn(cpu.get_register(self.op1_register), op2);
+                //check bit 20 is a 0, if so then it is MSR
+                if !self.set_condition { // MSR SPSR
+                    let spsr = cpu.get_spsr();
+                    let negative = if spsr.flags.negative {0b1000} else {0};
+                    let zero = if spsr.flags.zero {0b0100} else {0};
+                    let carry = if spsr.flags.carry {0b0010} else {0};
+                    let overflow = if spsr.flags.signed_overflow {0b0001} else {0};
+                    let mut value = (negative + zero + carry + overflow) as u32;
+                    value = value << 26;
+                    let irq = if spsr.control_bits.irq_disable {0b10000000} else {0};
+                    let fiq = if spsr.control_bits.fiq_disable {0b01000000} else {0};
+                    let state = if spsr.control_bits.state_bit {0b00100000} else {0};
+                    value += irq + fiq + state;
+                    value += spsr.control_bits.mode_bits as u32;
+                    cpu.set_register(self.op1_register, value);
+                }
+                else{
+                    cpu.get_spsr().flags = arithmatic::cmn(cpu.get_register(self.op1_register), op2);
+                }
             },
             OpCodes::MOV => { //mov
                 cpu.set_register(self.destination_register, op2);
