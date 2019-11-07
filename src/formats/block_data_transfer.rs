@@ -38,10 +38,8 @@ impl From<u32> for BlockDataTransfer {
 impl Instruction for BlockDataTransfer {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         if self.load {
-            println!("Doing Load");
             self.load_data(cpu, mem_map);
         } else {
-            println!("Doing Store");
             self.save_data(cpu, mem_map);
         }
     }
@@ -88,7 +86,6 @@ impl BlockDataTransfer {
         }
 
         for reg_num in self.register_list.iter() {
-            println!("Storing reg: R{} = {} to {:X}", reg_num, cpu.get_register_override(*reg_num, current_operating_mode), current_address);
             // todo figure out write back with base in reg list
             mem_map.write_u32(current_address as u32, cpu.get_register_override(*reg_num, current_operating_mode));
             current_address += 4;
