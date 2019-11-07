@@ -1,4 +1,6 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
+use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
+use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -79,7 +81,7 @@ impl CPU {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
         match opcode {
-            0x080 | 0x3A0 | 0x0600  => { // ADD lli
+            0x080 | 0x3A0 | 0x0600 => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             },
@@ -91,14 +93,31 @@ impl CPU {
                 let mut format: BranchExchange = BranchExchange::from(instruction);
                 format.execute(self, mem_map);
             },
+            0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
+                let mut format: Multiply = Multiply::from(instruction);
+                format.execute(self, mem_map);
+            },
+            0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
+                let mut format: MultiplyLong = MultiplyLong::from(instruction);
+                format.execute(self, mem_map);
+            },
+            0x9...0x1F9 => {
+                if opcode & 0x40 == 0 {
+                    let mut format = HalfwordRegisterOffset::from(instruction);
+                    format.execute(self, mem_map);
+                } else {
+                    let mut format = HalfwordImmediateOffset::from(instruction);
+                    format.execute(self, mem_map);
+                }
+            },
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
-    
+
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
-        let pc_contents = self.get_register(current_pc); 
+        let pc_contents = self.get_register(current_pc);
         self.set_register(current_pc, pc_contents + 4);
         self.decode(map, instruction);
     }
