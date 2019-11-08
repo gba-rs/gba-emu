@@ -40,13 +40,13 @@ impl From<u32> for ShiftType {
     }
 }
 
-pub fn apply_shift(base_value: u32, shift: &Shift, shift_register_value: u32) -> u32 {
+pub fn apply_shift(base_value: u32, shift: &Shift, cpu: &mut CPU) -> u32 {
     let shifted_value;
     let shift_amount;
     if shift.immediate {
         shift_amount = shift.shift_amount as u32;
     } else {
-        shift_amount = shift_register_value;
+        shift_amount = cpu.get_register(shift.shift_register);
     }
     match shift.shift_type {
         ShiftType::LogicalLeft => {

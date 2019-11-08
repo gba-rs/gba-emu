@@ -81,7 +81,6 @@ impl CPU {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
         if opcode >> 10 == 0b01 {
-            println!("SINGLE DATA TRANSFER");
             let mut format: SingleDataTransfer = SingleDataTransfer::from(instruction);
             format.execute(self, mem_map);
         } else {

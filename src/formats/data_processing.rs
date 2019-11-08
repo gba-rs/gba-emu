@@ -84,7 +84,7 @@ impl DataProcessing {
         } else {
             op2 = cpu.get_register(self.operand2.rm);
             let shift_register_amount = cpu.get_register(self.operand2.shift.shift_register);
-            apply_shift(op2, &self.operand2.shift, shift_register_amount);
+            apply_shift(op2, &self.operand2.shift, cpu);
         }
 
         return op2;
