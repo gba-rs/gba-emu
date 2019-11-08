@@ -1,4 +1,7 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt, branch::Branch};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, software_interrupt::SoftwareInterrupt};
+use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
+use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -79,7 +82,7 @@ impl CPU {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
         match opcode {
-            0x080 | 0x3A0 | 0x0600  => { // ADD lli
+            0x080 | 0x3A0 | 0x0600 => { // ADD lli
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             },
@@ -89,21 +92,38 @@ impl CPU {
             },
             0x121 => { //Believe this should be Branch & Exchange
                 let mut format: BranchExchange = BranchExchange::from(instruction);
-                format.execute(self, mem_map)
+                format.execute(self, mem_map);
+            },
+            0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
+                let mut format: Multiply = Multiply::from(instruction);
+                format.execute(self, mem_map);
+            },
+            0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
+                let mut format: MultiplyLong = MultiplyLong::from(instruction);
+                format.execute(self, mem_map);
             },
             0xA00...0xAFF => {
                 let mut format: Branch = Branch::from(instruction);
                 format.execute(self, mem_map)
 
-            }
+            },
+            0x9...0x1F9 => {
+                if opcode & 0x40 == 0 {
+                    let mut format = HalfwordRegisterOffset::from(instruction);
+                    format.execute(self, mem_map);
+                } else {
+                    let mut format = HalfwordImmediateOffset::from(instruction);
+                    format.execute(self, mem_map);
+                }
+            },
             _ => panic!("Could not decode {:X}", opcode),
         }
     }
-    
+
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
-        let pc_contents = self.get_register(current_pc); 
+        let pc_contents = self.get_register(current_pc);
         self.set_register(current_pc, pc_contents + 4);
         self.decode(map, instruction);
     }
@@ -132,6 +152,32 @@ impl CPU {
             }
         }
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
+    }
+
+    pub fn get_register_override(&mut self, reg_num: u8, op_mode: OperatingMode) -> u32 {
+        if self.current_instruction_set == InstructionSet::Thumb {
+            if reg_num > 10 {
+                panic!("Attempting to get register out of range for Thumb: {}", reg_num);
+            }
+        } else {
+            if reg_num > 15 {
+                panic!("Attempting to get register out of range for Arm: {}", reg_num);
+            }
+        }
+        return self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]];
+    }
+
+    pub fn set_register_override(&mut self, reg_num: u8, op_mode: OperatingMode, value: u32) {
+        if self.current_instruction_set == InstructionSet::Thumb {
+            if reg_num > 10 {
+                panic!("Attempting to set register out of range for Thumb: {}", reg_num);
+            }
+        } else {
+            if reg_num > 15 {
+                panic!("Attempting to set register out of range for Arm: {}", reg_num);
+            }
+        }
+        self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
     }
 
     pub fn get_spsr(&mut self) -> ProgramStatusRegister {
