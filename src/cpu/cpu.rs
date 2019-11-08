@@ -1,6 +1,7 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt, common::Condition};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, common::Condition, software_interrupt::SoftwareInterrupt};
 use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
@@ -11,7 +12,7 @@ pub const ARM_LR: u8 = 14;
 pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
 
-const REG_MAP: [[[usize; 16]; 7]; 2] = [
+pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
     [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],     // System
@@ -105,6 +106,11 @@ impl CPU {
             0x800...0x9FF => {
                  let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
                  format.execute(self, mem_map);
+            },
+            0xA00...0xAFF => {
+                let mut format: Branch = Branch::from(instruction);
+                format.execute(self, mem_map)
+
             },
             0x9...0x1F9 => {
                 if opcode & 0x40 == 0 {
