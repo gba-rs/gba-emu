@@ -1,6 +1,7 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, software_interrupt::SoftwareInterrupt};
 use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -10,7 +11,7 @@ pub const ARM_LR: u8 = 14;
 pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
 
-const REG_MAP: [[[usize; 16]; 7]; 2] = [
+pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
     [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],     // System
@@ -100,6 +101,11 @@ impl CPU {
             0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
                 let mut format: MultiplyLong = MultiplyLong::from(instruction);
                 format.execute(self, mem_map);
+            },
+            0xA00...0xAFF => {
+                let mut format: Branch = Branch::from(instruction);
+                format.execute(self, mem_map)
+
             },
             0x9...0x1F9 => {
                 if opcode & 0x40 == 0 {
