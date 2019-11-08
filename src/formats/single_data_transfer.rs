@@ -70,9 +70,9 @@ impl Instruction for SingleDataTransfer {
         if !self.offset_is_register {
             address_with_offset = apply_offset(base, self.offset.immediate_value, self.up_down);
         } else {
-            let shifted_register = apply_shift(self.offset.shift.shift_type, self.offset.shift.shift_amount,
-                                               self.offset.rm as u32);
-            let offset = cpu.get_register(shifted_register) as u8;
+            let shift_register_amount = cpu.get_register(self.op1_register);
+            let shifted_register = apply_shift(base, &self.offset.shift, shift_register_amount );
+            let offset = cpu.get_register(shifted_register as u8) as u8;
             address_with_offset = apply_offset(base, offset, self.up_down);
         }
 

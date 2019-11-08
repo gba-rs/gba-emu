@@ -83,13 +83,8 @@ impl DataProcessing {
             op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
         } else {
             op2 = cpu.get_register(self.operand2.rm);
-            let shift_amount: u32;
-            if self.operand2.shift.immediate {
-                shift_amount = self.operand2.shift.shift_amount as u32;
-            } else {
-                shift_amount = cpu.get_register(self.operand2.shift.shift_register);
-            }
-            apply_shift(self.operand2.shift.shift_type, shift_amount as u8, op2);
+            let shift_register_amount = cpu.get_register(self.operand2.shift.shift_register);
+            apply_shift(op2, &self.operand2.shift, shift_register_amount);
         }
 
         return op2;

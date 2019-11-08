@@ -1,6 +1,6 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
 use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
-use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong, single_data_transfer::SingleDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -80,38 +80,45 @@ impl CPU {
     pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
-        match opcode {
-            0x080 | 0x3A0 | 0x0600 => { // ADD lli
-                let mut format: DataProcessing = DataProcessing::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0xF00...0xFFF => {
-                let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x121 => { //Believe this should be Branch & Exchange
-                let mut format: BranchExchange = BranchExchange::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
-                let mut format: Multiply = Multiply::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
-                let mut format: MultiplyLong = MultiplyLong::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x9...0x1F9 => {
-                if opcode & 0x40 == 0 {
-                    let mut format = HalfwordRegisterOffset::from(instruction);
+        if opcode >> 10 == 0b01 {
+            println!("SINGLE DATA TRANSFER");
+            let mut format: SingleDataTransfer = SingleDataTransfer::from(instruction);
+            format.execute(self, mem_map);
+        } else {
+            match opcode {
+                0x080 | 0x3A0 | 0x0600 => { // ADD lli
+                    let mut format: DataProcessing = DataProcessing::from(instruction);
                     format.execute(self, mem_map);
-                } else {
-                    let mut format = HalfwordImmediateOffset::from(instruction);
+                },
+                0xF00...0xFFF => {
+                    let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
                     format.execute(self, mem_map);
-                }
-            },
-            _ => panic!("Could not decode {:X}", opcode),
+                },
+                0x121 => { //Believe this should be Branch & Exchange
+                    let mut format: BranchExchange = BranchExchange::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
+                    let mut format: Multiply = Multiply::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
+                    let mut format: MultiplyLong = MultiplyLong::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0x9...0x1F9 => {
+                    if opcode & 0x40 == 0 {
+                        let mut format = HalfwordRegisterOffset::from(instruction);
+                        format.execute(self, mem_map);
+                    } else {
+                        let mut format = HalfwordImmediateOffset::from(instruction);
+                        format.execute(self, mem_map);
+                    }
+                },
+                _ => panic!("Could not decode {:X}", opcode),
+            }
         }
+
     }
 
     pub fn fetch(&mut self, map: &mut MemoryMap) {

@@ -1,3 +1,5 @@
+use crate::cpu::cpu::CPU;
+
 pub struct Shift {
     pub shift_type: ShiftType,
     pub shift_amount: u8,
@@ -38,27 +40,33 @@ impl From<u32> for ShiftType {
     }
 }
 
-pub fn apply_shift(shift_type: ShiftType, shift_amount: u8, base_value: u32) -> u8{
+pub fn apply_shift(base_value: u32, shift: &Shift, shift_register_value: u32) -> u32 {
     let shifted_value;
-
-    match shift_type {
+    let shift_amount;
+    if shift.immediate {
+        shift_amount = shift.shift_amount as u32;
+    } else {
+        shift_amount = shift_register_value;
+    }
+    match shift.shift_type {
         ShiftType::LogicalLeft => {
-            shifted_value = base_value << (shift_amount as u32);
+            shifted_value = base_value << (shift.shift_amount as u32);
             // todo: make sure flags aren't a thing
         }
         ShiftType::LogicalRight => {
-            shifted_value = base_value >> (shift_amount as u32);
+            shifted_value = base_value >> (shift.shift_amount as u32);
             // todo: make sure flags aren't a thing
         }
         ShiftType::ArithmeticRight => {
-            shifted_value = ((base_value as i32) >> shift_amount as i32) as u32;
+            shifted_value = ((base_value as i32) >> shift.shift_amount as i32) as u32;
             // make sure this isn't truncating
         }
         ShiftType::RotateRight => {
-            shifted_value = base_value.rotate_right(shift_amount as u32);
+            shifted_value = base_value.rotate_right(shift.shift_amount as u32);
         }
         _ => panic!("Shift type fucked up")
     }
 
-    return shifted_value as u8;
+    return shifted_value;
 }
+
