@@ -5,6 +5,7 @@ use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
+use super::{arm_instr::arm_instructions};
 
 
 pub const ARM_PC: u8 = 15;
@@ -54,6 +55,26 @@ pub enum InstructionSet {
     Thumb
 }
 
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum InstructionFormat {
+    DataProcessing,
+    PsrTransfer,
+    Multiply,
+    MultiplyLong,
+    SingleDataSwap,
+    BranchAndExchange,
+    HalfwordDataTransfer,
+    SingleDataTransfer,
+    Undefiend,
+    BlockDataTransfer,
+    Branch,
+    CoProcessorDataTransfer,
+    CoProcessorDataOperation,
+    CoProcessorRegisetTransfer,
+    SoftwareInterrupt
+}
+
 pub struct CPU {   
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
@@ -81,38 +102,29 @@ impl CPU {
 
     pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
-        println!("Decoding: {:X}", opcode);
-        match opcode {
-            0x080 | 0x3A0 | 0x0600 => { // ADD lli
+        let format = arm_instructions[opcode as usize];
+        println!("Decoding: {:X} = {:?}", opcode, format);
+        match format {
+            InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
                 let mut format: DataProcessing = DataProcessing::from(instruction);
                 format.execute(self, mem_map);
             },
-            0xF00...0xFFF => {
-                let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x121 => { //Believe this should be Branch & Exchange
-                let mut format: BranchExchange = BranchExchange::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
+            InstructionFormat::Multiply => {
                 let mut format: Multiply = Multiply::from(instruction);
                 format.execute(self, mem_map);
             },
-            0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
+            InstructionFormat::MultiplyLong => {
                 let mut format: MultiplyLong = MultiplyLong::from(instruction);
                 format.execute(self, mem_map);
             },
-            0x800...0x9FF => {
-                 let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
-                 format.execute(self, mem_map);
-            },
-            0xA00...0xAFF => {
-                let mut format: Branch = Branch::from(instruction);
-                format.execute(self, mem_map)
+            InstructionFormat::SingleDataSwap => {
 
             },
-            0x9...0x1F9 => {
+            InstructionFormat::BranchAndExchange => {
+                let mut format: BranchExchange = BranchExchange::from(instruction);
+                format.execute(self, mem_map);
+            },
+            InstructionFormat::HalfwordDataTransfer => {
                 if opcode & 0x40 == 0 {
                     let mut format = HalfwordRegisterOffset::from(instruction);
                     format.execute(self, mem_map);
@@ -121,7 +133,25 @@ impl CPU {
                     format.execute(self, mem_map);
                 }
             },
-            _ => panic!("Could not decode {:X}", opcode),
+            InstructionFormat::SingleDataTransfer => {
+
+            },
+            InstructionFormat::Undefiend => {
+                panic!("Got an undefined format: {:X}",opcode);
+            },
+            InstructionFormat::BlockDataTransfer => {
+                 let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
+                 format.execute(self, mem_map);
+            },
+            InstructionFormat::Branch => {
+                let mut format: Branch = Branch::from(instruction);
+                format.execute(self, mem_map);
+            },
+            InstructionFormat::SoftwareInterrupt => {
+                let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
+                format.execute(self, mem_map);
+            },
+            _ => panic!("Got a bad format {:?} = {:X}", format, opcode)
         }
     }
 
