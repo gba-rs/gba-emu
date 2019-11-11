@@ -59,6 +59,12 @@ impl Instruction for MultiplyLong {
             cpu.set_register(self.destination_register_hi, rdhi);
             cpu.set_register(self.destination_register_lo, rdlo);
         }
+        if self.set_condition {
+            cpu.cpsr.flags.negative = flags.negative;
+            cpu.cpsr.flags.zero = flags.zero;
+            cpu.cpsr.flags.carry = flags.carry;
+            cpu.cpsr.flags.signed_overflow = flags.signed_overflow;
+        }
     }
 }
 

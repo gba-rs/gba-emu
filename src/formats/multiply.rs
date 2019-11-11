@@ -36,11 +36,21 @@ impl Instruction for Multiply {
                         cpu.get_register(self.op2_register),
                         cpu.get_register(self.op3_register));
                 cpu.set_register(self.destination_register, value);
+                if self.set_condition {
+                    cpu.cpsr.flags.negative = flags.negative;
+                    cpu.cpsr.flags.zero = flags.zero;
+                    cpu.cpsr.flags.carry = flags.carry;
+                }
             }else{ // MUL
                 let (value, flags) = arithmetic::mul(
                         cpu.get_register(self.op1_register),
                         cpu.get_register(self.op2_register));
                 cpu.set_register(self.destination_register, value);
+                if self.set_condition {
+                    cpu.cpsr.flags.negative = flags.negative;
+                    cpu.cpsr.flags.zero = flags.zero;
+                    cpu.cpsr.flags.carry = flags.carry;
+                }
             }
     }
 }
