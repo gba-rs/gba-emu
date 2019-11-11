@@ -1,5 +1,5 @@
 use super::{common::Condition, common::Instruction};
-use crate::{operations::arithmatic};
+use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::CPU;
 
@@ -32,26 +32,26 @@ impl From<u32> for MultiplyLong {
 
 impl Instruction for MultiplyLong {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        let (rdhi, rdlo, flags) = arithmatic::mull(
+        let (rdhi, rdlo, flags) = arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);
         if self.accumulate {
             let mut vals = (0, 0);
             if self.unsigned {
-                let product = arithmatic::u64_from_u32(rdhi, rdlo);
-                let number = arithmatic::u64_from_u32(
+                let product = arithmetic::u64_from_u32(rdhi, rdlo);
+                let number = arithmetic::u64_from_u32(
                     cpu.get_register(self.destination_register_hi),
                     cpu.get_register(self.destination_register_lo));
                 let sum = product.overflowing_add(number).0;
-                vals = arithmatic::u32_from_u64(sum);
+                vals = arithmetic::u32_from_u64(sum);
             }
             else{
-                let product = arithmatic::i64_from_u32(rdhi, rdlo);
-                let number = arithmatic::i64_from_u32(
+                let product = arithmetic::i64_from_u32(rdhi, rdlo);
+                let number = arithmetic::i64_from_u32(
                     cpu.get_register(self.destination_register_hi),
                     cpu.get_register(self.destination_register_lo));
                 let sum = product.overflowing_add(number).0;
-                vals = arithmatic::u32_from_i64(sum);
+                vals = arithmetic::u32_from_i64(sum);
             }
             cpu.set_register(self.destination_register_hi, vals.0);
             cpu.set_register(self.destination_register_lo, vals.1);

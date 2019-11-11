@@ -1,6 +1,6 @@
 use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::arithmatic::add;
+use crate::operations::arithmetic::add;
 use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC, cpu::cpu::REG_MAP};
 use crate::cpu::cpu::ARM_LR;
 

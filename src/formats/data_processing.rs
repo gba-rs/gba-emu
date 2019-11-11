@@ -1,5 +1,5 @@
 use super::{common::Condition, common::ShiftType, common::Shift, common::Instruction};
-use crate::{operations::arithmatic};
+use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
 
@@ -160,33 +160,33 @@ impl Instruction for DataProcessing {
             }
             OpCodes::SUB  => { //sub
                 let (value, flags) =
-                    arithmatic::sub(cpu.get_register(self.op1_register), op2);
+                    arithmetic::sub(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
             OpCodes::RSB => { //rsb
                 let (value, flags) =
-                    arithmatic::rsb(cpu.get_register(self.op1_register), op2);
+                    arithmetic::rsb(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
             OpCodes::ADD => { //add
 //                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
                 let (value, flags) =
-                    arithmatic::add(cpu.get_register(self.op1_register), op2);
+                    arithmetic::add(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
             OpCodes::ADC => { //ADC
                 let (value, flags) =
-                    arithmatic::adc(cpu.get_register(self.op1_register), op2);
+                    arithmetic::adc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
             OpCodes::SBC => { //SBC
                 let (value, flags) =
-                    arithmatic::sbc(cpu.get_register(self.op1_register), op2);
+                    arithmetic::sbc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
             OpCodes::RSC => { //RSC
                 let (value, flags) =
-                    arithmatic::rsc(cpu.get_register(self.op1_register), op2);
+                    arithmetic::rsc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
             },
             OpCodes::TST => { //TST AND
@@ -227,7 +227,7 @@ impl Instruction for DataProcessing {
                     cpu.set_spsr(ProgramStatusRegister::from(value));
                 }
                 else {
-                    cpu.get_spsr().flags = arithmatic::cmp(cpu.get_register(self.op1_register), op2);
+                    cpu.get_spsr().flags = arithmetic::cmp(cpu.get_register(self.op1_register), op2);
                 }
             },
             OpCodes::CMN => { //cmn
@@ -248,7 +248,7 @@ impl Instruction for DataProcessing {
                     cpu.set_register(self.op1_register, value);
                 }
                 else{
-                    cpu.get_spsr().flags = arithmatic::cmn(cpu.get_register(self.op1_register), op2);
+                    cpu.get_spsr().flags = arithmetic::cmn(cpu.get_register(self.op1_register), op2);
                 }
             },
             OpCodes::MOV => { //mov

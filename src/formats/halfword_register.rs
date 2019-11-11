@@ -2,7 +2,7 @@ use super::{common::Condition, common::Instruction};
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::memory::work_ram::WorkRam;
-use crate::operations::arithmatic::add;
+use crate::operations::arithmetic::add;
 
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
