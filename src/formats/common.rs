@@ -82,7 +82,7 @@ impl From<u32> for Shift {
             shift_type: ShiftType::from((value & 0x60) >> 5),
             shift_amount: ((value & 0xF80) >> 7) as u8,
             shift_register: ((value & 0xF00) >> 8) as u8,
-            immediate: ((value & 0x10) >> 5) != 0
+            immediate: ((value & 0x10) >> 5) == 0
         }
     }
 }
