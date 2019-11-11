@@ -103,7 +103,7 @@ impl CPU {
     pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         let format = arm_instructions[opcode as usize];
-        let condition = Condition::from((instruction & 0xF000_0000) >> 28)
+        let condition = Condition::from((instruction & 0xF000_0000) >> 28);
         println!("Decoding {:X}: {:X} = {:?}", instruction, opcode, format);
         if self.check_condition(condition) {
             match format {

@@ -40,6 +40,9 @@ impl Instruction for Branch {
 
         // Adding the offset to the PC
         let (value, flags) = add(current_pc_value, offset);
+
+        println!("Final PC: {:X}", value);
+
         cpu.set_register(current_pc, value);
     }
 }
