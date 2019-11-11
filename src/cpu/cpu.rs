@@ -104,8 +104,9 @@ impl CPU {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         let format = arm_instructions[opcode as usize];
         let condition = Condition::from((instruction & 0xF000_0000) >> 28);
-        println!("Decoding {:X}: {:X} = {:?}", instruction, opcode, format);
-        if self.check_condition(condition) {
+        let check_condition = self.check_condition(&condition);
+        println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);
+        if check_condition {
             match format {
                 InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
                     let mut format: DataProcessing = DataProcessing::from(instruction);
@@ -218,7 +219,7 @@ impl CPU {
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
     }
 
-    pub fn check_condition(&mut self, cond: Condition) -> bool {
+    pub fn check_condition(&mut self, cond: &Condition) -> bool {
         match cond {
             Condition::EQ => return self.cpsr.flags.zero,
             Condition::NE => return !self.cpsr.flags.zero,

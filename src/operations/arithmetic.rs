@@ -10,7 +10,7 @@ fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, ConditionFlags) {
 
     return (real_output, ConditionFlags{
         negative: (output & (0x1 << 31)) != 0,
-        zero: output == 0,
+        zero: real_output == 0,
         carry: carryout,
         signed_overflow: (op1_sign == op2_sign) && (op1_sign != output_sign)
     });
@@ -91,7 +91,7 @@ pub fn adc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
 }
 
 pub fn cmp(op1: u32, op2: u32) -> ConditionFlags {
-    let (_, flags) = sub(op1, op2);
+    let (value, flags) = sub(op1, op2);
     return flags;
 }
 

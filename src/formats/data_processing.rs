@@ -218,16 +218,17 @@ impl Instruction for DataProcessing {
                 else{
                     let op1 = cpu.get_register(self.op1_register);
                     let value = (op1 ^ op2) as u64;
-                    cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                    cpu.cpsr.flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
                 }
             },
             OpCodes::CMP => { //cmp
                 if !self.set_condition { //MRS SPSR
+                    println!("Going into an SPR");
                     let value = cpu.get_register(self.destination_register);
                     cpu.set_spsr(ProgramStatusRegister::from(value));
                 }
                 else {
-                    cpu.get_spsr().flags = arithmetic::cmp(cpu.get_register(self.op1_register), op2);
+                    cpu.cpsr.flags = arithmetic::cmp(cpu.get_register(self.op1_register), op2);
                 }
             },
             OpCodes::CMN => { //cmn
