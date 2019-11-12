@@ -65,7 +65,7 @@ impl From<u32> for SingleDataTransferOperand {
 
 impl Instruction for SingleDataTransfer {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        let mut address_with_offset;
+        let address_with_offset;
         let base = cpu.get_register(self.op1_register);
         if !self.offset_is_register {
             address_with_offset = apply_offset(base, self.offset.immediate_value, self.up_down);

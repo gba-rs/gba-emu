@@ -1,13 +1,9 @@
 extern crate gba_emulator;
 
-use gba_emulator::*;
-
 #[cfg(test)]
 mod tests {
-    use gba_emulator::cpu::cpu::{CPU, InstructionSet, OperatingMode};
-    use gba_emulator::formats::common::Instruction;
-    use gba_emulator::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
-    use gba_emulator::formats::single_data_transfer;
+    use gba_emulator::cpu::cpu::{CPU};
+    use gba_emulator::memory::{memory_map::MemoryMap};
 
     #[test]
     fn correct_operation_called_byte_immediate_word_aligned() {
@@ -52,9 +48,9 @@ mod tests {
         map.write_u32(address_in_memory + offset, value_to_load);
         cpu.set_register(0, address_in_memory);
         // original offset register is 8 but a log. shift right of 2 is applied in the instruction
-        cpu.set_register(2, offset);
+        cpu.set_register(8, offset);
 
-        cpu.decode(&mut map,   0x17D08128);
+        cpu.decode(&mut map, 0xE7D08128);
 
         assert_eq!(cpu.get_register(8), 0x0F);
     }

@@ -1,6 +1,5 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
-use crate::memory::work_ram::WorkRam;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {
@@ -48,7 +47,7 @@ pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_
         panic!("Attempting to store halfword in a memory location that is not word aligned or halfword aligned!");
     }
 
-    let mut formatted_value = 0;
+    let formatted_value;
     match data_type {
         DataType::Word => {
             formatted_value = value_to_store;
@@ -96,7 +95,7 @@ pub fn load_to_register(memory_address: u32, register: u8) {}
 * If not signed, the bits 31-16 are 0s
 */
 pub fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
-    let mut data: u16 = 0;
+    let data: u16;
     if is_word_aligned(address) {
         data = ((base_value & 0xFFFF0000) >> 16) as u16;
     } else if is_halfword_aligned(address) {
@@ -125,7 +124,7 @@ pub fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 
 * If not signed, the bits 31-8 are 0s
 */
 pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
-    let mut data: u8 = 0;
+    let data: u8;
     if is_word_aligned(address) {
         data = ((base_value & 0xFF000000) >> 24) as u8;
     } else if is_word_plus_1_aligned(address) {
@@ -209,6 +208,7 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::memory::{work_ram::WorkRam};
 
     #[test]
     fn test_apply_offset() {

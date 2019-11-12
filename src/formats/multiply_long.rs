@@ -31,12 +31,12 @@ impl From<u32> for MultiplyLong {
 }
 
 impl Instruction for MultiplyLong {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let (rdhi, rdlo, flags) = arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);
         if self.accumulate {
-            let mut vals = (0, 0);
+            let vals: (u32, u32);
             if self.unsigned {
                 let product = arithmetic::u64_from_u32(rdhi, rdlo);
                 let number = arithmetic::u64_from_u32(

@@ -1,13 +1,11 @@
 extern crate gba_emulator;
 
-use gba_emulator::*;
-
 #[cfg(test)]
 mod tests {
-    use gba_emulator::cpu::cpu::{CPU, InstructionSet, OperatingMode};
+    use gba_emulator::cpu::cpu::{CPU};
     use gba_emulator::formats::block_data_transfer::BlockDataTransfer;
     use gba_emulator::formats::common::Instruction;
-    use gba_emulator::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
+    use gba_emulator::memory::{work_ram::WorkRam, memory_map::MemoryMap};
 
     #[test]
     fn test_stmib() {
@@ -20,7 +18,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut map);
 
@@ -41,7 +39,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut map);
 
@@ -62,7 +60,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut map);
 
@@ -83,7 +81,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut map);
 
@@ -101,7 +99,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         map.write_u32(0xFF04, 1);
@@ -125,7 +123,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         map.write_u32(0xFF00, 1);
@@ -149,7 +147,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         map.write_u32(0xFEF0, 1);
@@ -173,7 +171,7 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut map = MemoryMap::new();
-        let mut work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
+        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
         map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         map.write_u32(0xFEF0, 1);

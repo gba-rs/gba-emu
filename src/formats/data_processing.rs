@@ -1,7 +1,7 @@
 use super::{common::Condition, common::Instruction};
 use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::shift::{ShiftType, Shift, apply_shift};
+use crate::operations::shift::{Shift, apply_shift};
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
 
 
@@ -77,20 +77,20 @@ impl From<u32> for DataProcessing {
 
 impl DataProcessing {
     pub fn barrel_shifter(&mut self, cpu: &mut CPU) -> u32 {
-        let mut op2: u32;
+        let op2: u32;
 
         if self.operand2.immediate {
             op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
         } else {
             op2 = cpu.get_register(self.operand2.rm);
-            let shift_register_amount = cpu.get_register(self.operand2.shift.shift_register);
+            // let shift_register_amount = cpu.get_register(self.operand2.shift.shift_register);
             apply_shift(op2, &self.operand2.shift, cpu);
         }
 
         return op2;
     }
     
-    fn set_flags(&mut self, cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
+    fn set_flags(&mut self, _cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
         let carryout: bool = (value >> 32) != 0;
         let op1_sign: bool = (op1 >> 31) != 0;
         let op2_sign: bool = (op2 >> 31) != 0;
@@ -125,7 +125,7 @@ impl From<u32> for DataProcessingOperand {
 }
 
 impl Instruction for DataProcessing {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let op2 = self.barrel_shifter(cpu);
         match OpCodes::from(self.opcode) {
             OpCodes::AND => { //and
