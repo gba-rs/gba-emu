@@ -1,6 +1,7 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction, common::Condition, software_interrupt::SoftwareInterrupt};
 use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::formats::{single_data_transfer::SingleDataTransfer};
 use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
@@ -121,7 +122,11 @@ impl CPU {
                     format.execute(self, mem_map);
                 },
                 InstructionFormat::SingleDataSwap => {
-    
+                    panic!("Single data swap not implemented");
+                },
+                InstructionFormat::SingleDataTransfer => {
+                    let mut format: SingleDataTransfer = SingleDataTransfer::from(instruction);
+                    format.execute(self, mem_map);
                 },
                 InstructionFormat::BranchAndExchange => {
                     let mut format: BranchExchange = BranchExchange::from(instruction);
@@ -135,9 +140,6 @@ impl CPU {
                         let mut format = HalfwordImmediateOffset::from(instruction);
                         format.execute(self, mem_map);
                     }
-                },
-                InstructionFormat::SingleDataTransfer => {
-    
                 },
                 InstructionFormat::Undefiend => {
                     panic!("Got an undefined format: {:X}",opcode);
@@ -157,7 +159,9 @@ impl CPU {
                 _ => panic!("Got a bad format {:?} = {:X}", format, opcode)
             }
         }
+
     }
+
 
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
