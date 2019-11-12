@@ -10,7 +10,7 @@ pub struct GBA {
 
 impl GBA {
     pub fn new(pc_address: u32, bios: Vec<u8>, rom: Vec<u8>) -> GBA {
-        let mut temp_gamepack = [
+        let temp_gamepack = [
             GamePackRom::new(0),
             GamePackRom::new(0),
             GamePackRom::new(0),

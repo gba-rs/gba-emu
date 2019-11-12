@@ -29,7 +29,7 @@ impl From<u32> for Multiply {
 }
 
 impl Instruction for Multiply {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
             if self.accumulate { // MLA
                 let (value, flags) = arithmetic::mla(
                         cpu.get_register(self.op1_register),

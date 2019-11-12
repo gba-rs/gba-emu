@@ -7,7 +7,7 @@ use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::formats::{debug::Debug};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
-use super::{arm_instr::arm_instructions};
+use super::{arm_instr::ARM_INSTRUCTIONS};
 
 
 pub const ARM_PC: u8 = 15;
@@ -104,10 +104,10 @@ impl CPU {
 
     pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
-        let format = arm_instructions[opcode as usize];
+        let format = ARM_INSTRUCTIONS[opcode as usize];
         let condition = Condition::from((instruction & 0xF000_0000) >> 28);
         let check_condition = self.check_condition(&condition);
-        print!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);       
+        println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);       
         if check_condition {
             match format {
                 InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
@@ -270,7 +270,7 @@ mod tests {
 
     #[test]
     fn test_access_registers(){
-        let mut cpu = CPU::new();
+        let cpu = CPU::new();
         let _empty_registers: [u32; 31] = [0; 31];
         
         assert_eq!(_empty_registers, cpu.registers);
@@ -283,7 +283,7 @@ mod tests {
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         
-        cpu.decode(&mut map, 0xE3000000);
+        cpu.decode(&mut map, 0xE5000000);
     }
 
     #[test]
@@ -325,7 +325,7 @@ mod tests {
     fn test_register_access_invalid() {
         let mut cpu = CPU::new();
         cpu.current_instruction_set = InstructionSet::Thumb;
-        let should_fail = cpu.get_register(11);
+        let _should_fail = cpu.get_register(11);
     }
 
     #[test]

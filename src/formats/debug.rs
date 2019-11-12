@@ -19,9 +19,9 @@ impl From<u32> for Debug {
 }
 
 impl Instruction for Debug {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         if self.immidiete {
-            if(self.hex) {
+            if self.hex {
                 println!("{:X}", cpu.get_register(self.source_register));
             } else {
                 println!("{}", cpu.get_register(self.source_register));
