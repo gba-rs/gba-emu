@@ -6,7 +6,7 @@ use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
-use super::{arm_instr::arm_instructions};
+use super::{arm_instr::ARM_INSTRUCTIONS};
 
 
 pub const ARM_PC: u8 = 15;
@@ -103,7 +103,7 @@ impl CPU {
 
     pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
-        let format = arm_instructions[opcode as usize];
+        let format = ARM_INSTRUCTIONS[opcode as usize];
         let condition = Condition::from((instruction & 0xF000_0000) >> 28);
         let check_condition = self.check_condition(&condition);
         println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);
@@ -267,7 +267,7 @@ mod tests {
 
     #[test]
     fn test_access_registers(){
-        let mut cpu = CPU::new();
+        let cpu = CPU::new();
         let _empty_registers: [u32; 31] = [0; 31];
         
         assert_eq!(_empty_registers, cpu.registers);
@@ -322,7 +322,7 @@ mod tests {
     fn test_register_access_invalid() {
         let mut cpu = CPU::new();
         cpu.current_instruction_set = InstructionSet::Thumb;
-        let should_fail = cpu.get_register(11);
+        let _should_fail = cpu.get_register(11);
     }
 
     #[test]

@@ -1,6 +1,5 @@
 extern crate gba_emulator;
 
-use gba_emulator::*;
 //use gba_emulator::formats::data_processing::DataProcessing;
 //use gba_emulator::formats::{data_processing::DataProcessing};
 
@@ -9,11 +8,11 @@ use gba_emulator::*;
 #[cfg(test)]
 mod tests {
 //    use gba_emulator::formats::data_processing::DataProcessing;
-    use gba_emulator::cpu::cpu::{CPU, InstructionSet, OperatingMode};
+    use gba_emulator::cpu::cpu::{CPU};
     use gba_emulator::cpu::program_status_register::ProgramStatusRegister;
     use gba_emulator::formats::data_processing::DataProcessing;
     use gba_emulator::formats::common::Instruction;
-    use gba_emulator::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
+    use gba_emulator::memory::{memory_map::MemoryMap};
 
 
 

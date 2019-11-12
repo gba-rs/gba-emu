@@ -1,7 +1,7 @@
 use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::arithmetic::add;
-use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC, cpu::cpu::REG_MAP};
+use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC};
 use crate::cpu::cpu::ARM_LR;
 
 pub struct Branch {
@@ -21,7 +21,7 @@ impl From<u32> for Branch {
 }
 
 impl Instruction for Branch {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let current_pc_value = cpu.get_register(current_pc) + 8; // because pipeline bullshit
         let mut offset = (self.offset << 2) as u32;
@@ -39,7 +39,7 @@ impl Instruction for Branch {
         }
 
         // Adding the offset to the PC
-        let (value, flags) = add(current_pc_value, offset);
+        let (value, _) = add(current_pc_value, offset);
 
         println!("Final PC: {:X}", value);
 

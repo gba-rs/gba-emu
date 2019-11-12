@@ -4,11 +4,10 @@ use gba_emulator::*;
 #[cfg(test)]
 mod tests {
 //    use gba_emulator::formats::data_processing::DataProcessing;
-    use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::ARM_LR,cpu::cpu::THUMB_PC, cpu::cpu::REG_MAP};
-    use gba_emulator::formats::data_processing::DataProcessing;
+    use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::ARM_LR,cpu::cpu::THUMB_PC};
     use gba_emulator::formats::branch::Branch;
     use gba_emulator::formats::common::Instruction;
-    use gba_emulator::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
+    use gba_emulator::memory::{memory_map::MemoryMap};
 
     #[test]
     fn check_cpu_branch_backward() {

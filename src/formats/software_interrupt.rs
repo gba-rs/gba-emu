@@ -32,7 +32,6 @@ impl Instruction for SoftwareInterrupt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cpu::{cpu::CPU};
     
     #[test]
     fn test_execute() {

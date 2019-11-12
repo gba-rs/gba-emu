@@ -21,7 +21,7 @@ impl From<u32> for BranchExchange {
 }
 
 impl Instruction for BranchExchange {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let new_pc = cpu.get_register(self.rn);
 
         if self.mode_bit == 0 {

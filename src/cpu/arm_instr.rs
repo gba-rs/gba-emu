@@ -1,6 +1,6 @@
 use super::{cpu::InstructionFormat};
 
-pub const arm_instructions: [InstructionFormat; 4096] = [
+pub const ARM_INSTRUCTIONS: [InstructionFormat; 4096] = [
     // 0000 0000 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,

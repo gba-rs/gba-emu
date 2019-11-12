@@ -1,7 +1,5 @@
 extern crate gba_emulator;
 
-use gba_emulator::*;
-
 #[cfg(test)]
 mod tests {
     #[test]
