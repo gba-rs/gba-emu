@@ -4,6 +4,7 @@ use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
 use crate::formats::{single_data_transfer::SingleDataTransfer};
 use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
+use crate::formats::{debug::Debug};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
@@ -106,7 +107,7 @@ impl CPU {
         let format = ARM_INSTRUCTIONS[opcode as usize];
         let condition = Condition::from((instruction & 0xF000_0000) >> 28);
         let check_condition = self.check_condition(&condition);
-        println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);
+        println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);       
         if check_condition {
             match format {
                 InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
@@ -142,7 +143,9 @@ impl CPU {
                     }
                 },
                 InstructionFormat::Undefiend => {
-                    panic!("Got an undefined format: {:X}",opcode);
+                    let mut format = Debug::from(instruction);
+                    format.execute(self, mem_map);
+                    // panic!("Got an undefined format: {:X}",opcode);
                 },
                 InstructionFormat::BlockDataTransfer => {
                      let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
@@ -280,7 +283,7 @@ mod tests {
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         
-        cpu.decode(&mut map, 0xE3000000);
+        cpu.decode(&mut map, 0xE5000000);
     }
 
     #[test]

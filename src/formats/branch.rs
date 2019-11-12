@@ -30,8 +30,6 @@ impl Instruction for Branch {
             offset = offset | 0xFFC0_0000;
         }
 
-        println!("Offset: {}", offset as i32);
-
         // Setting the link register
         if self.link {
             // The current PC is 8 ahead but we want to get the next instruction so we subtract 4
@@ -40,8 +38,6 @@ impl Instruction for Branch {
 
         // Adding the offset to the PC
         let (value, _) = add(current_pc_value, offset);
-
-        println!("Final PC: {:X}", value);
 
         cpu.set_register(current_pc, value);
     }
