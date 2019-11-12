@@ -162,32 +162,38 @@ impl Instruction for DataProcessing {
                 let (value, flags) =
                     arithmetic::sub(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::RSB => { //rsb
                 let (value, flags) =
                     arithmetic::rsb(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::ADD => { //add
 //                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
                 let (value, flags) =
                     arithmetic::add(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::ADC => { //ADC
                 let (value, flags) =
                     arithmetic::adc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::SBC => { //SBC
                 let (value, flags) =
                     arithmetic::sbc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::RSC => { //RSC
                 let (value, flags) =
                     arithmetic::rsc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::TST => { //TST AND
                 if !self.set_condition { //MRS CPSR
@@ -197,7 +203,7 @@ impl Instruction for DataProcessing {
                 else{
                     let op1 = cpu.get_register(self.op1_register);
                     let value = (op1 & op2) as u64;
-                    cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                    cpu.cpsr.flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
                 }
             },
             OpCodes::TEQ => { //TEQ EOR
@@ -249,7 +255,7 @@ impl Instruction for DataProcessing {
                     cpu.set_register(self.op1_register, value);
                 }
                 else{
-                    cpu.get_spsr().flags = arithmetic::cmn(cpu.get_register(self.op1_register), op2);
+                    cpu.cpsr.flags = arithmetic::cmn(cpu.get_register(self.op1_register), op2);
                 }
             },
             OpCodes::MOV => { //mov
