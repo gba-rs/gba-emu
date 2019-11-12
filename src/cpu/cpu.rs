@@ -1,6 +1,9 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, branch_exchange::BranchExchange, software_interrupt::SoftwareInterrupt};
+use crate::formats::{data_processing::DataProcessing, common::Instruction, common::Condition, software_interrupt::SoftwareInterrupt};
 use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
-use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong, single_data_transfer::SingleDataTransfer};
+use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::formats::{single_data_transfer::SingleDataTransfer};
+use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
+use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 
@@ -10,7 +13,7 @@ pub const ARM_LR: u8 = 14;
 pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
 
-const REG_MAP: [[[usize; 16]; 7]; 2] = [
+pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
     [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],     // System
@@ -105,6 +108,15 @@ impl CPU {
                     let mut format: MultiplyLong = MultiplyLong::from(instruction);
                     format.execute(self, mem_map);
                 },
+                0x800...0x9FF => {
+                    let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0xA00...0xAFF => {
+                    let mut format: Branch = Branch::from(instruction);
+                    format.execute(self, mem_map)
+
+                },
                 0x9...0x1F9 => {
                     if opcode & 0x40 == 0 {
                         let mut format = HalfwordRegisterOffset::from(instruction);
@@ -120,12 +132,13 @@ impl CPU {
 
     }
 
+
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
         self.set_register(current_pc, pc_contents + 4);
-        self.decode(map, instruction);
+        self.decode(map, instruction.to_be());
     }
 
     pub fn get_register(&mut self, reg_num: u8) -> u32 {
@@ -178,6 +191,27 @@ impl CPU {
             }
         }
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
+    }
+
+    pub fn check_condition(&mut self, cond: Condition) -> bool {
+        match cond {
+            Condition::EQ => return self.cpsr.flags.zero,
+            Condition::NE => return !self.cpsr.flags.zero,
+            Condition::CS => return self.cpsr.flags.carry,
+            Condition::CC => return !self.cpsr.flags.carry,
+            Condition::MI => return self.cpsr.flags.negative,
+            Condition::PL => return !self.cpsr.flags.negative,
+            Condition::VS => return self.cpsr.flags.signed_overflow,
+            Condition::VC => return !self.cpsr.flags.signed_overflow,
+            Condition::HI => return self.cpsr.flags.carry && !self.cpsr.flags.zero,
+            Condition::LS => return !self.cpsr.flags.carry && self.cpsr.flags.zero,
+            Condition::GE => return self.cpsr.flags.negative == self.cpsr.flags.signed_overflow,
+            Condition::LT => return self.cpsr.flags.negative != self.cpsr.flags.signed_overflow,
+            Condition::GT => return !self.cpsr.flags.zero && (self.cpsr.flags.negative == self.cpsr.flags.signed_overflow),
+            Condition::LE => return self.cpsr.flags.zero && (self.cpsr.flags.negative != self.cpsr.flags.signed_overflow),
+            Condition::AL => return true,
+            Condition::Error => panic!("Condition::Error hit"),
+        }
     }
 
     pub fn get_spsr(&mut self) -> ProgramStatusRegister {
@@ -233,8 +267,8 @@ mod tests {
         cpu.set_register(15, 0x02000000);
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        map.write_u32(0x02000000, 0xE0812001);
-        map.write_u32(0x02000004, 0xE0812001);
+        map.write_u32(0x02000000, 0x012081E0);
+        map.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut map);
         cpu.fetch(&mut map);
     }
@@ -267,7 +301,7 @@ mod tests {
         cpu.set_register(15, 0x02000000);
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        map.write_u32(0x02000000, 0xD12F_FF1F);
+        map.write_u32(0x02000000, 0x1FFF2FD1);
         cpu.fetch(&mut map);
         assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
     }
