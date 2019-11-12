@@ -46,8 +46,8 @@ impl MemoryMap {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let mut memory = mem.borrow_mut();
-        memory[index as usize] = ((value & 0xFF00) >> 8) as u8;
-        memory[(index as usize) + 1] = (value & 0xFF) as u8;
+        memory[(index as usize) + 1] = ((value & 0xFF00) >> 8) as u8;
+        memory[index as usize] = (value & 0xFF) as u8;
         
     }
 
@@ -55,10 +55,10 @@ impl MemoryMap {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let mut memory = mem.borrow_mut();
-        memory[index as usize] = ((value & 0xFF000000) >> 24) as u8;
-        memory[(index as usize) + 1] = ((value & 0xFF0000) >> 16) as u8;
-        memory[(index as usize) + 2] = ((value & 0xFF00) >> 8) as u8;
-        memory[(index as usize) + 3] = (value & 0xFF) as u8;
+        memory[(index as usize) + 3] = ((value & 0xFF000000) >> 24) as u8;
+        memory[(index as usize) + 2] = ((value & 0xFF0000) >> 16) as u8;
+        memory[(index as usize) + 1] = ((value & 0xFF00) >> 8) as u8;
+        memory[index as usize] = (value & 0xFF) as u8;
 
 
     }
@@ -81,7 +81,7 @@ impl MemoryMap {
         let mut result: u32 = 0;
         let memory = mem.borrow_mut();
         for i in 0..4 {
-            result |= (memory[(index + i) as usize] as u32) <<  ((3 - i) * 8);
+            result |= (memory[(index + i) as usize] as u32) <<  (i * 8);
         }
         return result;
     }
@@ -90,7 +90,7 @@ impl MemoryMap {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let memory = mem.borrow_mut();
-        let result: u16 = ((memory[index as usize] as u16) << 8) | (memory[(index + 1) as usize] as u16);
+        let result: u16 = ((memory[(index + 1) as usize] as u16) << 8) | (memory[index as usize] as u16);
         return result;
     }
 
@@ -114,7 +114,7 @@ impl MemoryMap {
             }
         }
 
-        panic!("Not implemented");
+        panic!("Not implemented: {:X}", address);
     }
 }
 
