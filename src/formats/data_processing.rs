@@ -1,5 +1,5 @@
 use super::{common::Condition, common::Instruction};
-use crate::{operations::arithmatic};
+use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::shift::{ShiftType, Shift, apply_shift};
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
@@ -45,7 +45,7 @@ impl From<u8> for OpCodes {
             0b1101 => return OpCodes::MOV,
             0b1110 => return OpCodes::BIC,
             0b1111 => return OpCodes::MVN,
-            _ => return panic!("ahh")
+            _=> panic!("Error in data processing opcode")
         }
     }
 }
@@ -138,34 +138,40 @@ impl Instruction for DataProcessing {
             }
             OpCodes::SUB  => { //sub
                 let (value, flags) =
-                    arithmatic::sub(cpu.get_register(self.op1_register), op2);
+                    arithmetic::sub(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::RSB => { //rsb
                 let (value, flags) =
-                    arithmatic::rsb(cpu.get_register(self.op1_register), op2);
+                    arithmetic::rsb(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::ADD => { //add
 //                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
                 let (value, flags) =
-                    arithmatic::add(cpu.get_register(self.op1_register), op2);
+                    arithmetic::add(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::ADC => { //ADC
                 let (value, flags) =
-                    arithmatic::adc(cpu.get_register(self.op1_register), op2);
+                    arithmetic::adc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::SBC => { //SBC
                 let (value, flags) =
-                    arithmatic::sbc(cpu.get_register(self.op1_register), op2);
+                    arithmetic::sbc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::RSC => { //RSC
                 let (value, flags) =
-                    arithmatic::rsc(cpu.get_register(self.op1_register), op2);
+                    arithmetic::rsc(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::TST => { //TST AND
                 if !self.set_condition { //MRS CPSR
@@ -175,7 +181,7 @@ impl Instruction for DataProcessing {
                 else{
                     let op1 = cpu.get_register(self.op1_register);
                     let value = (op1 & op2) as u64;
-                    cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                    cpu.cpsr.flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
                 }
             },
             OpCodes::TEQ => { //TEQ EOR
@@ -196,16 +202,17 @@ impl Instruction for DataProcessing {
                 else{
                     let op1 = cpu.get_register(self.op1_register);
                     let value = (op1 ^ op2) as u64;
-                    cpu.get_spsr().flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
+                    cpu.cpsr.flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
                 }
             },
             OpCodes::CMP => { //cmp
                 if !self.set_condition { //MRS SPSR
+                    println!("Going into an SPR");
                     let value = cpu.get_register(self.destination_register);
                     cpu.set_spsr(ProgramStatusRegister::from(value));
                 }
                 else {
-                    cpu.get_spsr().flags = arithmatic::cmp(cpu.get_register(self.op1_register), op2);
+                    cpu.cpsr.flags = arithmetic::cmp(cpu.get_register(self.op1_register), op2);
                 }
             },
             OpCodes::CMN => { //cmn
@@ -226,7 +233,7 @@ impl Instruction for DataProcessing {
                     cpu.set_register(self.op1_register, value);
                 }
                 else{
-                    cpu.get_spsr().flags = arithmatic::cmn(cpu.get_register(self.op1_register), op2);
+                    cpu.cpsr.flags = arithmetic::cmn(cpu.get_register(self.op1_register), op2);
                 }
             },
             OpCodes::MOV => { //mov

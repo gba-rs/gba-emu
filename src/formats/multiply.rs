@@ -1,5 +1,5 @@
 use super::{common::Condition, common::Instruction};
-use crate::{operations::arithmatic};
+use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::CPU;
 
@@ -31,16 +31,26 @@ impl From<u32> for Multiply {
 impl Instruction for Multiply {
     fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
             if self.accumulate { // MLA
-                let (value, flags) = arithmatic::mla(
+                let (value, flags) = arithmetic::mla(
                         cpu.get_register(self.op1_register),
                         cpu.get_register(self.op2_register),
                         cpu.get_register(self.op3_register));
                 cpu.set_register(self.destination_register, value);
+                if self.set_condition {
+                    cpu.cpsr.flags.negative = flags.negative;
+                    cpu.cpsr.flags.zero = flags.zero;
+                    cpu.cpsr.flags.carry = flags.carry;
+                }
             }else{ // MUL
-                let (value, flags) = arithmatic::mul(
+                let (value, flags) = arithmetic::mul(
                         cpu.get_register(self.op1_register),
                         cpu.get_register(self.op2_register));
                 cpu.set_register(self.destination_register, value);
+                if self.set_condition {
+                    cpu.cpsr.flags.negative = flags.negative;
+                    cpu.cpsr.flags.zero = flags.zero;
+                    cpu.cpsr.flags.carry = flags.carry;
+                }
             }
     }
 }

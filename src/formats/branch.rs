@@ -1,6 +1,6 @@
 use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::arithmatic::add;
+use crate::operations::arithmetic::add;
 use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC, cpu::cpu::REG_MAP};
 use crate::cpu::cpu::ARM_LR;
 
@@ -30,6 +30,8 @@ impl Instruction for Branch {
             offset = offset | 0xFFC0_0000;
         }
 
+        println!("Offset: {}", offset as i32);
+
         // Setting the link register
         if self.link {
             // The current PC is 8 ahead but we want to get the next instruction so we subtract 4
@@ -38,6 +40,9 @@ impl Instruction for Branch {
 
         // Adding the offset to the PC
         let (value, flags) = add(current_pc_value, offset);
+
+        println!("Final PC: {:X}", value);
+
         cpu.set_register(current_pc, value);
     }
 }
