@@ -107,7 +107,7 @@ impl CPU {
         let format = arm_instructions[opcode as usize];
         let condition = Condition::from((instruction & 0xF000_0000) >> 28);
         let check_condition = self.check_condition(&condition);
-        // println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);
+        print!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);       
         if check_condition {
             match format {
                 InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {

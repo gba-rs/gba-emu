@@ -19,6 +19,7 @@ fn main() {
     let step_count = args[3].parse().unwrap();
 
     let mut gba: GBA = GBA::new(0x08000000, bios, rom);
+    // let mut gba: GBA = GBA::new(0x00000000, bios, rom);
 
     for i in 0..step_count {
         gba.step();

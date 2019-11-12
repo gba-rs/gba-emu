@@ -114,7 +114,7 @@ impl MemoryMap {
             }
         }
 
-        panic!("Not implemented");
+        panic!("Not implemented: {:X}", address);
     }
 }
 
