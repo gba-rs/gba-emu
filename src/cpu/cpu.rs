@@ -1,6 +1,7 @@
 use crate::formats::{data_processing::DataProcessing, common::Instruction, common::Condition, software_interrupt::SoftwareInterrupt};
 use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::formats::{single_data_transfer::SingleDataTransfer};
 use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
@@ -82,48 +83,55 @@ impl CPU {
     pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         println!("Decoding: {:X}", opcode);
-        match opcode {
-            0x080 | 0x3A0 | 0x0600 => { // ADD lli
-                let mut format: DataProcessing = DataProcessing::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0xF00...0xFFF => {
-                let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x121 => { //Believe this should be Branch & Exchange
-                let mut format: BranchExchange = BranchExchange::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
-                let mut format: Multiply = Multiply::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
-                let mut format: MultiplyLong = MultiplyLong::from(instruction);
-                format.execute(self, mem_map);
-            },
-            0x800...0x9FF => {
-                 let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
-                 format.execute(self, mem_map);
-            },
-            0xA00...0xAFF => {
-                let mut format: Branch = Branch::from(instruction);
-                format.execute(self, mem_map)
+        if opcode >> 10 == 0b01 {
+            let mut format: SingleDataTransfer = SingleDataTransfer::from(instruction);
+            format.execute(self, mem_map);
+        } else {
+            match opcode {
+                0x080 | 0x3A0 | 0x0600 => { // ADD lli
+                    let mut format: DataProcessing = DataProcessing::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0xF00...0xFFF => {
+                    let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0x121 => { //Believe this should be Branch & Exchange
+                    let mut format: BranchExchange = BranchExchange::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0x009 | 0x019 | 0x029 | 0x039 => { // MUL, MLA
+                    let mut format: Multiply = Multiply::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0x089 | 0x099 | 0x0A9 | 0x0B9 | 0x0C9 | 0x0D9 | 0x0E9 | 0x0F9 => { // UMULL, SMULL, UMLAL, SMLAL
+                    let mut format: MultiplyLong = MultiplyLong::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0x800...0x9FF => {
+                    let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
+                    format.execute(self, mem_map);
+                },
+                0xA00...0xAFF => {
+                    let mut format: Branch = Branch::from(instruction);
+                    format.execute(self, mem_map)
 
-            },
-            0x9...0x1F9 => {
-                if opcode & 0x40 == 0 {
-                    let mut format = HalfwordRegisterOffset::from(instruction);
-                    format.execute(self, mem_map);
-                } else {
-                    let mut format = HalfwordImmediateOffset::from(instruction);
-                    format.execute(self, mem_map);
-                }
-            },
-            _ => panic!("Could not decode {:X}", opcode),
+                },
+                0x9...0x1F9 => {
+                    if opcode & 0x40 == 0 {
+                        let mut format = HalfwordRegisterOffset::from(instruction);
+                        format.execute(self, mem_map);
+                    } else {
+                        let mut format = HalfwordImmediateOffset::from(instruction);
+                        format.execute(self, mem_map);
+                    }
+                },
+                _ => panic!("Could not decode {:X}", opcode),
+            }
         }
+
     }
+
 
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = map.read_u32(self.registers[15]);
