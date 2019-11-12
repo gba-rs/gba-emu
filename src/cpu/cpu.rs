@@ -327,7 +327,7 @@ mod tests {
         cpu.set_register(15, 0x02000000);
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        map.write_u32(0x02000000, 0x1FFF2FD1);
+        map.write_u32(0x02000000, 0x11FF2FE1);
         cpu.fetch(&mut map);
         assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
     }

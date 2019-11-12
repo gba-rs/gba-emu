@@ -44,7 +44,7 @@ impl From<u8> for OpCodes {
             0b1101 => return OpCodes::MOV,
             0b1110 => return OpCodes::BIC,
             0b1111 => return OpCodes::MVN,
-            _ => return panic!("ahh")
+            _=> panic!("Error in data processing opcode")
         }
     }
 }

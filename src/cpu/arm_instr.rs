@@ -1,17 +1,17 @@
 use super::{cpu::InstructionFormat};
 
 pub const arm_instructions: [InstructionFormat; 4096] = [
-// 0000 0000 0000
+    // 0000 0000 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0000 0001 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0000 0010 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -28,14 +28,14 @@ InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionForm
 // 0000 0100 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0000 0101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0000 0110 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -52,14 +52,14 @@ InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionForm
 // 0000 1000 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0000 1001 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0000 1010 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -76,14 +76,14 @@ InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionForm
 // 0000 1100 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0000 1101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0000 1110 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -100,98 +100,98 @@ InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionForm
 // 0001 0000 0000
 InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
 InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Multiply, InstructionFormat::SingleDataSwap, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
+InstructionFormat::Multiply, InstructionFormat::SingleDataSwap, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
 
 // 0001 0001 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 0010 0000
 InstructionFormat::DataProcessing, InstructionFormat::BranchAndExchange, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
 InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Multiply, InstructionFormat::Undefiend, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
+InstructionFormat::Multiply, InstructionFormat::Undefiend, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
 
 // 0001 0011 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 0100 0000
 InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
 InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::MultiplyLong, InstructionFormat::SingleDataSwap, InstructionFormat::MultiplyLong, InstructionFormat::SingleDataTransfer,
+InstructionFormat::MultiplyLong, InstructionFormat::SingleDataSwap, InstructionFormat::MultiplyLong, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::MultiplyLong, InstructionFormat::SingleDataTransfer, InstructionFormat::MultiplyLong, InstructionFormat::SingleDataTransfer,
 
 // 0001 0101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 0110 0000
 InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
 InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Multiply, InstructionFormat::Undefiend, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
+InstructionFormat::Multiply, InstructionFormat::Undefiend, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
 
 // 0001 0111 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1000 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1001 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1010 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1011 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1100 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1110 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1111 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
-InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0010 0000 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -1535,4 +1535,6 @@ InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, Inst
 InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt,
 InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt,
 InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt,
-InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt];
+InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt,
+
+];
