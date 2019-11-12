@@ -23,7 +23,7 @@ fn main() {
     for i in 0..step_count {
         gba.step();
         for i in 0..16 {
-            println!("R{} = {:X}", i, gba.cpu.get_register(i));
+            // println!("R{} = {:X}", i, gba.cpu.get_register(i));
         }
     }
 }
