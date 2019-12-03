@@ -1,5 +1,6 @@
 use super::{common::Condition};
 
+#[derive(Debug)]
 struct SingleDataSwap {
     pub source_register: u8,
     pub destination_register: u8,

@@ -68,7 +68,7 @@ pub enum InstructionFormat {
     BranchAndExchange,
     HalfwordDataTransfer,
     SingleDataTransfer,
-    Undefiend,
+    Undefined,
     BlockDataTransfer,
     Branch,
     CoProcessorDataTransfer,
@@ -85,7 +85,8 @@ pub struct CPU {
     pub onchip_wram: WorkRam,
     pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
-    pub current_instruction_set: InstructionSet
+    pub current_instruction_set: InstructionSet,
+    pub last_instruction: String
 }
 
 impl CPU {
@@ -98,7 +99,8 @@ impl CPU {
             onchip_wram: WorkRam::new(0x7FFF, 0),
             bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::Supervisor,
-            current_instruction_set: InstructionSet::Arm
+            current_instruction_set: InstructionSet::Arm,
+            last_instruction: "".to_string()
         };
     }
 
@@ -112,14 +114,20 @@ impl CPU {
             match format {
                 InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
                     let mut format: DataProcessing = DataProcessing::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
                 },
                 InstructionFormat::Multiply => {
                     let mut format: Multiply = Multiply::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
                 },
                 InstructionFormat::MultiplyLong => {
                     let mut format: MultiplyLong = MultiplyLong::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
                 },
                 InstructionFormat::SingleDataSwap => {
@@ -127,36 +135,51 @@ impl CPU {
                 },
                 InstructionFormat::SingleDataTransfer => {
                     let mut format: SingleDataTransfer = SingleDataTransfer::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
                 },
                 InstructionFormat::BranchAndExchange => {
                     let mut format: BranchExchange = BranchExchange::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
                 },
                 InstructionFormat::HalfwordDataTransfer => {
                     if opcode & 0x40 == 0 {
                         let mut format = HalfwordRegisterOffset::from(instruction);
+                        println!("{:?}", format);
+                        self.last_instruction = format!("{:?}", format);
                         format.execute(self, mem_map);
                     } else {
                         let mut format = HalfwordImmediateOffset::from(instruction);
+                        println!("{:?}", format);
+                        self.last_instruction = format!("{:?}", format);
                         format.execute(self, mem_map);
                     }
                 },
-                InstructionFormat::Undefiend => {
+                InstructionFormat::Undefined => {
                     let mut format = Debug::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
-                    // panic!("Got an undefined format: {:X}",opcode);
                 },
                 InstructionFormat::BlockDataTransfer => {
                      let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
+                     println!("{:?}", format);
+                     self.last_instruction = format!("{:?}", format);
                      format.execute(self, mem_map);
                 },
                 InstructionFormat::Branch => {
                     let mut format: Branch = Branch::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
                 },
                 InstructionFormat::SoftwareInterrupt => {
                     let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
+                    println!("{:?}", format);
+                    self.last_instruction = format!("{:?}", format);
                     format.execute(self, mem_map);
                 },
                 _ => panic!("Got a bad format {:?} = {:X}", format, opcode)

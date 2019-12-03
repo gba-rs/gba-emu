@@ -4,6 +4,7 @@ use crate::cpu::cpu::CPU;
 use crate::operations::load_store::{apply_offset, DataType, DataTransfer, data_transfer_execute};
 use crate::operations::shift::{Shift, apply_shift};
 
+#[derive(Debug)]
 pub struct SingleDataTransfer {
     pub offset: SingleDataTransferOperand,
     pub destination_register: u8,
@@ -44,7 +45,7 @@ impl From<u32> for SingleDataTransfer {
     }
 }
 
-
+#[derive(Debug)]
 pub struct SingleDataTransferOperand {
     pub shift: Shift,
     pub rm: u8,

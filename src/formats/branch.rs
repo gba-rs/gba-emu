@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::arithmetic::add;
 use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC};
 use crate::cpu::cpu::ARM_LR;
+use std::fmt;
 
 pub struct Branch {
     pub condition: Condition,
@@ -17,6 +18,27 @@ impl From<u32> for Branch {
             link: ((value & 0x100_0000) >> 24) != 0,
             condition: Condition::from((value & 0xF000_0000) >> 28)
         }
+    }
+}
+
+impl fmt::Debug for Branch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "B");
+        if self.link {
+            write!(f, "L");
+        }
+
+        write!(f, "{:?}", self.condition);
+
+        let mut offset = (self.offset << 2) as u32;
+
+        if ((offset >> 21) & 0x1) != 0 {
+            offset = offset | 0xFFC0_0000;
+        }
+
+        let (value, _) = add(offset, 8);
+
+        write!(f, " #{:X}", value)
     }
 }
 

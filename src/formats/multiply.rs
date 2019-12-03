@@ -3,6 +3,7 @@ use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::CPU;
 
+#[derive(Debug)]
 pub struct Multiply {
     pub condition: Condition,     // Cond
     pub accumulate: bool,         // A

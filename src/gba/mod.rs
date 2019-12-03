@@ -1,11 +1,12 @@
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
-use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom};
+use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_registers::IORegisters};
 
 
 pub struct GBA {
     pub cpu: CPU,
     pub mem_map: MemoryMap,
-    pub game_pack_memory: [GamePackRom; 3]
+    pub game_pack_memory: [GamePackRom; 3],
+    pub io_reg: IORegisters
 }
 
 impl GBA {
@@ -19,7 +20,8 @@ impl GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             mem_map: MemoryMap::new(),
-            game_pack_memory: temp_gamepack
+            game_pack_memory: temp_gamepack,
+            io_reg: IORegisters::new(0)
         };
 
         // setup the PC
@@ -44,6 +46,7 @@ impl GBA {
         temp.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
         temp.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
         temp.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
+        temp.mem_map.register_memory(0x04000000, 0x040003FE, &temp.io_reg.memory);
 
         return temp;
     }

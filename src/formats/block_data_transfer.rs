@@ -2,6 +2,7 @@ use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode};
 
+#[derive(Debug)]
 pub struct BlockDataTransfer {
     pub register_list: Vec<u8>,
     pub base_register: u8,

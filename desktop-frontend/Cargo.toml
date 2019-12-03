@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 gba-emulator = {path = "../"}
+raylib = { git = "https://github.com/deltaphc/raylib-rs", branch = "master" }

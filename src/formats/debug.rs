@@ -2,6 +2,7 @@ use super::common::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
 
+#[derive(Debug)]
 pub struct Debug {
     source_register: u8,
     immidiete: bool,

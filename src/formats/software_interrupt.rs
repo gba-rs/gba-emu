@@ -2,6 +2,7 @@ use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::OperatingMode, cpu::ARM_PC, cpu::ARM_LR};
 
+#[derive(Debug)]
 pub struct SoftwareInterrupt {
     pub comment_field_arm: u32,
     pub comment_field_thumb: u32,

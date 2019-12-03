@@ -59,8 +59,6 @@ impl MemoryMap {
         memory[(index as usize) + 1] = ((value & 0xFF0000) >> 16) as u8;
         memory[(index as usize) + 2] = ((value & 0xFF00) >> 8) as u8;
         memory[(index as usize) + 3] = (value & 0xFF) as u8;
-
-
     }
 
     pub fn write_block(&mut self, address: u32, block: Vec<u8>) {

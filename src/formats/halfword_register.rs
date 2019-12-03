@@ -3,11 +3,13 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::load_store::*;
 
+#[derive(Debug)]
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
     pub offset_register: u8,
 }
 
+#[derive(Debug)]
 pub struct HalfwordImmediateOffset {
     pub halfword_common: HalfwordCommon,
     pub offset_high_nibble: u8,
@@ -17,6 +19,7 @@ pub struct HalfwordImmediateOffset {
 /* A struct that represents the common data between halfword register offset
    and halfword immediate offset
 */
+#[derive(Debug)]
 pub struct HalfwordCommon {
     pub is_pre_indexed: bool,
     pub up_down_bit: bool,
