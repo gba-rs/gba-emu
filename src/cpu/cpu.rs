@@ -197,7 +197,7 @@ impl CPU {
         self.decode(map, instruction.to_be());
     }
 
-    pub fn get_register(&mut self, reg_num: u8) -> u32 {
+    pub fn get_register(&self, reg_num: u8) -> u32 {
         if self.current_instruction_set == InstructionSet::Thumb {
             if reg_num > 10 {
                 panic!("Attempting to get register out of range for Thumb: {}", reg_num);
@@ -223,7 +223,7 @@ impl CPU {
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
-    pub fn get_register_override(&mut self, reg_num: u8, op_mode: OperatingMode) -> u32 {
+    pub fn get_register_override(&self, reg_num: u8, op_mode: OperatingMode) -> u32 {
         if self.current_instruction_set == InstructionSet::Thumb {
             if reg_num > 10 {
                 panic!("Attempting to get register out of range for Thumb: {}", reg_num);

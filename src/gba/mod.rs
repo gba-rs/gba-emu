@@ -10,7 +10,25 @@ pub struct GBA {
 }
 
 impl GBA {
-    pub fn new(pc_address: u32, bios: Vec<u8>, rom: Vec<u8>) -> GBA {
+
+    pub fn new_default() -> GBA {
+        let temp_gamepack = [
+            GamePackRom::new(0),
+            GamePackRom::new(0),
+            GamePackRom::new(0),
+        ];
+
+        let temp: GBA = GBA {
+            cpu: CPU::new(),
+            mem_map: MemoryMap::new(),
+            game_pack_memory: temp_gamepack,
+            io_reg: IORegisters::new(0)
+        };
+
+        return temp;
+    }
+
+    pub fn new(pc_address: u32, bios: &Vec<u8>, rom: &Vec<u8>) -> GBA {
         let temp_gamepack = [
             GamePackRom::new(0),
             GamePackRom::new(0),

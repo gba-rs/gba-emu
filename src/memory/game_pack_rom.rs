@@ -12,10 +12,10 @@ impl GamePackRom {
         }
     }
 
-    pub fn load(&mut self, bios: Vec<u8>) {
+    pub fn load(&mut self, bios: &Vec<u8>) {
         let mut index: usize = 0;
         for byte in bios {
-            self.memory.borrow_mut()[index] = byte;
+            self.memory.borrow_mut()[index] = *byte;
             index += 1;
         }
     }

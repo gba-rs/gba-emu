@@ -54,11 +54,11 @@ impl From<u32> for ShiftType {
 impl fmt::Debug for ShiftType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LogicalLeft => write!(f, "LSL"),
-            LogicalRight => write!(f, "LSR"),
-            ArithmeticRight => write!(f, "ASR"),
-            RotateRight => write!(f, "ROR"),
-            Error => write!(f, "WTF")
+            ShiftType::LogicalLeft => write!(f, "LSL"),
+            ShiftType::LogicalRight => write!(f, "LSR"),
+            ShiftType::ArithmeticRight => write!(f, "ASR"),
+            ShiftType::RotateRight => write!(f, "ROR"),
+            ShiftType::Error => write!(f, "WTF")
         }
     }
 }
