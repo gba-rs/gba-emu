@@ -9,9 +9,8 @@ pub struct GBA {
     pub io_reg: IORegisters
 }
 
-impl GBA {
-
-    pub fn new_default() -> GBA {
+impl Default for GBA {
+    fn default() -> Self {
         let temp_gamepack = [
             GamePackRom::new(0),
             GamePackRom::new(0),
@@ -27,7 +26,9 @@ impl GBA {
 
         return temp;
     }
+}
 
+impl GBA {
     pub fn new(pc_address: u32, bios: &Vec<u8>, rom: &Vec<u8>) -> GBA {
         let temp_gamepack = [
             GamePackRom::new(0),
