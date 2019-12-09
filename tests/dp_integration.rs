@@ -10,8 +10,8 @@ mod tests {
 //    use gba_emulator::formats::data_processing::DataProcessing;
     use gba_emulator::cpu::cpu::{CPU};
     use gba_emulator::cpu::program_status_register::ProgramStatusRegister;
-    use gba_emulator::formats::data_processing::DataProcessing;
-    use gba_emulator::formats::common::Instruction;
+    use gba_emulator::arm_formats::data_processing::DataProcessing;
+    use gba_emulator::arm_formats::common::Instruction;
     use gba_emulator::memory::{memory_map::MemoryMap};
 
 
