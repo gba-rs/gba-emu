@@ -80,10 +80,10 @@ mod tests {
         assert_eq!(move_shifted.rs, 0x7);
         assert_eq!(move_shifted.rd, 0x7);
 
-        assert_eq!(move_shifted_1.op, 0x3);
-        assert_eq!(move_shifted_1.offset, 0x1F);
-        assert_eq!(move_shifted_1.rs, 0x7);
-        assert_eq!(move_shifted_1.rd, 0x7);
+        assert_eq!(move_shifted_1.op, 0x2);
+        assert_eq!(move_shifted_1.offset, 0x16);
+        assert_eq!(move_shifted_1.rs, 5);
+        assert_eq!(move_shifted_1.rd, 2);
     }
 
     #[test]
