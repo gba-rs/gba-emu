@@ -14,6 +14,8 @@ pub const ARM_PC: u8 = 15;
 pub const ARM_LR: u8 = 14;
 pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
+pub const THUMB_SP: u8 = 8;
+pub const THUMB_LR: u8 = 9;
 
 pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
@@ -282,7 +284,6 @@ mod tests {
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        
         cpu.decode(&mut map, 0xE5000000);
     }
 
