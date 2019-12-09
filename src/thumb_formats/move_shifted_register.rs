@@ -2,7 +2,7 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::formats::common::Instruction;
 use crate::operations::shift::{Shift, apply_shift};
-use crate::operations::shift::ShiftType::LogicalLeft;
+use crate::operations::shift::ShiftType::{LogicalLeft, LogicalRight, ArithmeticRight};
 
 pub struct MoveShifted {
     pub op: u8,
@@ -36,8 +36,28 @@ impl Instruction for MoveShifted {
                 let shifted_value = apply_shift(base_value, &shift, cpu);
                 cpu.set_register(self.rd, shifted_value);
             }
-            1 => {}
-            2 => {}
+            1 => {
+                let shift = Shift {
+                    shift_amount: self.offset,
+                    shift_register: self.rs,
+                    shift_type: LogicalRight,
+                    immediate: true,
+                };
+                let base_value = cpu.get_register(self.rs);
+                let shifted_value = apply_shift(base_value, &shift, cpu);
+                cpu.set_register(self.rd, shifted_value);
+            }
+            2 => {
+                let shift = Shift {
+                    shift_amount: self.offset,
+                    shift_register: self.rs,
+                    shift_type: ArithmeticRight,
+                    immediate: true,
+                };
+                let base_value = cpu.get_register(self.rs);
+                let shifted_value = apply_shift(base_value, &shift, cpu);
+                cpu.set_register(self.rd, shifted_value);
+            }
             _ => {
                 panic!("Move Shifted Register failed to execuse: Invalid OP code")
             }
@@ -85,5 +105,47 @@ mod tests {
         assert_eq!(instruction.rs, 2);
         assert_eq!(instruction.rd, 4);
         assert_eq!(cpu.get_register(rd), value << 1);
+    }
+
+    #[test]
+    fn test_execute_op1() {
+        let mut instruction = MoveShifted::from(0x894);
+
+        let rs = 0x02;
+        let rd = 0x04;
+        let value = 0x10;
+
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        cpu.set_register(rs, value);
+
+        instruction.execute(&mut cpu, &mut mem_map);
+
+        assert_eq!(instruction.op, 1);
+        assert_eq!(instruction.offset, 2);
+        assert_eq!(instruction.rs, 2);
+        assert_eq!(instruction.rd, 4);
+        assert_eq!(cpu.get_register(rd), value >> 2);
+    }
+
+    #[test]
+    fn test_execute_op2() {
+        let mut instruction = MoveShifted::from(0x1094);
+
+        let rs = 0x02;
+        let rd = 0x04;
+        let value = 0x100;
+
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        cpu.set_register(rs, value);
+
+        instruction.execute(&mut cpu, &mut mem_map);
+
+        assert_eq!(instruction.op, 2);
+        assert_eq!(instruction.offset, 2);
+        assert_eq!(instruction.rs, 2);
+        assert_eq!(instruction.rd, 4);
+        assert_eq!(cpu.get_register(rd), 0x40);
     }
 }
