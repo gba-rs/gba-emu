@@ -32,7 +32,7 @@ impl From<u32> for MultiplyLong {
 }
 
 impl Instruction for MultiplyLong {
-    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let (rdhi, rdlo, flags) = arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);
@@ -66,6 +66,10 @@ impl Instruction for MultiplyLong {
             cpu.cpsr.flags.carry = flags.carry;
             cpu.cpsr.flags.signed_overflow = flags.signed_overflow;
         }
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 

@@ -2,12 +2,15 @@ use crate::formats::{data_processing::DataProcessing, common::Instruction, commo
 use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
 use crate::formats::{single_data_transfer::SingleDataTransfer};
+use crate::formats::{single_data_swap::SingleDataSwap};
 use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
 use crate::formats::{debug::Debug};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
+use std::borrow::{Borrow, BorrowMut};
+
 
 
 pub const ARM_PC: u8 = 15;
@@ -104,88 +107,51 @@ impl CPU {
         };
     }
 
-    pub fn decode(&mut self, mem_map: &mut MemoryMap, instruction: u32) {
+    pub fn decode(&self, instruction: u32) -> Box<dyn Instruction> {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
-        let format = ARM_INSTRUCTIONS[opcode as usize];
-        let condition = Condition::from((instruction & 0xF000_0000) >> 28);
-        let check_condition = self.check_condition(&condition);
-        println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, format);       
-        if check_condition {
-            match format {
-                InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
-                    let mut format: DataProcessing = DataProcessing::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                InstructionFormat::Multiply => {
-                    let mut format: Multiply = Multiply::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                InstructionFormat::MultiplyLong => {
-                    let mut format: MultiplyLong = MultiplyLong::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                InstructionFormat::SingleDataSwap => {
-                    panic!("Single data swap not implemented");
-                },
-                InstructionFormat::SingleDataTransfer => {
-                    let mut format: SingleDataTransfer = SingleDataTransfer::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                InstructionFormat::BranchAndExchange => {
-                    let mut format: BranchExchange = BranchExchange::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                InstructionFormat::HalfwordDataTransfer => {
-                    if opcode & 0x40 == 0 {
-                        let mut format = HalfwordRegisterOffset::from(instruction);
-                        println!("{:?}", format);
-                        self.last_instruction = format!("{:?}", format);
-                        format.execute(self, mem_map);
-                    } else {
-                        let mut format = HalfwordImmediateOffset::from(instruction);
-                        println!("{:?}", format);
-                        self.last_instruction = format!("{:?}", format);
-                        format.execute(self, mem_map);
-                    }
-                },
-                InstructionFormat::Undefined => {
-                    let mut format = Debug::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                InstructionFormat::BlockDataTransfer => {
-                     let mut format: BlockDataTransfer = BlockDataTransfer::from(instruction);
-                     println!("{:?}", format);
-                     self.last_instruction = format!("{:?}", format);
-                     format.execute(self, mem_map);
-                },
-                InstructionFormat::Branch => {
-                    let mut format: Branch = Branch::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                InstructionFormat::SoftwareInterrupt => {
-                    let mut format: SoftwareInterrupt = SoftwareInterrupt::from(instruction);
-                    println!("{:?}", format);
-                    self.last_instruction = format!("{:?}", format);
-                    format.execute(self, mem_map);
-                },
-                _ => panic!("Got a bad format {:?} = {:X}", format, opcode)
-            }
+        let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
+        // println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, instruction_format);
+        match instruction_format {
+            InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
+                return Box::new(DataProcessing::from(instruction));
+            },
+            InstructionFormat::Multiply => {
+                return Box::new(Multiply::from(instruction));
+            },
+            InstructionFormat::MultiplyLong => {
+                return Box::new(MultiplyLong::from(instruction));
+            },
+            InstructionFormat::SingleDataSwap => {
+                // panic!("Single data swap not implemented");
+                return Box::new(SingleDataSwap::from(instruction));
+            },
+            InstructionFormat::SingleDataTransfer => {
+                return Box::new(SingleDataTransfer::from(instruction));
+            },
+            InstructionFormat::BranchAndExchange => {
+                return Box::new(BranchExchange::from(instruction));
+            },
+            InstructionFormat::HalfwordDataTransfer => {
+                if opcode & 0x40 == 0 {
+                    return Box::new(HalfwordRegisterOffset::from(instruction));
+                } else {
+                    return Box::new(HalfwordImmediateOffset::from(instruction));
+                }
+            },
+            InstructionFormat::Undefined => {
+                return Box::new(Debug::from(instruction));
+            },
+            InstructionFormat::BlockDataTransfer => {
+                    return Box::new(BlockDataTransfer::from(instruction));
+            },
+            InstructionFormat::Branch => {
+                return Box::new(Branch::from(instruction));
+            },
+            InstructionFormat::SoftwareInterrupt => {
+                return Box::new(SoftwareInterrupt::from(instruction));
+            },
+            _ => panic!("Got a bad format {:?} = {:X}", instruction_format, opcode)
         }
-
     }
 
 
@@ -194,7 +160,16 @@ impl CPU {
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
         self.set_register(current_pc, pc_contents + 4);
-        self.decode(map, instruction.to_be());
+
+        let condition = Condition::from((instruction.to_be() & 0xF000_0000) >> 28);
+        let check_condition = self.check_condition(&condition);
+
+        let mut instr = self.decode(instruction.to_be());
+        self.last_instruction = instr.decode();
+
+        if check_condition {
+            (instr.borrow_mut() as &mut dyn Instruction).execute(self, map);
+        }
     }
 
     pub fn get_register(&self, reg_num: u8) -> u32 {
@@ -249,7 +224,7 @@ impl CPU {
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
     }
 
-    pub fn check_condition(&mut self, cond: &Condition) -> bool {
+    pub fn check_condition(&self, cond: &Condition) -> bool {
         match cond {
             Condition::EQ => return self.cpsr.flags.zero,
             Condition::NE => return !self.cpsr.flags.zero,
@@ -306,7 +281,7 @@ mod tests {
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         
-        cpu.decode(&mut map, 0xE5000000);
+        // cpu.decode(&mut map, 0xE5000000);
     }
 
     #[test]
@@ -314,7 +289,7 @@ mod tests {
         let mut map = MemoryMap::new();
         let mut cpu = CPU::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        cpu.decode(&mut map, 0xE0812001);
+        // cpu.decode(&mut map, 0xE0812001);
     }
 
     #[test]

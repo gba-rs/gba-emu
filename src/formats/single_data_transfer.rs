@@ -65,7 +65,7 @@ impl From<u32> for SingleDataTransferOperand {
 }
 
 impl Instruction for SingleDataTransfer {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let address_with_offset;
         let base = cpu.get_register(self.op1_register);
         if !self.offset_is_register {
@@ -86,6 +86,10 @@ impl Instruction for SingleDataTransfer {
             destination: self.destination_register,
         };
         data_transfer_execute(transfer_info, base, address_with_offset, cpu, mem_map);
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 

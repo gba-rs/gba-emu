@@ -17,6 +17,8 @@ body{
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
 }
 
 .flex{
@@ -74,6 +76,27 @@ body{
     max-width: 250px;
 }
 
+.code-block {
+    line-height: 1;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow-x: hidden;
+    background: #eeeeee;
+    padding: 8px;
+    border-radius: 2px;
+}
+
+.disassembly-address {
+    padding-right: 8px;
+}
+
+.disassembly-hex {
+    padding-right: 8px;
+}
+
+.disassembly-selected {
+    background: yellow;
+}
 
 /*Button*/
 .button-flat{
@@ -106,7 +129,7 @@ body{
 }
 
 .row{
-    margin-top: 15px;
+    margin: 4px;
 }
 
 .no-margin{

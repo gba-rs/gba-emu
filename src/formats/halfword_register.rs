@@ -57,12 +57,16 @@ impl From<u32> for HalfwordCommon {
 }
 
 impl Instruction for HalfwordRegisterOffset {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = cpu.get_register(self.offset_register);
         let address_with_offset = apply_offset(base, offset as u8, self.halfword_common.up_down_bit);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 
@@ -76,12 +80,16 @@ impl From<u32> for HalfwordRegisterOffset {
 }
 
 impl Instruction for HalfwordImmediateOffset {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
         let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 

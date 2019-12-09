@@ -32,8 +32,8 @@ impl fmt::Debug for Branch {
 
         let mut offset = (self.offset << 2) as u32;
 
-        if ((offset >> 21) & 0x1) != 0 {
-            offset = offset | 0xFFC0_0000;
+        if ((offset >> 25) & 0x1) != 0 {
+            offset = offset | 0xFC00_0000;
         }
 
         let (value, _) = add(offset, 8);
@@ -43,13 +43,13 @@ impl fmt::Debug for Branch {
 }
 
 impl Instruction for Branch {
-    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
-        let current_pc_value = cpu.get_register(current_pc) + 8; // because pipeline bullshit
+        let current_pc_value = cpu.get_register(current_pc) + 4; // because pipeline bullshit
         let mut offset = (self.offset << 2) as u32;
 
-        if ((offset >> 21) & 0x1) != 0 {
-            offset = offset | 0xFFC0_0000;
+        if ((offset >> 25) & 0x1) != 0 {
+            offset = offset | 0xFC00_0000;
         }
 
         // Setting the link register
@@ -62,5 +62,9 @@ impl Instruction for Branch {
         let (value, _) = add(current_pc_value, offset);
 
         cpu.set_register(current_pc, value);
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }

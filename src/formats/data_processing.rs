@@ -98,7 +98,7 @@ impl fmt::Debug for DataProcessing {
 }
 
 impl DataProcessing {
-    pub fn barrel_shifter(&mut self, cpu: &mut CPU) -> u32 {
+    pub fn barrel_shifter(&self, cpu: &mut CPU) -> u32 {
         let op2: u32;
 
         if self.operand2.immediate {
@@ -112,7 +112,7 @@ impl DataProcessing {
         return op2;
     }
     
-    fn set_flags(&mut self, _cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
+    fn set_flags(&self, _cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
         let carryout: bool = (value >> 32) != 0;
         let op1_sign: bool = (op1 >> 31) != 0;
         let op2_sign: bool = (op2 >> 31) != 0;
@@ -147,7 +147,7 @@ impl From<u32> for DataProcessingOperand {
 }
 
 impl Instruction for DataProcessing {
-    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let op2 = self.barrel_shifter(cpu);
         match self.opcode {
             OpCodes::AND => { //and
@@ -271,6 +271,10 @@ impl Instruction for DataProcessing {
                 panic!("{:?}", self.opcode);
             }
         }
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 

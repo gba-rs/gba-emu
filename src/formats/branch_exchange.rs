@@ -24,7 +24,7 @@ impl fmt::Debug for BranchExchange {
 }
 
 impl Instruction for BranchExchange {
-    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let new_pc = cpu.get_register(self.rn);
         let mode_bit = new_pc & 0x01;
         println!("Mode bit: {:X}", mode_bit);
@@ -38,6 +38,10 @@ impl Instruction for BranchExchange {
             cpu.set_register(THUMB_PC, new_pc);
             // Flush Pipeline
         }
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 

@@ -1,7 +1,9 @@
-use super::{common::Condition};
+use super::{common::Condition, common::Instruction};
+use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::CPU;
 
 #[derive(Debug)]
-struct SingleDataSwap {
+pub struct SingleDataSwap {
     pub source_register: u8,
     pub destination_register: u8,
     pub base_register: u8,
@@ -18,6 +20,15 @@ impl From<u32> for SingleDataSwap {
             byte_word: (value & 0x40_0000 >> 22) != 0,
             condition: Condition::from((value & 0xF000_0000) >> 28)
         };
+    }
+}
+
+impl Instruction for SingleDataSwap {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    }
+
+    fn decode(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 

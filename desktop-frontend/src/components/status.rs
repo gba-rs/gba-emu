@@ -1,7 +1,6 @@
 use yew::prelude::*;
 use yew::{html, Component, ComponentLink, Html, ShouldRender};
 use gba_emulator::gba::GBA;
-use gba_emulator::cpu::cpu::InstructionSet;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -21,13 +20,13 @@ impl Component for Status {
     type Message = Msg;
     type Properties = StatusProp;
 
-    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, _: ComponentLink<Self>) -> Self {
         Status {
             props: props
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, _: Self::Message) -> ShouldRender {
         true
     }
 
