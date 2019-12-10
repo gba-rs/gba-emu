@@ -29,7 +29,7 @@ impl Instruction for SoftwareInterrupt {
         cpu.set_register(ARM_PC, 0x08);
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

@@ -9,6 +9,7 @@ use crate::formats::{debug::Debug};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
+use super::{decode_error::DecodeError};
 use std::borrow::{Borrow, BorrowMut};
 
 
@@ -107,50 +108,49 @@ impl CPU {
         };
     }
 
-    pub fn decode(&self, instruction: u32) -> Box<dyn Instruction> {
+    pub fn decode(&self, instruction: u32) -> Result<Box<dyn Instruction>, DecodeError> {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
-        // println!("Decoding {:X} Cond {:?} = {:?}: {:X} = {:?}", instruction, condition, check_condition, opcode, instruction_format);
         match instruction_format {
             InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
-                return Box::new(DataProcessing::from(instruction));
+                return Ok(Box::new(DataProcessing::from(instruction)));
             },
             InstructionFormat::Multiply => {
-                return Box::new(Multiply::from(instruction));
+                return Ok(Box::new(Multiply::from(instruction)));
             },
             InstructionFormat::MultiplyLong => {
-                return Box::new(MultiplyLong::from(instruction));
+                return Ok(Box::new(MultiplyLong::from(instruction)));
             },
             InstructionFormat::SingleDataSwap => {
                 // panic!("Single data swap not implemented");
-                return Box::new(SingleDataSwap::from(instruction));
+                return Ok(Box::new(SingleDataSwap::from(instruction)));
             },
             InstructionFormat::SingleDataTransfer => {
-                return Box::new(SingleDataTransfer::from(instruction));
+                return Ok(Box::new(SingleDataTransfer::from(instruction)));
             },
             InstructionFormat::BranchAndExchange => {
-                return Box::new(BranchExchange::from(instruction));
+                return Ok(Box::new(BranchExchange::from(instruction)));
             },
             InstructionFormat::HalfwordDataTransfer => {
                 if opcode & 0x40 == 0 {
-                    return Box::new(HalfwordRegisterOffset::from(instruction));
+                    return Ok(Box::new(HalfwordRegisterOffset::from(instruction)));
                 } else {
-                    return Box::new(HalfwordImmediateOffset::from(instruction));
+                    return Ok(Box::new(HalfwordImmediateOffset::from(instruction)));
                 }
             },
-            InstructionFormat::Undefined => {
-                return Box::new(Debug::from(instruction));
-            },
             InstructionFormat::BlockDataTransfer => {
-                    return Box::new(BlockDataTransfer::from(instruction));
+                    return Ok(Box::new(BlockDataTransfer::from(instruction)));
             },
             InstructionFormat::Branch => {
-                return Box::new(Branch::from(instruction));
+                return Ok(Box::new(Branch::from(instruction)));
             },
             InstructionFormat::SoftwareInterrupt => {
-                return Box::new(SoftwareInterrupt::from(instruction));
+                return Ok(Box::new(SoftwareInterrupt::from(instruction)));
             },
-            _ => panic!("Got a bad format {:?} = {:X}", instruction_format, opcode)
+            _ => Err(DecodeError{
+                instruction: instruction,
+                opcode: opcode
+            })
         }
     }
 
@@ -164,11 +164,18 @@ impl CPU {
         let condition = Condition::from((instruction.to_be() & 0xF000_0000) >> 28);
         let check_condition = self.check_condition(&condition);
 
-        let mut instr = self.decode(instruction.to_be());
-        self.last_instruction = instr.decode();
+        let decode_result = self.decode(instruction.to_be());
+        match decode_result {
+            Ok(mut instr) => {
+                self.last_instruction = instr.asm();
 
-        if check_condition {
-            (instr.borrow_mut() as &mut dyn Instruction).execute(self, map);
+                if check_condition {
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(self, map);
+                }
+            },
+            Err(e) => {
+                panic!("{:?}", e);
+            }
         }
     }
 
@@ -275,13 +282,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_decode_unimplemented(){
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         
-        // cpu.decode(&mut map, 0xE5000000);
+        let result = cpu.decode(0x00F0F0F0);
+        match result {
+            Ok(instr) => {
+                println!("{:?}", instr.asm());
+                assert!(false);
+            },
+            Err(e) => {
+                assert!(true);
+            }
+        }
     }
 
     #[test]
@@ -326,14 +341,14 @@ mod tests {
         let _should_fail = cpu.get_register(11);
     }
 
-    #[test]
-    fn test_branch_exchange(){
-        let mut cpu = CPU::new();
-        cpu.set_register(15, 0x02000000);
-        let mut map = MemoryMap::new();
-        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        map.write_u32(0x02000000, 0x11FF2FE1);
-        cpu.fetch(&mut map);
-        assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
-    }
+    // #[test]
+    // fn test_branch_exchange(){
+    //     let mut cpu = CPU::new();
+    //     cpu.set_register(15, 0x02000000);
+    //     let mut map = MemoryMap::new();
+    //     map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
+    //     map.write_u32(0x02000000, 0x11FF2FE1);
+    //     cpu.fetch(&mut map);
+    //     assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
+    // }
 }

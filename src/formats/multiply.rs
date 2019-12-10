@@ -55,7 +55,7 @@ impl Instruction for Multiply {
             }
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

@@ -45,7 +45,7 @@ impl Instruction for BlockDataTransfer {
         }
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

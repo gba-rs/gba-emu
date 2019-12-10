@@ -68,7 +68,7 @@ impl Instruction for MultiplyLong {
         }
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

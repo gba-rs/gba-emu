@@ -18,7 +18,7 @@ mod tests {
         cpu.set_register(current_pc, 0x105C8);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x10588);
+        assert_eq!(reg, 0x10584);
     }
 
     #[test]
@@ -30,7 +30,7 @@ mod tests {
         cpu.set_register(current_pc, 0x10590);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x105a4);
+        assert_eq!(reg, 0x105A0);
     }
 
     #[test]
@@ -42,8 +42,8 @@ mod tests {
         cpu.set_register(current_pc, 0x105C8);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x10588);
-        assert_eq!(cpu.get_register(ARM_LR), 0x105CC);
+        assert_eq!(reg, 0x10584);
+        assert_eq!(cpu.get_register(ARM_LR), 0x105C8);
     }
 
     #[test]
@@ -55,7 +55,7 @@ mod tests {
         cpu.set_register(current_pc, 0x10590);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x105a4);
-        assert_eq!(cpu.get_register(ARM_LR), 0x10594);
+        assert_eq!(reg, 0x105a0);
+        assert_eq!(cpu.get_register(ARM_LR), 0x10590);
     }
 }

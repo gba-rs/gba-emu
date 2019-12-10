@@ -88,7 +88,7 @@ impl Instruction for SingleDataTransfer {
         data_transfer_execute(transfer_info, base, address_with_offset, cpu, mem_map);
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

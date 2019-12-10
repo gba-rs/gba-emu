@@ -15,7 +15,7 @@ mod tests {
         map.write_u32(address_in_memory, value_to_load);
         cpu.set_register(2, address_in_memory);
 
-        cpu.decode(&mut map, 0x14F20004);
+        cpu.decode(0x14F20004).unwrap().execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(0), 0x0F);
     }
@@ -30,7 +30,7 @@ mod tests {
         map.write_u32(address_in_memory, value_to_load);
         cpu.set_register(2, address_in_memory);
 
-        cpu.decode(&mut map, 0x14F20004);
+        cpu.decode(0x14F20004).unwrap().execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(0), 0x77);
     }
@@ -50,7 +50,9 @@ mod tests {
         // original offset register is 8 but a log. shift right of 2 is applied in the instruction
         cpu.set_register(8, offset);
 
-        cpu.decode(&mut map, 0xE7D08128);
+        let instr = cpu.decode(0xE7D08128).unwrap();
+        println!("{:?}", instr.asm());
+        instr.execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(8), 0x0F);
     }

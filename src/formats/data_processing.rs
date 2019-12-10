@@ -273,7 +273,7 @@ impl Instruction for DataProcessing {
         }
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

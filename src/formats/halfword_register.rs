@@ -65,7 +65,7 @@ impl Instruction for HalfwordRegisterOffset {
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }
@@ -88,7 +88,7 @@ impl Instruction for HalfwordImmediateOffset {
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

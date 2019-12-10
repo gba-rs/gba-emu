@@ -39,8 +39,8 @@ impl Component for Cpsr {
 impl Renderable<Cpsr> for Cpsr {
     fn view(&self) -> Html<Self> {
         html! {
-            <div class="card row">
-                <h3>{"Current Program Status Register"}</h3>
+            <div>
+                <h4>{"Current Program Status Register"}</h4>
                 <ul>
                     <li>{format!("Carry: {}", self.props.gba.borrow().cpu.cpsr.flags.carry)}</li>
                     <li>{format!("Negative: {}", self.props.gba.borrow().cpu.cpsr.flags.negative)}</li>

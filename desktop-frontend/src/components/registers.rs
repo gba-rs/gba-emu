@@ -42,22 +42,36 @@ impl Component for Registers {
 impl Renderable<Registers> for Registers {
     fn view(&self) -> Html<Self> {
         html! {
-            <div class="card row">
-                <h3>{"Registers"}</h3>
-                <ul>
-                    {for (0..if self.props.gba.borrow().cpu.current_instruction_set == InstructionSet::Arm { 16 } else { 10 }).map(|val|{
-                        if self.props.hex {
-                            html! {
-                                <li>{format!("R{} = 0x{:X}", val, self.props.gba.borrow().cpu.get_register(val))}</li>
+            <div>
+                <h4>{"Registers"}</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{"Reg"}</th>
+                            <th scope="col">{"Val"}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {for (0..if self.props.gba.borrow().cpu.current_instruction_set == InstructionSet::Arm { 16 } else { 10 }).map(|val|{
+                            if self.props.hex {
+                                html! {
+                                    <tr>
+                                        <td>{format!("{}", val)}</td>
+                                        <td>{format!("0x{:X}", self.props.gba.borrow().cpu.get_register(val))}</td>
+                                    </tr>
+                                }
+                            } else {
+                                html! {
+                                    <tr>
+                                        <td>{format!("{}", val)}</td>
+                                        <td>{format!("{}", self.props.gba.borrow().cpu.get_register(val))}</td>
+                                    </tr>
+                                }
                             }
-                        } else {
-                            html! {
-                                <li>{format!("R{} = {}", val, self.props.gba.borrow().cpu.get_register(val))}</li>
-                            }
-                        }
-                        
-                    })}
-                </ul>
+                            
+                        })}
+                    </tbody>
+                </table>
             </div>
         }
     }

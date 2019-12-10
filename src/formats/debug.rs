@@ -32,7 +32,7 @@ impl Instruction for Debug {
         }
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

@@ -64,7 +64,7 @@ impl Instruction for Branch {
         cpu.set_register(current_pc, value);
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }

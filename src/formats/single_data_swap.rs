@@ -27,7 +27,7 @@ impl Instruction for SingleDataSwap {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
     }
 
-    fn decode(&self) -> String {
+    fn asm(&self) -> String {
         return format!("{:?}", self);
     }
 }
