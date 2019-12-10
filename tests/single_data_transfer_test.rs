@@ -41,7 +41,7 @@ mod tests {
         let mut map = MemoryMap::new();
         let value_to_load = 0xF0;
         let address_in_memory = 0x0200_0000;
-        let offset = 0x8;
+        let offset = 0x8; 
 
 
         map.register_memory(0x0200_0000, 0x0203FFFF, &cpu.wram.memory);

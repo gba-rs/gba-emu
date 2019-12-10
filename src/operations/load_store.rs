@@ -76,11 +76,11 @@ pub fn is_word_aligned(memory_address: u32) -> bool {
 }
 
 pub fn is_word_plus_1_aligned(memory_address: u32) -> bool {
-    return (memory_address & 0x3) == 1; // 1 more than mult. of 4
+    return (memory_address & 0x2) == 0; // 1 more than mult. of 4
 }
 
 pub fn is_halfword_aligned(memory_address: u32) -> bool {
-    return (memory_address & 0x3) == 2; // 2 more than mult. of 4
+    return (memory_address & 0x1) == 0; // 2 more than mult. of 4
 }
 
 pub fn load_to_register(memory_address: u32, register: u8) {}
@@ -127,19 +127,20 @@ pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
     println!("Base value: {:X}", base_value);
     println!("Is word aligned: {}", is_word_aligned(address));
     let data: u8;
-    if is_word_aligned(address) {
-        println!("word aligned");
-        data = ((base_value & 0xFF000000) >> 24) as u8;
-    } else if is_word_plus_1_aligned(address) {
-        println!("word plus 1 aligned");
-        data = ((base_value & 0x00FF0000) >> 16) as u8;
-    } else if is_halfword_aligned(address) {
-        println!("halfword aligned");
-        data = ((base_value & 0x0000FF00) >> 8) as u8;
-    } else { // word + 3 byte aligned (3 more than mult of 4)
-        println!("Else");
-        data = (base_value & 0x000000FF) as u8;
-    }
+    // if is_word_aligned(address) { //0011
+    //     println!("word aligned");
+    //     data = ((base_value & 0xFF000000) >> 24) as u8;
+    // } else if is_word_plus_1_aligned(address) { //0010
+    //     println!("word plus 1 aligned");
+    //     data = ((base_value & 0x00FF0000) >> 16) as u8;
+    // } else if is_halfword_aligned(address) {    //0001
+    //     println!("halfword aligned");
+    //     data = ((base_value & 0x0000FF00) >> 8) as u8;
+    // } else { // word + 3 byte aligned (3 more than mult of 4)
+    //     println!("Else");
+    //     data = (base_value & 0x000000FF) as u8;
+    // }
+    data = (base_value & 0x000000FF) as u8;
 
     println!("data: {:X}", data);
 
