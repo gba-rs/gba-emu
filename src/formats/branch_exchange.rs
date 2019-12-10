@@ -50,12 +50,21 @@ impl Instruction for BranchExchange {
 #[cfg(test)]
 mod tests { 
     use super::*;
+    use crate::cpu::cpu::CPU;
+    use crate::memory::memory_map::MemoryMap;
+    use crate::cpu::cpu::InstructionSet;
 
     #[test]
     fn test_mode(){
         let a: BranchExchange = BranchExchange::from(0xD12F_FF1F); //Final bit is 1
-        // assert_eq!(a.mode_bit, 1);
-        let b: BranchExchange = BranchExchange::from(0xD12F_FF1E); //Final bit is 0
-        // assert_eq!(b.mode_bit, 0);
+        let mut cpu = CPU::new();
+        let mut map = MemoryMap::new();
+        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        cpu.set_register(current_pc, 0);
+        a.execute(&mut cpu,&mut map);
+        assert_eq!(cpu.current_instruction_set, InstructionSet::Arm);
+        cpu.set_register(current_pc, 1);
+        a.execute(&mut cpu,&mut map);
+        assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
     }
 }

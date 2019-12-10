@@ -124,6 +124,8 @@ pub fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 
 * If not signed, the bits 31-8 are 0s
 */
 pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
+    println!("Base value: {:X}", base_value);
+    println!("Is word aligned: {}", is_word_aligned(address));
     let data: u8;
     if is_word_aligned(address) {
         data = ((base_value & 0xFF000000) >> 24) as u8;
@@ -135,6 +137,8 @@ pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
         data = (base_value & 0x000000FF) as u8;
     }
 
+    println!("data: {:X}", data);
+
     let byte_to_load: u32;
 
     if !signed || (data & 0x80) == 0 { // if not signed or sign bit is 0
@@ -143,6 +147,7 @@ pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
         byte_to_load = 0xFFFFFF00 | (data as u32);
     }
 
+    println!("Byte to load: {:X}", byte_to_load);
     return byte_to_load as u32;
 }
 
