@@ -1,12 +1,13 @@
 use yew::prelude::*;
 use yew::{html, Component, ComponentLink, Html, ShouldRender};
-use yew::services::console::ConsoleService;
 use gba_emulator::gba::GBA;
+use yew::services::console::ConsoleService;
 use std::rc::Rc;
 use std::cell::RefCell;
 
 pub struct MemoryViewer {
-    props: MemoryViewerProp
+    props: MemoryViewerProp,
+    hex_string: String
 }
 
 #[derive(Properties)]
@@ -21,7 +22,12 @@ pub struct MemoryViewerProp {
     pub initialized: bool
 }
 
-pub enum Msg {}
+pub enum Msg {
+    StartHexEdit(String),
+    UpdateHexString (String),
+    WriteMemory (u32),
+    Nope
+}
 
 impl Component for MemoryViewer {
     type Message = Msg;
@@ -29,12 +35,36 @@ impl Component for MemoryViewer {
 
     fn create(props: Self::Properties, _: ComponentLink<Self>) -> Self {
         MemoryViewer {
-            props: props
+            props: props,
+            hex_string: "".to_string()
         }
     }
 
-    fn update(&mut self, _: Self::Message) -> ShouldRender {
-        true
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        match msg {
+            Msg::StartHexEdit(init_val) => {
+                self.hex_string = init_val;
+                false
+            },
+            Msg::UpdateHexString(val) => {
+                self.hex_string = val;
+                false
+            },
+            Msg::WriteMemory(address) => {
+                self.hex_string.retain(|c| !c.is_whitespace());
+                match u8::from_str_radix(&self.hex_string, 16) {
+                    Ok(val) => {
+                        ConsoleService::new().log(&format!("Writing value {:X}", val));
+                        self.props.gba.borrow_mut().mem_map.write_u8(address, val);
+                    },
+                    Err(e) => {
+                        ConsoleService::new().log(&format!("Error parsing string:{}", self.hex_string));
+                    }
+                }
+                true
+            },
+            Msg::Nope => {false}
+        }
     }
 
     fn change(&mut self, props: Self::Properties) -> ShouldRender {
@@ -46,9 +76,7 @@ impl Component for MemoryViewer {
 impl Renderable<MemoryViewer> for MemoryViewer {
     fn view(&self) -> Html<Self> {
         if self.props.initialized {
-            ConsoleService::new().log("Attempting to get the bytes");
             let bytes = self.props.gba.borrow().mem_map.read_block(self.props.min, self.props.max - self.props.min);
-            ConsoleService::new().log(&format!("Got the bytes: {}", bytes.len()));
             html! {
                 <div class="code-block">
                     {for (0..bytes.len()).step_by(16).map(|val|{
@@ -58,8 +86,13 @@ impl Renderable<MemoryViewer> for MemoryViewer {
                                 {for (0..16).map(|offset|{
                                     let index = val + offset;
                                     if index < bytes.len() {
+                                        let byte = bytes[val + offset];
+                                        let address = self.props.min + val as u32 + offset as u32;
                                         html! {
-                                            <span>{format!(" {:02X}", bytes[val + offset])}</span>
+                                            <input type="text" class="hex-edit hex-edit-byte" value={format!(" {:02X}", byte)} 
+                                            onclick=|_|{ Msg::StartHexEdit(format!("{:X}", byte)) }
+                                            oninput=|e|{ Msg::UpdateHexString(e.value) } 
+                                            onkeypress=|e|{ if e.key() == "Enter" { Msg::WriteMemory(address) } else { Msg::Nope } }/>
                                         }
                                     } else {
                                         html! {

@@ -57,6 +57,16 @@ body{
     padding: 4px !important;
 }
 
+.hex-edit {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.hex-edit-byte {
+    width: 2em;
+}
+
 .code-block {
     line-height: 1;
     font-family: monospace;

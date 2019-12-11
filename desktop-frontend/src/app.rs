@@ -140,7 +140,7 @@ impl Component for App {
             Msg::UpdateRange(range_to_update) => {
                 match range_to_update {
                     RangeUpdate::MemoryViewerMin | RangeUpdate::MemoryViewerMax => {
-                        let result = self.mem_max_str.parse::<u32>();
+                        let result = u32::from_str_radix(&self.mem_max_str, 16);//self.mem_max_str.parse::<u32>();
                         match result {
                             Ok(val) => {
                                 self.mem_max = val;
@@ -148,7 +148,7 @@ impl Component for App {
                             Err(e) => {}
                         }
 
-                        let result = self.mem_min_str.parse::<u32>();
+                        let result = u32::from_str_radix(&self.mem_min_str, 16);
                         match result {
                             Ok(val) => {
                                 self.mem_min = val;
@@ -157,7 +157,7 @@ impl Component for App {
                         }
                     },
                     RangeUpdate::DisassemblyMin | RangeUpdate::DisassemblyMax => {
-                        let result = self.dis_max_str.parse::<u32>();
+                        let result = u32::from_str_radix(&self.dis_max_str, 16);
                         match result {
                             Ok(val) => {
                                 self.dis_max = val;
@@ -165,7 +165,7 @@ impl Component for App {
                             Err(e) => {}
                         }
 
-                        let result = self.dis_min_str.parse::<u32>();
+                        let result = u32::from_str_radix(&self.dis_min_str, 16);
                         match result {
                             Ok(val) => {
                                 self.dis_min = val;
