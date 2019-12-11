@@ -44,7 +44,7 @@ impl Renderable<Registers> for Registers {
         html! {
             <div>
                 <h4>{"Registers"}</h4>
-                <table class="table">
+                <table class="table register-table">
                     <thead>
                         <tr>
                             <th scope="col">{"Reg"}</th>
@@ -57,7 +57,7 @@ impl Renderable<Registers> for Registers {
                                 html! {
                                     <tr>
                                         <td>{format!("{}", val)}</td>
-                                        <td>{format!("0x{:X}", self.props.gba.borrow().cpu.get_register(val))}</td>
+                                        <td>{format!("0x{:08X}", self.props.gba.borrow().cpu.get_register(val))}</td>
                                     </tr>
                                 }
                             } else {

@@ -25,7 +25,7 @@ pub struct MemoryBlock {
 }
 
 pub struct MemoryMap {
-    memory_mapping: Vec<MemoryBlock>
+    pub memory_mapping: Vec<MemoryBlock>
 }
 
 impl MemoryMap {
@@ -73,7 +73,15 @@ impl MemoryMap {
         }
     }
 
-    pub fn read_u32(&mut self, address: u32) -> u32 {
+    pub fn read_block(&self, address: u32, bytes: u32) -> Vec<u8> {
+        let mut temp: Vec<u8> = vec![];
+        for i in address..(address + bytes) {
+            temp.push(self.read_u8(i));
+        }
+        return temp;
+    }
+
+    pub fn read_u32(&self, address: u32) -> u32 {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let mut result: u32 = 0;
@@ -84,7 +92,7 @@ impl MemoryMap {
         return result;
     }
 
-    pub fn read_u16(&mut self, address: u32) -> u16 {
+    pub fn read_u16(&self, address: u32) -> u16 {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let memory = mem.borrow_mut();
@@ -92,7 +100,7 @@ impl MemoryMap {
         return result;
     }
 
-    pub fn read_u8(&mut self, address: u32) -> u8 {
+    pub fn read_u8(&self, address: u32) -> u8 {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         return mem.borrow_mut()[index as usize];
@@ -105,7 +113,7 @@ impl MemoryMap {
         });
     }
 
-    fn get_memory(&mut self, address: u32) -> (u32, u32, &RefCell<Vec<u8>>) {
+    fn get_memory(&self, address: u32) -> (u32, u32, &RefCell<Vec<u8>>) {
         for mem_block in self.memory_mapping.iter() {
             if mem_block.range.contains(address) {
                 return (mem_block.range.lower, mem_block.range.higher, &mem_block.memory);
