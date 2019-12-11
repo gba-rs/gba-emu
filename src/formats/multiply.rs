@@ -3,6 +3,7 @@ use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::CPU;
 
+#[derive(Debug)]
 pub struct Multiply {
     pub condition: Condition,     // Cond
     pub accumulate: bool,         // A
@@ -29,7 +30,7 @@ impl From<u32> for Multiply {
 }
 
 impl Instruction for Multiply {
-    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
             if self.accumulate { // MLA
                 let (value, flags) = arithmetic::mla(
                         cpu.get_register(self.op1_register),
@@ -52,6 +53,10 @@ impl Instruction for Multiply {
                     cpu.cpsr.flags.carry = flags.carry;
                 }
             }
+    }
+
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 
