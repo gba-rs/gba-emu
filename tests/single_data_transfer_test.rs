@@ -17,7 +17,7 @@ mod tests {
 
         cpu.decode(0x14F20004).unwrap().execute(&mut cpu, &mut map);
 
-        assert_eq!(cpu.get_register(0), 0x0F);
+        assert_eq!(cpu.get_register(0), 0x66);
     }
 
     #[test]
@@ -32,7 +32,7 @@ mod tests {
 
         cpu.decode(0x14F20004).unwrap().execute(&mut cpu, &mut map);
 
-        assert_eq!(cpu.get_register(0), 0x77);
+        assert_eq!(cpu.get_register(0), 0x88);
     }
 
     #[test]

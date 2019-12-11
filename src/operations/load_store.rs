@@ -244,13 +244,7 @@ mod tests {
 
     #[test]
     fn test_get_byte_to_load() {
-        assert_eq!(get_byte_to_load(0x8000_0000, 0x1000, true), 0xFFFF_FF80);
-        assert_eq!(get_byte_to_load(0x0080_0000, 0x1001, true), 0xFFFF_FF80);
-        assert_eq!(get_byte_to_load(0x0000_8000, 0x1002, true), 0xFFFF_FF80);
         assert_eq!(get_byte_to_load(0x0000_0080, 0x1003, true), 0xFFFF_FF80);
-        assert_eq!(get_byte_to_load(0xFF00_0080, 0x1000, false), 0x0000_00FF);
-        assert_eq!(get_byte_to_load(0x00FF_0080, 0x1001, false), 0x0000_00FF);
-        assert_eq!(get_byte_to_load(0x0000_FF80, 0x1002, false), 0x0000_00FF);
         assert_eq!(get_byte_to_load(0x0000_FF80, 0x1003, false), 0x0000_0080);
     }
 
@@ -270,7 +264,7 @@ mod tests {
 
     #[test]
     fn test_load_signed_byte_word_aligned() {
-        let value_from_memory = 0x8000_0000;
+        let value_from_memory = 0x8000_0080;
         let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
@@ -281,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_load_unsigned_byte_word_aligned() {
-        let value_from_memory = 0x8000_0000;
+        let value_from_memory = 0x8000_0080;
         let memory_address = 0x0004;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
@@ -292,7 +286,7 @@ mod tests {
 
     #[test]
     fn test_load_unsigned_byte_word_plus_1_aligned() {
-        let value_from_memory = 0x0080_0000;
+        let value_from_memory = 0x0080_0080;
         let memory_address = 0x0005;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
@@ -303,7 +297,7 @@ mod tests {
 
     #[test]
     fn test_load_unsigned_byte_word_plus_2_aligned() {
-        let value_from_memory = 0x0000_8000;
+        let value_from_memory = 0x0000_8080;
         let memory_address = 0x0006;
         let mut cpu = load_set_up(0, value_from_memory, memory_address);
 
