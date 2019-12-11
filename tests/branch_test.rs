@@ -11,7 +11,7 @@ mod tests {
 
     #[test]
     fn check_cpu_branch_backward() {
-        let mut a: Branch = Branch::from(0xEAFFFFEE);
+        let a: Branch = Branch::from(0xEAFFFFEE);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
@@ -23,7 +23,7 @@ mod tests {
 
     #[test]
     fn check_cpu_branch_forward() {
-        let mut a: Branch = Branch::from(0xEA000003);
+        let a: Branch = Branch::from(0xEA000003);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn check_cpu_branch_and_link_backward() {
-        let mut a: Branch = Branch::from(0xEBFFFFEE);
+        let a: Branch = Branch::from(0xEBFFFFEE);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn check_cpu_branch_and_link_forward() {
-        let mut a: Branch = Branch::from(0xEB000003);
+        let a: Branch = Branch::from(0xEB000003);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };

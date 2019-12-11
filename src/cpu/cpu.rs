@@ -5,12 +5,11 @@ use crate::formats::{single_data_transfer::SingleDataTransfer};
 use crate::formats::{single_data_swap::SingleDataSwap};
 use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::formats::{block_data_transfer::BlockDataTransfer};
-use crate::formats::{debug::Debug};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::{BorrowMut};
 
 
 
@@ -283,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_decode_unimplemented(){
-        let mut cpu = CPU::new();
+        let cpu = CPU::new();
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         
@@ -293,7 +292,7 @@ mod tests {
                 println!("{:?}", instr.asm());
                 assert!(false);
             },
-            Err(e) => {
+            Err(_) => {
                 assert!(true);
             }
         }
@@ -302,7 +301,7 @@ mod tests {
     #[test]
     fn test_decode(){
         let mut map = MemoryMap::new();
-        let mut cpu = CPU::new();
+        let cpu = CPU::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         // cpu.decode(&mut map, 0xE0812001);
     }
