@@ -37,7 +37,11 @@ impl Instruction for LoadStoreHalfword {
     }
 
     fn asm(&self) -> String {
-        unimplemented!()
+        let instruction = format!("r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.immediate_offset);
+        if self.load {
+            return format!("LDRH {}", instruction);
+        }
+        return format!("STRH {}", instruction);
     }
 }
 
@@ -82,7 +86,7 @@ mod tests {
         load_store_halfword.execute(&mut cpu, &mut mem_map);
 
         assert_eq!(load_store_halfword.load , false);
-        assert_eq!(load_store_halfword.immediate_offset, expected_offset);
+        assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
@@ -105,10 +109,19 @@ mod tests {
         load_store_halfword.execute(&mut cpu, &mut mem_map);
 
         assert_eq!(load_store_halfword.load , true);
-        assert_eq!(load_store_halfword.immediate_offset, expected_offset);
+        assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
         assert_eq!(mem_map.read_u16(0x0008 + expected_offset), 22);
+    }
+
+    #[test]
+    fn test_asm() {
+        let load_halfword = LoadStoreHalfword::from(0x8C14);
+        let store_halfword = LoadStoreHalfword::from(0x8414);
+
+        assert_eq!(load_halfword.asm(), "LDRH r4, [r2, #0x10]");
+        assert_eq!(store_halfword.asm(), "STRH r4, [r2, #0x10]");
     }
 }
