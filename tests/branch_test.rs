@@ -11,51 +11,51 @@ mod tests {
 
     #[test]
     fn check_cpu_branch_backward() {
-        let mut a: Branch = Branch::from(0xEAFFFFEE);
+        let a: Branch = Branch::from(0xEAFFFFEE);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 0x105C8);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x10588);
+        assert_eq!(reg, 0x10584);
     }
 
     #[test]
     fn check_cpu_branch_forward() {
-        let mut a: Branch = Branch::from(0xEA000003);
+        let a: Branch = Branch::from(0xEA000003);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 0x10590);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x105a4);
+        assert_eq!(reg, 0x105A0);
     }
 
     #[test]
     fn check_cpu_branch_and_link_backward() {
-        let mut a: Branch = Branch::from(0xEBFFFFEE);
+        let a: Branch = Branch::from(0xEBFFFFEE);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 0x105C8);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x10588);
-        assert_eq!(cpu.get_register(ARM_LR), 0x105CC);
+        assert_eq!(reg, 0x10584);
+        assert_eq!(cpu.get_register(ARM_LR), 0x105C8);
     }
 
     #[test]
     fn check_cpu_branch_and_link_forward() {
-        let mut a: Branch = Branch::from(0xEB000003);
+        let a: Branch = Branch::from(0xEB000003);
         let mut cpu = CPU::new();
         let mut map = MemoryMap::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 0x10590);
         a.execute(&mut cpu,&mut map);
         let reg = cpu.get_register(current_pc);
-        assert_eq!(reg, 0x105a4);
-        assert_eq!(cpu.get_register(ARM_LR), 0x10594);
+        assert_eq!(reg, 0x105a0);
+        assert_eq!(cpu.get_register(ARM_LR), 0x10590);
     }
 }

@@ -1,0 +1,143 @@
+/*
+    Author: Eric Nowac <nowace@msoe.edu>
+*/
+html{
+    background: #e0e0e0;
+    font-family: sans-serif;
+    margin: 0;
+}
+
+body{
+    margin: 0;
+    padding: 0;
+}
+
+.main{
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.flex{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/*Nav bar*/
+.navbar{
+    overflow: hidden;
+    background-color: #333;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.navbar a{
+    float: left;
+    display: block;
+    color: #f2f2f2;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.navbar a:hover{
+    color: #cfcfcf;
+}
+
+.control button{
+    margin: 4px;
+}
+
+.table td {
+    padding: 2px;
+}
+
+.code-block {
+    line-height: 1;
+    font-family: monospace;
+    overflow: scroll;
+    max-height: 800px;
+    white-space: nowrap;
+    background: #eeeeee;
+    padding: 8px;
+    border-radius: 2px;
+}
+
+.disassembly-address {
+    padding-right: 8px;
+}
+
+.disassembly-hex {
+    padding-right: 8px;
+}
+
+.disassembly-selected {
+    background: yellow;
+}
+
+/*Utilities*/
+.text-center{
+    text-align: center;
+}
+
+.text-right{
+    text-align: right;
+}
+
+.text-left{
+    text-align: left;
+}
+
+.row{
+    margin: 4px;
+}
+
+.no-margin{
+    margin: 0px;
+}
+
+/*Colors*/
+.yellow{
+    background-color: #FFEB3B;
+}
+
+.yellow-text{
+    color: #FFEB3B;
+}
+
+.light-blue{
+    background-color: #03A9F4;
+}
+
+.light-blue-text{
+    color: #03A9F4;
+}
+
+.red{
+    background-color: #F44336;
+}
+
+.red-text{
+    color: #F44336;
+}
+
+.orange{
+    background-color: #FF9800;
+}
+
+.orange-text{
+    background-color: #FF9800;
+}
+
+.grey{
+    background-color: #9e9e9e;
+}
+
+.grey-text{
+    background-color: #9e9e9e;
+}

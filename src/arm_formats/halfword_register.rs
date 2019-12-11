@@ -3,11 +3,13 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::load_store::*;
 
+#[derive(Debug)]
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
     pub offset_register: u8,
 }
 
+#[derive(Debug)]
 pub struct HalfwordImmediateOffset {
     pub halfword_common: HalfwordCommon,
     pub offset_high_nibble: u8,
@@ -17,6 +19,7 @@ pub struct HalfwordImmediateOffset {
 /* A struct that represents the common data between halfword register offset
    and halfword immediate offset
 */
+#[derive(Debug)]
 pub struct HalfwordCommon {
     pub is_pre_indexed: bool,
     pub up_down_bit: bool,
@@ -54,12 +57,16 @@ impl From<u32> for HalfwordCommon {
 }
 
 impl Instruction for HalfwordRegisterOffset {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = cpu.get_register(self.offset_register);
         let address_with_offset = apply_offset(base, offset as u8, self.halfword_common.up_down_bit);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
+    }
+
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 
@@ -73,12 +80,16 @@ impl From<u32> for HalfwordRegisterOffset {
 }
 
 impl Instruction for HalfwordImmediateOffset {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
         let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
+    }
+
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 
