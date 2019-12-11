@@ -16,38 +16,38 @@ InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, Inst
 // 0000 0010 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0000 0011 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::Multiply, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0000 0100 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0000 0101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0000 0110 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0000 0111 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0000 1000 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -64,14 +64,14 @@ InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, Inst
 // 0000 1010 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0000 1011 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0000 1100 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -88,109 +88,109 @@ InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, Inst
 // 0000 1110 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0000 1111 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::MultiplyLong, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::Undefined,
 
 // 0001 0000 0000
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 InstructionFormat::Multiply, InstructionFormat::SingleDataSwap, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
 
 // 0001 0001 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 0010 0000
-InstructionFormat::DataProcessing, InstructionFormat::BranchAndExchange, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Multiply, InstructionFormat::Undefiend, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::BranchAndExchange, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Multiply, InstructionFormat::Undefined, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
 
 // 0001 0011 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 0100 0000
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 InstructionFormat::MultiplyLong, InstructionFormat::SingleDataSwap, InstructionFormat::MultiplyLong, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::MultiplyLong, InstructionFormat::SingleDataTransfer, InstructionFormat::MultiplyLong, InstructionFormat::SingleDataTransfer,
 
 // 0001 0101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 0110 0000
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Multiply, InstructionFormat::Undefiend, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Multiply, InstructionFormat::Undefined, InstructionFormat::Multiply, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer, InstructionFormat::Multiply, InstructionFormat::SingleDataTransfer,
 
 // 0001 0111 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1000 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1001 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1010 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1011 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1100 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0001 1110 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::SingleDataTransfer,
 
 // 0001 1111 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
-InstructionFormat::DataProcessing, InstructionFormat::Undefiend, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
+InstructionFormat::DataProcessing, InstructionFormat::Undefined, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer, InstructionFormat::DataProcessing, InstructionFormat::HalfwordDataTransfer,
 
 // 0010 0000 0000
@@ -290,10 +290,10 @@ InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, Instructio
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 
 // 0011 0000 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 0011 0001 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -314,10 +314,10 @@ InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, Instructio
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
 
 // 0011 0100 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 0011 0101 0000
 InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing, InstructionFormat::DataProcessing,
@@ -578,196 +578,196 @@ InstructionFormat::SingleDataTransfer, InstructionFormat::SingleDataTransfer, In
 InstructionFormat::SingleDataTransfer, InstructionFormat::SingleDataTransfer, InstructionFormat::SingleDataTransfer, InstructionFormat::SingleDataTransfer,
 
 // 0110 0000 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 0001 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 0010 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 0011 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 0100 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 0101 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 0110 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 0111 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1000 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1001 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1010 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1011 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1100 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1101 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1110 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0110 1111 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0000 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0001 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0010 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0011 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0100 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0101 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0110 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 0111 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1000 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1001 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1010 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1011 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1100 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1101 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1110 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 0111 1111 0000
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
-InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefiend,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
+InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined, InstructionFormat::SingleDataTransfer, InstructionFormat::Undefined,
 
 // 1000 0000 0000
 InstructionFormat::BlockDataTransfer, InstructionFormat::BlockDataTransfer, InstructionFormat::BlockDataTransfer, InstructionFormat::BlockDataTransfer,
@@ -1154,292 +1154,292 @@ InstructionFormat::Branch, InstructionFormat::Branch, InstructionFormat::Branch,
 InstructionFormat::Branch, InstructionFormat::Branch, InstructionFormat::Branch, InstructionFormat::Branch,
 
 // 1100 0000 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 0001 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 0010 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 0011 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 0100 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 0101 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 0110 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 0111 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1000 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1001 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1010 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1011 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1100 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1101 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1110 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1100 1111 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0000 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0001 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0010 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0011 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0100 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0101 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0110 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 0111 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1000 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1001 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1010 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1011 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1100 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1101 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1110 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1101 1111 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0000 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0001 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0010 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0011 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0100 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0101 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0110 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 0111 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1000 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1001 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1010 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1011 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1100 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1101 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1110 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1110 1111 0000
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
-InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend, InstructionFormat::Undefiend,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
+InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined, InstructionFormat::Undefined,
 
 // 1111 0000 0000
 InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt, InstructionFormat::SoftwareInterrupt,

@@ -1,4 +1,5 @@
 use crate::cpu::cpu::CPU;
+use std::fmt;
 
 pub struct Shift {
     pub shift_type: ShiftType,
@@ -7,15 +8,25 @@ pub struct Shift {
     pub immediate: bool,
 }
 
-
 impl From<u32> for Shift {
     fn from(value: u32) -> Shift {
         return Shift {
             shift_type: ShiftType::from((value & 0x60) >> 5),
             shift_amount: ((value & 0xF80) >> 7) as u8,
             shift_register: ((value & 0xF00) >> 8) as u8,
-            immediate: ((value & 0x10) >> 5) != 0,
+            immediate: ((value & 0x10) >> 4) == 0,
         };
+    }
+}
+
+impl fmt::Debug for Shift {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?} ", self.shift_type);
+        if self.immediate {
+            write!(f, "{:X}", self.shift_amount)
+        } else {
+            write!(f, "r{}", self.shift_register)
+        }
     }
 }
 
@@ -40,13 +51,25 @@ impl From<u32> for ShiftType {
     }
 }
 
+impl fmt::Debug for ShiftType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ShiftType::LogicalLeft => write!(f, "LSL"),
+            ShiftType::LogicalRight => write!(f, "LSR"),
+            ShiftType::ArithmeticRight => write!(f, "ASR"),
+            ShiftType::RotateRight => write!(f, "ROR"),
+            ShiftType::Error => write!(f, "WTF")
+        }
+    }
+}
+
 pub fn apply_shift(base_value: u32, shift: &Shift, cpu: &mut CPU) -> u32 {
     let shifted_value;
     let shift_amount;
     if shift.immediate {
         shift_amount = shift.shift_amount as u32;
     } else {
-        shift_amount = cpu.get_register(shift.shift_register);
+        shift_amount = cpu.get_register(shift.shift_register) & 0xFF;
     }
     match shift.shift_type {
         ShiftType::LogicalLeft => {

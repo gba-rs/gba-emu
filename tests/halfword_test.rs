@@ -15,7 +15,7 @@ mod tests {
         map.write_u32(address_in_memory, value_to_load);
         cpu.set_register(4, address_in_memory);
 
-        cpu.decode(&mut map, 0x101421BF);
+        cpu.decode(0x101421BF).unwrap().execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(2), 0x0F0F);
     }
@@ -30,7 +30,7 @@ mod tests {
         map.write_u32(address_in_memory, value_to_load);
         cpu.set_register(4, address_in_memory);
 
-        cpu.decode(&mut map, 0x101421BF);
+        cpu.decode(0x101421BF).unwrap().execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(2), 0x8888);
     }
@@ -47,7 +47,7 @@ mod tests {
         cpu.set_register(4, address_in_memory);
         cpu.set_register(15, offset);
 
-        cpu.decode(&mut map, 0x1194_21BF);
+        cpu.decode(0x1194_21BF).unwrap().execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(2), 0xFFFF);
     }
@@ -64,7 +64,7 @@ mod tests {
         cpu.set_register(4, address_in_memory);
         cpu.set_register(15, offset);
 
-        cpu.decode(&mut map, 0x1194_21BF);
+        cpu.decode(0x1194_21BF).unwrap().execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(2), 0x8888);
     }
@@ -80,7 +80,7 @@ mod tests {
         cpu.set_register(4, address_in_memory);
         cpu.set_register(15, offset);
 
-        cpu.decode(&mut map, 0x1114_21BF);
+        cpu.decode(0x1114_21BF).unwrap().execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(2), 0x8888);
     }

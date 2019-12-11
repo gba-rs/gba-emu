@@ -2,6 +2,7 @@ use super::common::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
 
+#[derive(Debug)]
 pub struct Debug {
     source_register: u8,
     immidiete: bool,
@@ -19,7 +20,7 @@ impl From<u32> for Debug {
 }
 
 impl Instruction for Debug {
-    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         if self.immidiete {
             if self.hex {
                 println!("{:X}", cpu.get_register(self.source_register));
@@ -29,5 +30,9 @@ impl Instruction for Debug {
         } else {
             // TODO implement null terminated strings here
         }
+    }
+
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
     }
 }

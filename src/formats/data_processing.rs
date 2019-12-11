@@ -3,7 +3,7 @@ use crate::{operations::arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::shift::{Shift, apply_shift};
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
-
+use std::fmt;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {
@@ -50,12 +50,11 @@ impl From<u8> for OpCodes {
     }
 }
 
-
 pub struct DataProcessing {
     pub op1_register: u8,
     pub destination_register: u8,
     pub operand2: DataProcessingOperand,
-    pub opcode: u8,
+    pub opcode: OpCodes,
     pub set_condition: bool,
     pub immediate_operand: bool,
     pub condition: Condition
@@ -67,7 +66,7 @@ impl From<u32> for DataProcessing {
             op1_register: ((value & 0xF_0000) >> 16) as u8,
             destination_register: ((value & 0xF000) >> 12) as u8,
             operand2: DataProcessingOperand::from(value),
-            opcode: ((value & 0x1E0_0000) >> 21) as u8,
+            opcode: OpCodes::from(((value & 0x1E0_0000) >> 21) as u8),
             set_condition: ((value & 0x10_0000) >> 20) != 0,
             immediate_operand: ((value & 0x200_0000) >> 25) != 0,
             condition: Condition::from((value & 0xF000_0000) >> 28)
@@ -75,8 +74,31 @@ impl From<u32> for DataProcessing {
     }
 }
 
+impl fmt::Debug for DataProcessing {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.set_condition {
+            write!(f, "{:?}S{:?}", self.opcode, self.condition);
+        } else {
+            write!(f, "{:?}{:?}", self.opcode, self.condition);
+        }
+        
+        write!(f, " r{}, ", self.destination_register);
+        if !(self.opcode == OpCodes::MOV || self.opcode == OpCodes::MVN) {
+            write!(f, "r{}, ", self.op1_register);
+        }
+
+        if self.operand2.immediate {
+            let op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
+            write!(f, "#{:X}", op2)
+        } else {
+            write!(f, "r{}, ", self.operand2.rm);
+            write!(f, "{:?} ", self.operand2.shift)
+        }
+    }
+}
+
 impl DataProcessing {
-    pub fn barrel_shifter(&mut self, cpu: &mut CPU) -> u32 {
+    pub fn barrel_shifter(&self, cpu: &mut CPU) -> u32 {
         let op2: u32;
 
         if self.operand2.immediate {
@@ -90,7 +112,7 @@ impl DataProcessing {
         return op2;
     }
     
-    fn set_flags(&mut self, _cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
+    fn set_flags(&self, _cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
         let carryout: bool = (value >> 32) != 0;
         let op1_sign: bool = (op1 >> 31) != 0;
         let op2_sign: bool = (op2 >> 31) != 0;
@@ -125,9 +147,9 @@ impl From<u32> for DataProcessingOperand {
 }
 
 impl Instruction for DataProcessing {
-    fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let op2 = self.barrel_shifter(cpu);
-        match OpCodes::from(self.opcode) {
+        match self.opcode {
             OpCodes::AND => { //and
                 let value = cpu.get_register(self.op1_register) & op2;
                 cpu.set_register(self.destination_register, value);
@@ -246,9 +268,13 @@ impl Instruction for DataProcessing {
                 cpu.set_register(self.destination_register,!op2);
             },
             _ => {
-                panic!("{:X}", self.opcode);
+                panic!("{:?}", self.opcode);
             }
         }
+    }
+
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 
@@ -271,7 +297,7 @@ mod tests {
         let a: DataProcessing = DataProcessing::from(0xFFFFFFFF);
         assert_eq!(a.destination_register, 0b1111);
         assert_eq!(a.op1_register, 0b1111);
-        assert_eq!(a.opcode, 0b1111);
+        assert_eq!(a.opcode, OpCodes::MVN);
         assert_eq!(a.condition, Condition::Error);
         assert_eq!(a.immediate_operand, true);
         assert_eq!(a.set_condition, true);

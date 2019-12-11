@@ -2,6 +2,7 @@ use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode};
 
+#[derive(Debug)]
 pub struct BlockDataTransfer {
     pub register_list: Vec<u8>,
     pub base_register: u8,
@@ -36,20 +37,25 @@ impl From<u32> for BlockDataTransfer {
 }
 
 impl Instruction for BlockDataTransfer {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         if self.load {
             self.load_data(cpu, mem_map);
         } else {
             self.save_data(cpu, mem_map);
         }
     }
+
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
+    }
 }
 
 impl BlockDataTransfer {
-    fn load_data(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn load_data(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let mut current_address: i64 = cpu.get_register(self.base_register) as i64;
         current_address = self.get_start_address(current_address);
         let mut current_operating_mode = cpu.operating_mode;
+        let mut write_back = self.write_back;
 
         // Handle the psr
         if self.psr_force_user {
@@ -58,7 +64,7 @@ impl BlockDataTransfer {
             } else {
                 // bank transfer
                 current_operating_mode = OperatingMode::User;
-                self.write_back = false;
+                write_back = false;
             }
         }
 
@@ -67,22 +73,22 @@ impl BlockDataTransfer {
             current_address += 4;
         }
 
-        if self.write_back && !self.register_list.contains(&self.base_register) {
+        if write_back && !self.register_list.contains(&self.base_register) {
             cpu.set_register_override(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
         }
     }
 
-    fn save_data(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn save_data(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let mut current_address: i64 = cpu.get_register(self.base_register) as i64;
         current_address = self.get_start_address(current_address);
         let mut current_operating_mode = cpu.operating_mode;
-
+        let mut write_back = self.write_back;
 
         // Handle the psr
         if self.psr_force_user {
             // bank transfer
             current_operating_mode = OperatingMode::User;
-            self.write_back = false;
+            write_back = false;
         }
 
         for reg_num in self.register_list.iter() {
@@ -91,12 +97,12 @@ impl BlockDataTransfer {
             current_address += 4;
         }
 
-        if self.write_back {
+        if write_back {
             cpu.set_register_override(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
         }
     }
 
-    fn get_start_address(&mut self, current_address: i64) -> i64 {
+    fn get_start_address(&self, current_address: i64) -> i64 {
         if self.pre_indexing && self.up {
             return current_address + 4
         } else if !self.pre_indexing && self.up {
@@ -110,7 +116,7 @@ impl BlockDataTransfer {
         }
     }
 
-    fn get_end_address(&mut self, current_address: i64) -> i64 {
+    fn get_end_address(&self, current_address: i64) -> i64 {
         if self.pre_indexing && self.up {
             return current_address - 4
         } else if !self.pre_indexing && self.up {
