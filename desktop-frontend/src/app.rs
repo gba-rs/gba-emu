@@ -266,12 +266,24 @@ impl Renderable<App> for App {
                         <div class="col-2">
                             <Registers hex={self.hex} gba={self.gba.clone()}/>
                         </div>
-                        
-                        {self.view_ranges()}
                     
-                        <div class="col-5">
-                            {self.view_disassembly()}
-                            <MemoryViewer gba={self.gba.clone()} min={self.mem_min} max={self.mem_max} initialized={self.initialized}/>
+                        <div class="col-7">
+                            <div class="row">
+                                <div class="col-3">
+                                    {self.view_range_dis()}
+                                </div>
+                                <div class="col-9">
+                                    {self.view_disassembly()}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-3">
+                                    {self.view_range_mem()}
+                                </div>
+                                <div class="col-9">
+                                    <MemoryViewer gba={self.gba.clone()} min={self.mem_min} max={self.mem_max} initialized={self.initialized}/>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -330,10 +342,9 @@ impl App {
         }
     }
 
-    pub fn view_ranges(&self) -> Html<Self> {
+    pub fn view_range_dis(&self) -> Html<Self> {
         html! {
-            <div class="col-2">
-                <h4>{"Ranges"}</h4>
+            <>
                 <h5>{"Disassembly"}</h5>
                 <div class="input-group input-group-sm mb-3">
                     <div class="input-group-prepend">
@@ -356,6 +367,13 @@ impl App {
                     </div>
                 </div>
                 <button class="btn btn-outline-primary" onclick=|_|{Msg::UpdateRange(RangeUpdate::DisassemblyMax)}>{"Search"}</button>
+            </>
+        }
+    }
+
+    pub fn view_range_mem(&self) -> Html<Self> {
+        html!{
+            <>
                 <h5>{"Memory"}</h5>
                 <div class="input-group input-group-sm mb-3">
                     <div class="input-group-prepend">
@@ -370,7 +388,7 @@ impl App {
                     <input type="text" class="form-control" placeholder="100" oninput=|e| {Msg::UpdateInputString(e.value, RangeUpdate::MemoryViewerMax)}/>
                 </div>
                 <button class="btn btn-outline-primary" onclick=|_|{Msg::UpdateRange(RangeUpdate::MemoryViewerMax)}>{"Search"}</button>
-            </div>
+            </>
         }
     }
 
