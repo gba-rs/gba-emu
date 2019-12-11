@@ -4,6 +4,7 @@ use crate::formats::common::Instruction;
 use crate::operations::shift::{Shift, apply_shift};
 use crate::operations::shift::ShiftType::{LogicalLeft, LogicalRight, ArithmeticRight};
 
+#[derive(Debug)]
 pub struct MoveShifted {
     pub op: u8,
     pub offset: u8,
@@ -23,7 +24,7 @@ impl From<u16> for MoveShifted {
 }
 
 impl Instruction for MoveShifted {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         match self.op {
             0 => {
                 let shift = Shift {
@@ -62,6 +63,17 @@ impl Instruction for MoveShifted {
                 panic!("Move Shifted Register failed to execuse: Invalid OP code")
             }
         }
+    }
+
+    fn asm(&self) -> String {
+        let shift_code;
+        match self.op {
+            0 => shift_code = "LSL",
+            1 => shift_code = "LSR",
+            2 => shift_code = "ASR",
+            _ => { panic!("Move Shifted Register Erro: Invalid OP Code")}
+        }
+        return format!("MOVS r{}, r{}, {}, #0x{:X} ", self.rd, self.rs, shift_code, self.offset);
     }
 }
 
