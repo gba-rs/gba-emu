@@ -262,12 +262,19 @@ impl Renderable<App> for App {
                 <div class="container-fluid">
                     <div class="row">
                         {self.view_control()}
+                    </div>
+                    <div class="row">
+
+                         <div class="col-xs-12 col-lg-6 col-xl-3">
+                            <Status gba={self.gba.clone()}/>
+                            <Cpsr gba={self.gba.clone()}/>
+                        </div>
                         
-                        <div class="col-2">
+                        <div class="col-xs-12 col-lg-6 col-xl-3">
                             <Registers hex={self.hex} gba={self.gba.clone()}/>
                         </div>
                     
-                        <div class="col-7">
+                        <div class="col-xs-12 col-xl-6">
                             <div class="row">
                                 <div class="col-3">
                                     {self.view_range_dis()}
@@ -394,9 +401,9 @@ impl App {
 
     pub fn view_control(&self) -> Html<Self> {
         html! {
-            <div class="col-3">
-                <h4>{"Control"}</h4>
-                <div>                               
+            <>
+                // <h4>{"Control"}</h4>
+                <div class="col-xs-12 col-md-6 col-xl-3">                               
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
                             <span class="input-group-text" id="inputGroupFileAddon01">{"Bios"}</span>
@@ -414,7 +421,7 @@ impl App {
                     </div>
                 </div>
 
-                <div>                               
+                <div class="col-xs-12 col-md-6 col-xl-3">                               
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
                             <span class="input-group-text" id="inputGroupFileAddon02">{"Rom"}</span>
@@ -432,15 +439,17 @@ impl App {
                     </div>
                 </div>
             
-                <div class="btn-group" role="group">
-                    <button class="btn btn-outline-primary" onclick=|_|{Msg::Init}>{"Init Emulator"}</button>
-                    <button class="btn btn-outline-primary" onclick=|_|{Msg::Step(1)}>{"Step"}</button>
-                    <button class="btn btn-outline-primary" onclick=|_|{Msg::ToggleHex}>{"Toggle Hex"}</button>
-                    <button class="btn btn-outline-primary" onclick=|_|{Msg::Disassemble(InstructionSet::Arm)}>{"Disassemble"}</button>
+                <div class="col-xs-12 col-xl-6 sticky-top">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-primary" onclick=|_|{Msg::Init}>{"Init Emulator"}</button>
+                        <button class="btn btn-outline-primary" onclick=|_|{Msg::Step(1)}>{"Step"}</button>
+                        <button class="btn btn-outline-primary" onclick=|_|{Msg::Disassemble(InstructionSet::Arm)}>{"Disassemble"}</button>
+                    </div>
                 </div>
-                <Status gba={self.gba.clone()}/>
-                <Cpsr gba={self.gba.clone()}/>
-            </div>
+                
+                // <Status gba={self.gba.clone()}/>
+                // <Cpsr gba={self.gba.clone()}/>
+            </>
         }
     }
 }

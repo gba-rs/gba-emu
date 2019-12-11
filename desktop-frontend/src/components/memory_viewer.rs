@@ -92,7 +92,7 @@ impl Renderable<MemoryViewer> for MemoryViewer {
                                             <input type="text" class="hex-edit hex-edit-byte" value={format!(" {:02X}", byte)} 
                                             onclick=|_|{ Msg::StartHexEdit(format!("{:X}", byte)) }
                                             oninput=|e|{ Msg::UpdateHexString(e.value) } 
-                                            onkeypress=|e|{ if e.key() == "Enter" { Msg::WriteMemory(address) } else { Msg::Nope } }/>
+                                            onkeypress=|e|{ if e.key() == "Enter" { Msg::WriteMemory(address) } else { Msg::Nope }}/>
                                         }
                                     } else {
                                         html! {
