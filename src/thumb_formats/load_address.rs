@@ -23,11 +23,11 @@ impl From<u32> for LoadAddress {
 impl Instruction for LoadAddress {
     fn execute(&mut self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         if self.sp_cp == 0 {
-            let pc = cpu.get_register(THUMB_PC) + 4;
-            //todo: set the first bit in pc to 0
+            let mut pc = cpu.get_register(THUMB_PC) + 4;
             if pc & (1 << 0) != 0 {
-                //there is a 1 as the first bit
-                
+                //there is a 1 as the first bit so we need to swap that bit to 0
+                pc = pc - 1;
+                //so maybe this works?
             }
             let new = pc + self.word8 as u32;
             cpu.set_register(THUMB_PC, new);
@@ -39,11 +39,7 @@ impl Instruction for LoadAddress {
         }
     }
 
-//    fn asm(&self) -> String {
-//        return format!("{:?:", self};
-//    }
 
-}
 
 impl fmt::Debug for LoadAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
