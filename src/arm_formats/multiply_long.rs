@@ -33,7 +33,7 @@ impl From<u32> for MultiplyLong {
 
 impl Instruction for MultiplyLong {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
-        let (rdhi, rdlo, flags) = arithmetic::mull(
+        let (rdhi, rdlo, flags) = arm_arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);
         if self.accumulate {

@@ -171,8 +171,7 @@ impl Instruction for DataProcessing {
                 cpu.cpsr.flags = flags;
             },
             OpCodes::ADD => { //add
-//                println!("Adding {:X} + {:X}", cpu.registers[self.op1_register as usize], op2);
-                let (value, flags) =
+               let (value, flags) =
                     arm_arithmetic::add(cpu.get_register(self.op1_register), op2);
                 cpu.set_register(self.destination_register, value);
                 cpu.cpsr.flags = flags;
