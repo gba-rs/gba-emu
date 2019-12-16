@@ -301,8 +301,11 @@ impl Renderable<App> for App {
 
 impl App {
     pub fn view_disassembly(&self) -> Html<Self> {
+        let instruction_set = self.gba.borrow().cpu.current_instruction_set;
+        let current_pc_num = if instruction_set == InstructionSet::Arm { 15 } else { 10 };
+
         if self.disassembled {
-            let current_pc = self.gba.borrow().cpu.get_register(ARM_PC);
+            let current_pc = self.gba.borrow().cpu.get_register(current_pc_num);
             let mut disassembly_start: i64;
             
             let mut disassembly_end: i64;
@@ -400,6 +403,7 @@ impl App {
     }
 
     pub fn view_control(&self) -> Html<Self> {
+        let instruction_set = self.gba.borrow().cpu.current_instruction_set;
         html! {
             <>
                 // <h4>{"Control"}</h4>
@@ -443,7 +447,7 @@ impl App {
                     <div class="btn-group" role="group">
                         <button class="btn btn-outline-primary" onclick=|_|{Msg::Init}>{"Init Emulator"}</button>
                         <button class="btn btn-outline-primary" onclick=|_|{Msg::Step(1)}>{"Step"}</button>
-                        <button class="btn btn-outline-primary" onclick=|_|{Msg::Disassemble(InstructionSet::Arm)}>{"Disassemble"}</button>
+                        <button class="btn btn-outline-primary" onclick=|_|{Msg::Disassemble(instruction_set)}>{"Disassemble"}</button>
                     </div>
                 </div>
                 
