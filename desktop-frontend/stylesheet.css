@@ -49,19 +49,37 @@ body{
     color: #cfcfcf;
 }
 
-.control button{
-    margin: 4px;
+.control div{
+    display: inline-block;
 }
 
-.table td {
-    padding: 2px;
+.register-table {
+    width: 100%;
+}
+
+.register-table td{
+    padding: 4px !important;
+}
+
+.hex-edit {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.hex-edit-byte {
+    width: 2em;
+}
+
+.hex-edit-word {
+    width: 8em;
 }
 
 .code-block {
     line-height: 1;
     font-family: monospace;
     overflow: scroll;
-    max-height: 800px;
+    max-height: 400px;
     white-space: nowrap;
     background: #eeeeee;
     padding: 8px;

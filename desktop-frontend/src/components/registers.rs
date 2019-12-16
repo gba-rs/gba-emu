@@ -44,31 +44,27 @@ impl Renderable<Registers> for Registers {
         html! {
             <div>
                 <h4>{"Registers"}</h4>
-                <table class="table">
+                <table class="table register-table">
                     <thead>
                         <tr>
                             <th scope="col">{"Reg"}</th>
-                            <th scope="col">{"Val"}</th>
+                            <th scope="col">{"Val Hex"}</th>
+                            <th scope="col">{"Val Dec"}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {for (0..if self.props.gba.borrow().cpu.current_instruction_set == InstructionSet::Arm { 16 } else { 10 }).map(|val|{
-                            if self.props.hex {
                                 html! {
                                     <tr>
-                                        <td>{format!("{}", val)}</td>
-                                        <td>{format!("0x{:X}", self.props.gba.borrow().cpu.get_register(val))}</td>
+                                        <td class="text-left">{format!("r{}", val)}</td>
+                                        <td class="text-right">
+                                            <input class="hex-edit hex-edit-word" type="text" value={format!("0x{:08X}", self.props.gba.borrow().cpu.get_register(val))} />
+                                        </td>
+                                        <td class="text-right">
+                                            <input class="hex-edit hex-edit-word" type="text" value={format!("{}", self.props.gba.borrow().cpu.get_register(val))}/>
+                                        </td>
                                     </tr>
-                                }
-                            } else {
-                                html! {
-                                    <tr>
-                                        <td>{format!("{}", val)}</td>
-                                        <td>{format!("{}", self.props.gba.borrow().cpu.get_register(val))}</td>
-                                    </tr>
-                                }
-                            }
-                            
+                                }                            
                         })}
                     </tbody>
                 </table>
