@@ -4,6 +4,7 @@ pub mod block_data_transfer;
 pub mod branch_exchange;
 pub mod halfword_register;
 pub mod single_data_transfer;
+pub mod single_data_swap;
 pub mod multiply;
 pub mod multiply_long;
 pub mod software_interrupt;

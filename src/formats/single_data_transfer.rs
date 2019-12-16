@@ -4,6 +4,7 @@ use crate::cpu::cpu::CPU;
 use crate::operations::load_store::{apply_offset, DataType, DataTransfer, data_transfer_execute};
 use crate::operations::shift::{Shift, apply_shift};
 
+#[derive(Debug)]
 pub struct SingleDataTransfer {
     pub offset: SingleDataTransferOperand,
     pub destination_register: u8,
@@ -44,7 +45,7 @@ impl From<u32> for SingleDataTransfer {
     }
 }
 
-
+#[derive(Debug)]
 pub struct SingleDataTransferOperand {
     pub shift: Shift,
     pub rm: u8,
@@ -58,21 +59,22 @@ impl From<u32> for SingleDataTransferOperand {
             shift: Shift::from(value),
             rm: (value & 0xF) as u8,
             immediate_value: (value & 0xFF) as u8,
-            immediate: ((value & 0x200_0000) >> 25) != 0,
+            immediate: ((value & 0x0200_0000) >> 25) == 0,
         };
     }
 }
 
 impl Instruction for SingleDataTransfer {
-    fn execute(&mut self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let address_with_offset;
         let base = cpu.get_register(self.op1_register);
         if !self.offset_is_register {
             address_with_offset = apply_offset(base, self.offset.immediate_value, self.up_down);
         } else {
-            let shifted_register = apply_shift(self.offset.rm as u32, &self.offset.shift, cpu);
-            let offset = cpu.get_register(shifted_register as u8) as u8;
-            address_with_offset = apply_offset(base, offset, self.up_down);
+            let shifted_register = apply_shift(cpu.get_register(self.offset.rm), &self.offset.shift, cpu);
+            address_with_offset = apply_offset(base, shifted_register as u8, self.up_down);
+            println!("Shifted Register: {:X}", shifted_register);
+            println!("Address with offset: {:X}", address_with_offset);
         }
 
         let transfer_info =  DataTransfer {
@@ -85,6 +87,10 @@ impl Instruction for SingleDataTransfer {
             destination: self.destination_register,
         };
         data_transfer_execute(transfer_info, base, address_with_offset, cpu, mem_map);
+    }
+
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
     }
 }
 

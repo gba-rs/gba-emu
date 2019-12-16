@@ -9,7 +9,7 @@ mod tests {
 
     #[test]
     fn test_stmib() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE98D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE98D001E);
         let mut cpu = CPU::new();
         cpu.set_register(1, 0x1);
         cpu.set_register(2, 0x2);
@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_stmia() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE88D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE88D001E);
         let mut cpu = CPU::new();
         cpu.set_register(1, 0x1);
         cpu.set_register(2, 0x2);
@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn test_stmdb() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE90D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE90D001E);
         let mut cpu = CPU::new();
         cpu.set_register(1, 0x4);
         cpu.set_register(2, 0x5);
@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_stmda() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE80D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE80D001E);
         let mut cpu = CPU::new();
         cpu.set_register(1, 0x4);
         cpu.set_register(2, 0x5);
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn test_ldmib() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE99D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE99D001E);
         let mut cpu = CPU::new();
 
         cpu.set_register(13, 0xFF00);
@@ -117,7 +117,7 @@ mod tests {
     
     #[test]
     fn test_ldmia() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE89D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE89D001E);
         let mut cpu = CPU::new();
 
         cpu.set_register(13, 0xFF00);
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_ldmdb() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE91D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE91D001E);
         let mut cpu = CPU::new();
 
         cpu.set_register(13, 0xFF00);
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_ldmda() {
-        let mut a: BlockDataTransfer = BlockDataTransfer::from(0xE81D001E);
+        let a: BlockDataTransfer = BlockDataTransfer::from(0xE81D001E);
         let mut cpu = CPU::new();
 
         cpu.set_register(13, 0xFF00);
