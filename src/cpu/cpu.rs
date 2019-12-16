@@ -287,9 +287,6 @@ mod tests {
         let cpu = CPU::new();
         let mut map = MemoryMap::new();
         map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-<<<<<<< HEAD
-        cpu.decode(&mut map, 0xE5000000);
-=======
         
         let result = cpu.decode(0x00F0F0F0);
         match result {
@@ -301,7 +298,6 @@ mod tests {
                 assert!(true);
             }
         }
->>>>>>> master
     }
 
     #[test]
