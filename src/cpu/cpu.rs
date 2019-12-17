@@ -18,6 +18,9 @@ pub const ARM_LR: u8 = 14;
 pub const ARM_SP: u8 = 13;
 pub const THUMB_PC: u8 = 10;
 
+pub const ARM_WORD_SIZE: u8 = 4;
+pub const THUMB_WORD_SIZE: u8 = 2;
+
 pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
     [
@@ -78,6 +81,28 @@ pub enum InstructionFormat {
     CoProcessorDataOperation,
     CoProcessorRegisetTransfer,
     SoftwareInterrupt
+}
+
+pub enum ThumbInstructionFormat {
+    Move,
+    AddSubtract,
+    MoveCompare,
+    ALU,
+    HiRegister,
+    LoadPC,
+    LoadStoreOffset,
+    LoadStoreExtended,
+    LoadStoreImmediateOffset,
+    LoadStoreHalfWord,
+    LoadStoreSP,
+    GetAddress,
+    AddOffsetSP,
+    PushPopRegister,
+    MultipleLoadStore,
+    ConditionalBranch,
+    UnConditonalBranch,
+    LongBranchLink,
+    BreakpointInterrupt
 }
 
 pub struct CPU {   
@@ -155,13 +180,13 @@ impl CPU {
 
 
     pub fn fetch(&mut self, map: &mut MemoryMap) {
-        let instruction: u32 = map.read_u32(self.registers[15]);
+        let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { map.read_u32(self.registers[15]) } else { map.read_u16(self.registers[15]).into() };
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
-        self.set_register(current_pc, pc_contents + 4);
+        if self.current_instruction_set == InstructionSet::Arm { self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) } else { self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) };
 
-        let condition = Condition::from((instruction & 0xF000_0000) >> 28);
-        let check_condition = self.check_condition(&condition);
+        let condition = if self.current_instruction_set == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {(Condition::from(0x0))};//THUMB codes don't include conditions 
+        let check_condition = if self.current_instruction_set == InstructionSet::Arm { self.check_condition(&condition) } else { false };//fine
 
         let decode_result = self.decode(instruction);
         match decode_result {
