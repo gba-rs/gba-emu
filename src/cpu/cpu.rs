@@ -1,10 +1,10 @@
-use crate::formats::{data_processing::DataProcessing, common::Instruction, common::Condition, software_interrupt::SoftwareInterrupt};
-use crate::formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
-use crate::formats::{multiply::Multiply, multiply_long::MultiplyLong};
-use crate::formats::{single_data_transfer::SingleDataTransfer};
-use crate::formats::{single_data_swap::SingleDataSwap};
-use crate::formats::{branch::Branch, branch_exchange::BranchExchange};
-use crate::formats::{block_data_transfer::BlockDataTransfer};
+use crate::arm_formats::{data_processing::DataProcessing, common::Instruction, common::Condition, software_interrupt::SoftwareInterrupt};
+use crate::arm_formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
+use crate::arm_formats::{multiply::Multiply, multiply_long::MultiplyLong};
+use crate::arm_formats::{single_data_transfer::SingleDataTransfer};
+use crate::arm_formats::{single_data_swap::SingleDataSwap};
+use crate::arm_formats::{branch::Branch, branch_exchange::BranchExchange};
+use crate::arm_formats::{block_data_transfer::BlockDataTransfer};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
