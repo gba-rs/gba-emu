@@ -3,7 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::arm_formats::common::Instruction;
 use crate::operations::load_store::{store, DataType, apply_offset};
 
-struct LoadStoreHalfword {
+pub struct LoadStoreHalfword {
     load: bool,
     immediate_offset: u8,
     rb: u8,
