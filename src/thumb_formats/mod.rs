@@ -13,3 +13,4 @@ pub mod conditional_branch;
 pub mod alu;
 pub mod long_branch_link;
 pub mod sp_load;
+pub mod immediate_ops;
