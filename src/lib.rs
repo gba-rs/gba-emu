@@ -1,10 +1,11 @@
 mod utils;
-pub mod formats;
+pub mod arm_formats;
 pub mod operations;
 pub mod cpu;
 pub mod memory;
 pub mod gba;
 pub mod thumb_formats;
+
 use wasm_bindgen::prelude::*;
 
 
