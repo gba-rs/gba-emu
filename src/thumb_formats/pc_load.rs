@@ -1,4 +1,4 @@
-use crate::formats::common::Instruction;
+use crate::arm_formats::common::Instruction;
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
