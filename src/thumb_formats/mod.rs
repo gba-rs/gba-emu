@@ -1,6 +1,7 @@
 pub mod add_subtract;
 pub mod move_shifted_register;
 pub mod load_store_halfword;
+pub mod push_pop;
 pub mod load_store_sign_extended;
 pub mod unconditional_branch;
 pub mod load_store_register_offset;
