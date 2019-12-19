@@ -8,4 +8,5 @@ pub mod multiple_load_store;
 pub mod software_interrupt;
 pub mod conditional_branch;
 pub mod alu;
+pub mod long_branch_link;
 pub mod sp_load;
