@@ -98,6 +98,10 @@ body{
     background: yellow;
 }
 
+.cpsr-text {
+    min-width: 15em;
+}
+
 /*Utilities*/
 .text-center{
     text-align: center;

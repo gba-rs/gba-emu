@@ -3,8 +3,8 @@ extern crate gba_emulator;
 #[cfg(test)]
 mod tests {
     use gba_emulator::cpu::cpu::{CPU};
-    use gba_emulator::formats::block_data_transfer::BlockDataTransfer;
-    use gba_emulator::formats::common::Instruction;
+    use gba_emulator::arm_formats::block_data_transfer::BlockDataTransfer;
+    use gba_emulator::arm_formats::common::Instruction;
     use gba_emulator::memory::{work_ram::WorkRam, memory_map::MemoryMap};
 
     #[test]

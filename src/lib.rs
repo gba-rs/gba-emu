@@ -1,5 +1,5 @@
 mod utils;
-pub mod formats;
+pub mod arm_formats;
 pub mod operations;
 pub mod cpu;
 pub mod memory;
