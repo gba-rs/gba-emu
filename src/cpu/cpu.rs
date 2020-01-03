@@ -24,9 +24,6 @@ pub const THUMB_LR: u8 = 9;
 pub const ARM_WORD_SIZE: u8 = 4;
 pub const THUMB_WORD_SIZE: u8 = 2;
 
-pub const ARM_WORD_SIZE: u8 = 4;
-pub const THUMB_WORD_SIZE: u8 = 2;
-
 pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
     [
