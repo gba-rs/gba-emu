@@ -87,7 +87,7 @@ pub enum InstructionFormat {
 }
 
 pub enum ThumbInstructionFormat {
-    Move,
+    MoveShiftedRegister,
     AddSubtract,
     MoveCompare,
     ALU,

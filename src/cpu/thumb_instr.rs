@@ -1,0 +1,34 @@
+use super::{cpu::ThumbInstructionFormat};
+
+pub const THUMB_INSTRUCTIONS:: [ThumbInstructionFormat; 256] = [
+//0000 0000
+ThumbInstructionFormat::MoveShiftedRegister, ThumbInstructionFormat::MoveShiftedRegister, ThumbInstructionFormat::MoveShiftedRegister, ThumbInstructionFormat::MoveShiftedRegister,
+ThumbInstructionFormat::MoveShiftedRegister, ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,
+ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,
+ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,
+//0001 0000
+ThumbInstructionFormat::MoveShiftedRegister, ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,
+ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,ThumbInstructionFormat::MoveShiftedRegister,
+ThumbInstructionFormat::AddSubtract, ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,
+ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,
+//0010 0000
+ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,
+ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,
+ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,
+ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,ThumbInstructionFormat::MoveCompare,
+//0011 0000
+ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,
+ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,
+ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,
+ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,ThumbInstructionFormat::AddSubtract,
+//0100 0000
+ThumbInstructionFormat::
+
+
+
+
+
+
+
+
+]
