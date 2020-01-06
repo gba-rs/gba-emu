@@ -1,13 +1,8 @@
 extern crate gba_emulator;
 
-//use gba_emulator::formats::data_processing::DataProcessing;
-//use gba_emulator::formats::{data_processing::DataProcessing};
-
-
 
 #[cfg(test)]
 mod tests {
-//    use gba_emulator::formats::data_processing::DataProcessing;
     use gba_emulator::cpu::cpu::{CPU};
     use gba_emulator::cpu::program_status_register::ProgramStatusRegister;
     use gba_emulator::arm_formats::data_processing::DataProcessing;
@@ -18,7 +13,6 @@ mod tests {
 
     #[test]
     fn correct_operation_called_and() {
-//        assert_eq!()
         let a: DataProcessing = DataProcessing::from(0xE0012002);
         let mut cpu = CPU::new();
         cpu.set_register(1,1);

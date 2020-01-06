@@ -5,9 +5,15 @@ use crate::arm_formats::{single_data_transfer::SingleDataTransfer};
 use crate::arm_formats::{single_data_swap::SingleDataSwap};
 use crate::arm_formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::arm_formats::{block_data_transfer::BlockDataTransfer};
+use crate::thumb_formats::{add_subtract::AddSubtract,alu::ALU,conditional_branch::ConditionalBranch};
+use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::ImmediateOp, load_address::LoadAddress, load_store_halfword::LoadStoreHalfword};
+use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_register_offset::LoadStoreRegisterOffset, load_store_sign_extended::LoadStoreSignExtended};
+use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
+use crate::thumb_formats::{sp_load::STR,unconditional_branch::UnconditionalBranch};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
+use super::{thumb_instr::THUMB_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
 use std::borrow::{BorrowMut};
 
@@ -98,14 +104,17 @@ pub enum ThumbInstructionFormat {
     LoadStoreImmediateOffset,
     LoadStoreHalfWord,
     LoadStoreSP,
+    LoadAddress,
     GetAddress,
+    ImmediateOp,
     AddOffsetSP,
     PushPopRegister,
     MultipleLoadStore,
     ConditionalBranch,
     UnConditonalBranch,
     LongBranchLink,
-    BreakpointInterrupt
+    BreakpointInterrupt,
+    Undefined
 }
 
 pub struct CPU {   
@@ -136,49 +145,123 @@ impl CPU {
     }
 
     pub fn decode(&self, instruction: u32) -> Result<Box<dyn Instruction>, DecodeError> {
-        let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
-        let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
+        if self.current_instruction_set == InstructionSet::Arm {
+            let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
+            let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
+            match instruction_format {
+                InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
+                    return Ok(Box::new(DataProcessing::from(instruction)));
+                },
+                InstructionFormat::Multiply => {
+                    return Ok(Box::new(Multiply::from(instruction)));
+                },
+                InstructionFormat::MultiplyLong => {
+                    return Ok(Box::new(MultiplyLong::from(instruction)));
+                },
+                InstructionFormat::SingleDataSwap => {
+                    // panic!("Single data swap not implemented");
+                    return Ok(Box::new(SingleDataSwap::from(instruction)));
+                },
+                InstructionFormat::SingleDataTransfer => {
+                    return Ok(Box::new(SingleDataTransfer::from(instruction)));
+                },
+                InstructionFormat::BranchAndExchange => {
+                    return Ok(Box::new(BranchExchange::from(instruction)));
+                },
+                InstructionFormat::HalfwordDataTransfer => {
+                    if opcode & 0x40 == 0 {
+                        return Ok(Box::new(HalfwordRegisterOffset::from(instruction)));
+                    } else {
+                        return Ok(Box::new(HalfwordImmediateOffset::from(instruction)));
+                    }
+                },
+                InstructionFormat::BlockDataTransfer => {
+                        return Ok(Box::new(BlockDataTransfer::from(instruction)));
+                },
+                InstructionFormat::Branch => {
+                    return Ok(Box::new(Branch::from(instruction)));
+                },
+                InstructionFormat::SoftwareInterrupt => {
+                    return Ok(Box::new(SoftwareInterrupt::from(instruction)));
+                },
+                _ => Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            }
+    } else{
+        let thumb_instruction: u16 = instruction as u16;
+        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 7) & 0x0F)) as u16;
+        let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
         match instruction_format {
-            InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
-                return Ok(Box::new(DataProcessing::from(instruction)));
+            ThumbInstructionFormat::MoveShiftedRegister => {
+                return Ok(Box::new(MoveShifted::from(thumb_instruction)));
             },
-            InstructionFormat::Multiply => {
-                return Ok(Box::new(Multiply::from(instruction)));
+            ThumbInstructionFormat::AddSubtract => {
+                return Ok(Box::new(AddSubtract::from(thumb_instruction)));
             },
-            InstructionFormat::MultiplyLong => {
-                return Ok(Box::new(MultiplyLong::from(instruction)));
+            ThumbInstructionFormat::ALU => {
+                //return Ok(Box::new(ALU::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("ALU Instruction not yet Implemented");
             },
-            InstructionFormat::SingleDataSwap => {
-                // panic!("Single data swap not implemented");
-                return Ok(Box::new(SingleDataSwap::from(instruction)));
+            ThumbInstructionFormat::ConditionalBranch => {
+                //return Ok(Box::new(ConditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Conditional Branch Instruction not yet Implemented");
             },
-            InstructionFormat::SingleDataTransfer => {
-                return Ok(Box::new(SingleDataTransfer::from(instruction)));
+            ThumbInstructionFormat::HiRegister => {
+                //return Ok(Box::new(HiRegisterOp::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("HiRegisterOp Instruction not yet Implemented");
             },
-            InstructionFormat::BranchAndExchange => {
-                return Ok(Box::new(BranchExchange::from(instruction)));
+            ThumbInstructionFormat::ImmediateOp => {
+                return Ok(Box::new(ImmediateOp::from(thumb_instruction))); 
             },
-            InstructionFormat::HalfwordDataTransfer => {
-                if opcode & 0x40 == 0 {
-                    return Ok(Box::new(HalfwordRegisterOffset::from(instruction)));
-                } else {
-                    return Ok(Box::new(HalfwordImmediateOffset::from(instruction)));
-                }
+            ThumbInstructionFormat::LoadAddress => {
+                return Ok(Box::new(LoadAddress::from(thumb_instruction))); 
             },
-            InstructionFormat::BlockDataTransfer => {
-                    return Ok(Box::new(BlockDataTransfer::from(instruction)));
+            ThumbInstructionFormat::LoadStoreHalfWord => {
+                return Ok(Box::new(LoadStoreHalfword::from(thumb_instruction)));
             },
-            InstructionFormat::Branch => {
-                return Ok(Box::new(Branch::from(instruction)));
+            ThumbInstructionFormat::LoadStoreOffset => {
+                //return Ok(Box::new(LoadStoreRegisterOffset::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Load Store Offset Instruction not yet Implemented");
             },
-            InstructionFormat::SoftwareInterrupt => {
-                return Ok(Box::new(SoftwareInterrupt::from(instruction)));
+            ThumbInstructionFormat::LoadStoreExtended => {
+                //return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction))); // Missing Instruction 
+                panic!("Load Store Extende Instruction not yet Implemented");
+            },
+            ThumbInstructionFormat::LongBranchLink => {
+                //return Ok(Box::new(BL::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Long Branch & Link Instruction not yet Implemented");
+            },
+            ThumbInstructionFormat::MultipleLoadStore => {
+                //return Ok(Box::new(MultipleLoadStore::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Multiple Load Store Instruction not yet Implemented");
+            },
+            ThumbInstructionFormat::LoadPC => {
+                return Ok(Box::new(LDR::from(thumb_instruction)));
+            },
+            ThumbInstructionFormat::PushPopRegister => {
+                //return Ok(Box::new(PushPop::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Push/Pop Instruction not yet Implemented");
+            },
+            ThumbInstructionFormat::BreakpointInterrupt => {
+                //return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Break Point/Interrupt Instruction not yet Implemented");
+            },
+            ThumbInstructionFormat::LoadStoreSP => {
+                //return Ok(Box::new(STR::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Load Store SP Instruction not yet Implemented");
+            },
+            ThumbInstructionFormat::UnConditonalBranch => {
+                //return Ok(Box::new(UnconditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
+                panic!("Unconditional Branch Instruction not yet Implemented");
             },
             _ => Err(DecodeError{
                 instruction: instruction,
                 opcode: opcode
             })
         }
+    }
     }
 
 
