@@ -1,6 +1,6 @@
 use crate::operations::load_store::DataType;
 
-struct LoadStoreRegisterOffset {
+pub struct LoadStoreRegisterOffset {
     load: bool,
     data_type: DataType,
     offset_register: u8,

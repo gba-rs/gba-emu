@@ -5,9 +5,15 @@ use crate::arm_formats::{single_data_transfer::SingleDataTransfer};
 use crate::arm_formats::{single_data_swap::SingleDataSwap};
 use crate::arm_formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::arm_formats::{block_data_transfer::BlockDataTransfer};
+use crate::thumb_formats::{add_subtract::AddSubtract,alu::ALU,conditional_branch::ConditionalBranch};
+use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::ImmediateOp, load_address::LoadAddress, load_store_halfword::LoadStoreHalfword};
+use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_register_offset::LoadStoreRegisterOffset, load_store_sign_extended::LoadStoreSignExtended};
+use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
+use crate::thumb_formats::{sp_load::STR,unconditional_branch::UnconditionalBranch};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
+use super::{thumb_instr::THUMB_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
 use std::borrow::{BorrowMut};
 
@@ -20,6 +26,9 @@ pub const THUMB_PC: u8 = 10;
 pub const THUMB_SP: u8 = 8;
 pub const THUMB_LR: u8 = 9;
 
+
+pub const ARM_WORD_SIZE: u8 = 4;
+pub const THUMB_WORD_SIZE: u8 = 2;
 
 pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     // arm
@@ -83,6 +92,31 @@ pub enum InstructionFormat {
     SoftwareInterrupt
 }
 
+pub enum ThumbInstructionFormat {
+    MoveShiftedRegister,
+    AddSubtract,
+    MoveCompare,
+    ALU,
+    HiRegister,
+    LoadPC,
+    LoadStoreOffset,
+    LoadStoreExtended,
+    LoadStoreImmediateOffset,
+    LoadStoreHalfWord,
+    LoadStoreSP,
+    LoadAddress,
+    GetAddress,
+    ImmediateOp,
+    AddOffsetSP,
+    PushPopRegister,
+    MultipleLoadStore,
+    ConditionalBranch,
+    UnConditonalBranch,
+    LongBranchLink,
+    BreakpointInterrupt,
+    Undefined
+}
+
 pub struct CPU {   
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
@@ -111,6 +145,14 @@ impl CPU {
     }
 
     pub fn decode(&self, instruction: u32) -> Result<Box<dyn Instruction>, DecodeError> {
+        if self.current_instruction_set == InstructionSet::Arm {
+           return self.decode_arm(instruction);
+        } else{
+            return self.decode_thumb(instruction);
+        }
+    }
+
+    pub fn decode_arm(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
         match instruction_format {
@@ -156,15 +198,121 @@ impl CPU {
         }
     }
 
+    pub fn decode_thumb(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
+        let thumb_instruction: u16 = instruction as u16;
+        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 7) & 0x0F)) as u16;
+        let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
+        match instruction_format {
+            ThumbInstructionFormat::MoveShiftedRegister => {
+                return Ok(Box::new(MoveShifted::from(thumb_instruction)));
+            },
+            ThumbInstructionFormat::AddSubtract => {
+                return Ok(Box::new(AddSubtract::from(thumb_instruction)));
+            },
+            ThumbInstructionFormat::ALU => {
+                //return Ok(Box::new(ALU::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::ConditionalBranch => {
+                //return Ok(Box::new(ConditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::HiRegister => {
+                //return Ok(Box::new(HiRegisterOp::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::ImmediateOp => {
+                return Ok(Box::new(ImmediateOp::from(thumb_instruction))); 
+            },
+            ThumbInstructionFormat::LoadAddress => {
+                return Ok(Box::new(LoadAddress::from(thumb_instruction))); 
+            },
+            ThumbInstructionFormat::LoadStoreHalfWord => {
+                return Ok(Box::new(LoadStoreHalfword::from(thumb_instruction)));
+            },
+            ThumbInstructionFormat::LoadStoreOffset => {
+                //return Ok(Box::new(LoadStoreRegisterOffset::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::LoadStoreExtended => {
+                //return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction))); // Missing Instruction 
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::LongBranchLink => {
+                //return Ok(Box::new(BL::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::MultipleLoadStore => {
+                //return Ok(Box::new(MultipleLoadStore::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::LoadPC => {
+                return Ok(Box::new(LDR::from(thumb_instruction)));
+            },
+            ThumbInstructionFormat::PushPopRegister => {
+                //return Ok(Box::new(PushPop::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::BreakpointInterrupt => {
+                //return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::LoadStoreSP => {
+                //return Ok(Box::new(STR::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            ThumbInstructionFormat::UnConditonalBranch => {
+                //return Ok(Box::new(UnconditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
+            },
+            _ => Err(DecodeError{
+                instruction: instruction,
+                opcode: opcode
+            })
+        }
+    }
 
     pub fn fetch(&mut self, map: &mut MemoryMap) {
-        let instruction: u32 = map.read_u32(self.registers[15]);
+        let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { map.read_u32(self.registers[15]) } else { map.read_u16(self.registers[15]).into() };
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
-        self.set_register(current_pc, pc_contents + 4);
+        if self.current_instruction_set == InstructionSet::Arm { self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) } else { self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) };
 
-        let condition = Condition::from((instruction & 0xF000_0000) >> 28);
-        let check_condition = self.check_condition(&condition);
+        let condition = if self.current_instruction_set == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {(Condition::from(0x0))};//THUMB codes don't include conditions 
+        let check_condition = if self.current_instruction_set == InstructionSet::Arm { self.check_condition(&condition) } else { false };//fine
 
         let decode_result = self.decode(instruction);
         match decode_result {
