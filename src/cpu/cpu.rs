@@ -211,15 +211,24 @@ impl CPU {
             },
             ThumbInstructionFormat::ALU => {
                 //return Ok(Box::new(ALU::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("ALU Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::ConditionalBranch => {
                 //return Ok(Box::new(ConditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Conditional Branch Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::HiRegister => {
                 //return Ok(Box::new(HiRegisterOp::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("HiRegisterOp Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::ImmediateOp => {
                 return Ok(Box::new(ImmediateOp::from(thumb_instruction))); 
@@ -232,38 +241,62 @@ impl CPU {
             },
             ThumbInstructionFormat::LoadStoreOffset => {
                 //return Ok(Box::new(LoadStoreRegisterOffset::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Load Store Offset Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::LoadStoreExtended => {
                 //return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction))); // Missing Instruction 
-                panic!("Load Store Extende Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::LongBranchLink => {
                 //return Ok(Box::new(BL::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Long Branch & Link Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::MultipleLoadStore => {
                 //return Ok(Box::new(MultipleLoadStore::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Multiple Load Store Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::LoadPC => {
                 return Ok(Box::new(LDR::from(thumb_instruction)));
             },
             ThumbInstructionFormat::PushPopRegister => {
                 //return Ok(Box::new(PushPop::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Push/Pop Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::BreakpointInterrupt => {
                 //return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Break Point/Interrupt Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::LoadStoreSP => {
                 //return Ok(Box::new(STR::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Load Store SP Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             ThumbInstructionFormat::UnConditonalBranch => {
                 //return Ok(Box::new(UnconditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
-                panic!("Unconditional Branch Instruction not yet Implemented");
+                return Err(DecodeError{
+                    instruction: instruction,
+                    opcode: opcode
+                })
             },
             _ => Err(DecodeError{
                 instruction: instruction,
