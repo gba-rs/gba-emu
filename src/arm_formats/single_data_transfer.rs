@@ -1,8 +1,9 @@
-use super::{common::Condition, common::Instruction};
+use super::{common::Condition};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::CPU;
 use crate::operations::load_store::{apply_offset, DataType, DataTransfer, data_transfer_execute};
 use crate::operations::shift::{Shift, apply_shift};
+use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]
 pub struct SingleDataTransfer {

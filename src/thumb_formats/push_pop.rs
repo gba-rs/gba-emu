@@ -1,3 +1,5 @@
+use crate::operations::instruction::Instruction;
+
 #[derive(Debug)]
 pub struct PushPop {
     pub load: bool,

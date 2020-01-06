@@ -44,10 +44,5 @@ impl From<u32> for Condition {
     }
 }
 
-pub trait Instruction {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap);
-    fn asm(&self) -> String;
-}
-
 
 
