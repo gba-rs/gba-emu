@@ -146,50 +146,59 @@ impl CPU {
 
     pub fn decode(&self, instruction: u32) -> Result<Box<dyn Instruction>, DecodeError> {
         if self.current_instruction_set == InstructionSet::Arm {
-            let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
-            let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
-            match instruction_format {
-                InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
-                    return Ok(Box::new(DataProcessing::from(instruction)));
-                },
-                InstructionFormat::Multiply => {
-                    return Ok(Box::new(Multiply::from(instruction)));
-                },
-                InstructionFormat::MultiplyLong => {
-                    return Ok(Box::new(MultiplyLong::from(instruction)));
-                },
-                InstructionFormat::SingleDataSwap => {
-                    // panic!("Single data swap not implemented");
-                    return Ok(Box::new(SingleDataSwap::from(instruction)));
-                },
-                InstructionFormat::SingleDataTransfer => {
-                    return Ok(Box::new(SingleDataTransfer::from(instruction)));
-                },
-                InstructionFormat::BranchAndExchange => {
-                    return Ok(Box::new(BranchExchange::from(instruction)));
-                },
-                InstructionFormat::HalfwordDataTransfer => {
-                    if opcode & 0x40 == 0 {
-                        return Ok(Box::new(HalfwordRegisterOffset::from(instruction)));
-                    } else {
-                        return Ok(Box::new(HalfwordImmediateOffset::from(instruction)));
-                    }
-                },
-                InstructionFormat::BlockDataTransfer => {
-                        return Ok(Box::new(BlockDataTransfer::from(instruction)));
-                },
-                InstructionFormat::Branch => {
-                    return Ok(Box::new(Branch::from(instruction)));
-                },
-                InstructionFormat::SoftwareInterrupt => {
-                    return Ok(Box::new(SoftwareInterrupt::from(instruction)));
-                },
-                _ => Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
-            }
-    } else{
+           return self.decode_arm(instruction);
+        } else{
+            return self.decode_thumb(instruction);
+        }
+    }
+
+    pub fn decode_arm(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
+        let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
+        let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
+        match instruction_format {
+            InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
+                return Ok(Box::new(DataProcessing::from(instruction)));
+            },
+            InstructionFormat::Multiply => {
+                return Ok(Box::new(Multiply::from(instruction)));
+            },
+            InstructionFormat::MultiplyLong => {
+                return Ok(Box::new(MultiplyLong::from(instruction)));
+            },
+            InstructionFormat::SingleDataSwap => {
+                // panic!("Single data swap not implemented");
+                return Ok(Box::new(SingleDataSwap::from(instruction)));
+            },
+            InstructionFormat::SingleDataTransfer => {
+                return Ok(Box::new(SingleDataTransfer::from(instruction)));
+            },
+            InstructionFormat::BranchAndExchange => {
+                return Ok(Box::new(BranchExchange::from(instruction)));
+            },
+            InstructionFormat::HalfwordDataTransfer => {
+                if opcode & 0x40 == 0 {
+                    return Ok(Box::new(HalfwordRegisterOffset::from(instruction)));
+                } else {
+                    return Ok(Box::new(HalfwordImmediateOffset::from(instruction)));
+                }
+            },
+            InstructionFormat::BlockDataTransfer => {
+                    return Ok(Box::new(BlockDataTransfer::from(instruction)));
+            },
+            InstructionFormat::Branch => {
+                return Ok(Box::new(Branch::from(instruction)));
+            },
+            InstructionFormat::SoftwareInterrupt => {
+                return Ok(Box::new(SoftwareInterrupt::from(instruction)));
+            },
+            _ => Err(DecodeError{
+                instruction: instruction,
+                opcode: opcode
+            })
+        }
+    }
+
+    pub fn decode_thumb(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
         let thumb_instruction: u16 = instruction as u16;
         let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 7) & 0x0F)) as u16;
         let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
@@ -262,8 +271,6 @@ impl CPU {
             })
         }
     }
-    }
-
 
     pub fn fetch(&mut self, map: &mut MemoryMap) {
         let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { map.read_u32(self.registers[15]) } else { map.read_u16(self.registers[15]).into() };
