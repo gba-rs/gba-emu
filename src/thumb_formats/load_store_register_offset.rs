@@ -1,7 +1,10 @@
 use crate::operations::load_store::DataType;
-use crate::operations::instruction::Instruction;
-use crate::cpu::cpu::CPU;
+use crate::arm_formats::common::Instruction;
+use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
 use crate::memory::memory_map::MemoryMap;
+use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
+use std::fmt;
+use crate::operations::load_store::DataType::Word;
 
 pub struct LoadStoreRegisterOffset {
     load: bool,
@@ -29,6 +32,53 @@ impl From<u16> for LoadStoreRegisterOffset {
         };
     }
 }
+impl fmt::Debug for LoadStoreRegisterOffset {
+    fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
+        if !self.load && self.data_type ==  DataType::Word {
+            write!(f, "STR {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+        } else if self.load && self.data_type ==  DataType::Word {
+            write!(f, "LDR {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+        } else if !self.load && self.data_type ==  DataType::Byte {
+            write!(f, "STRB {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+        } else if self.load && self.data_type ==  DataType::Byte {
+            write!(f, "LDRB {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+        }
+        else {
+            write!(f, "error")
+        }
+    }
+}
+
+impl Instruction for LoadStoreRegisterOffset {
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+        if !self.load && self.data_type ==  DataType::Word {
+            //calculating target address by adding together Rb and offset. Store Rd at target
+            //assuming word is u32 as shown in load_store
+            let target_address: u32 = (self.rb + (self.offset_register << 2)) as u32;
+            mem_map.write_u32(target_address as u32,self.rd as u32);
+        } else if self.load && self.data_type ==  DataType::Word {
+            //calculate source address by adding Rb and offset. Load rd form source
+            let source_address: u32 = (self.rb + (self.offset_register << 2)) as u32;
+            let response = mem_map.read_u32(source_address as u32);
+            cpu.set_register(self.rd, response);
+
+        } else if !self.load && self.data_type ==  DataType::Byte {
+            //calculating target address by adding together Rb and offset. Store Rd at target
+            //assuming word is u32 as shown in load_store
+            let target_address: u32 = (self.rb + self.offset_register) as u32;
+            mem_map.write_u8(target_address as u32,self.rd)
+        } else if self.load && self.data_type ==  DataType::Byte {
+            //calculate source address by adding Rb and offset. Load rd form source
+            let source_address: u8 = self.rb + self.offset_register;
+            let response = mem_map.read_u8(source_address as u32);
+            cpu.set_register(self.rd, response as u32);
+        }
+    }
+    fn asm(&self) -> String {
+        return format!("{:?}", self);
+    }
+}
+
 
 impl Instruction for LoadStoreRegisterOffset {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
@@ -182,5 +232,15 @@ mod tests {
 
         format.execute(&mut cpu, &mut mem_map);
         assert_eq!(mem_map.read_u32(memory_address + offset_amount), value_to_store);
+    #[test]
+    fn test_str() {
+        let format = LoadStoreRegisterOffset::from(0x54B3);
+        assert_eq!(format.load, false);
+        assert_eq!(format.data_type, DataType::Byte);
+        assert_eq!(format.offset_register, 2);
+        assert_eq!(format.rb, 6);
+        assert_eq!(format.rd, 3);
+//        assert_eq!()
+
     }
 }
