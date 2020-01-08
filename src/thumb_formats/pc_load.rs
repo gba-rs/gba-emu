@@ -13,9 +13,7 @@ impl From<u16> for LDR {
     fn from(value: u16) -> LDR {
         return LDR {
             destination: ((value & 0x700) >> 8) as u8,
-            word8: (value & 0xFF) //<< 2, //right shift word8 by 2 should be word8 with 2 00's
-                                    //Note: I don't think I have to right shift here.
-                                    //might be wrong and someone should check my thought process here
+            word8: (value & 0xFF) << 2,
         }
     }
 }
@@ -38,6 +36,10 @@ impl Instruction for LDR {
     }
 }
 
+
+// Note: The value of the PC will be 4 bytes greater than the address of this instruction, but bit
+//1 of the PC is forced to 0 to ensure it is word aligned.
+// This should always be 0, but if there are problems this could be the reason.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -52,7 +54,7 @@ mod tests {
     #[test]
     fn load_zero() {
         let b: LDR = LDR::from(0x8802);
-        assert_eq!(b.word8, 2);
+        assert_eq!(b.word8, 8);
     }
 
     #[test]
@@ -61,6 +63,6 @@ mod tests {
         let mut map = MemoryMap::new();
         let b: LDR = LDR::from(0x8808);
         b.execute(&mut cpu, &mut map);
-        assert_eq!(cpu.get_register(0), 8);
+        assert_eq!(cpu.get_register(0), 32);
     }
 }
