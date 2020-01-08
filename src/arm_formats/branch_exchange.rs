@@ -1,6 +1,7 @@
 use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC};
+use log::{info, debug};
 use std::fmt;
 
 pub struct BranchExchange {
@@ -27,7 +28,7 @@ impl Instruction for BranchExchange {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let new_pc = cpu.get_register(self.rn);
         let mode_bit = new_pc & 0x01;
-        println!("Mode bit: {:X}", mode_bit);
+        debug!("Mode bit: {:X}", mode_bit);
 
         if mode_bit == 0 {
             cpu.current_instruction_set = InstructionSet::Arm;

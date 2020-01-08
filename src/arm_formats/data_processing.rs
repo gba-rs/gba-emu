@@ -3,6 +3,7 @@ use crate::{operations::arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::shift::{Shift, apply_shift};
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
+use log::{info, debug};
 use std::fmt;
 
 #[derive(Debug, PartialEq)]
@@ -228,7 +229,7 @@ impl Instruction for DataProcessing {
             },
             OpCodes::CMP => { //cmp
                 if !self.set_condition { //MRS SPSR
-                    println!("Going into an SPR");
+                    debug!("Going into an SPR");
                     let value = cpu.get_register(self.destination_register);
                     cpu.set_spsr(ProgramStatusRegister::from(value));
                 }

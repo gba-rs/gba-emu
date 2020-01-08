@@ -16,6 +16,7 @@ use super::{arm_instr::ARM_INSTRUCTIONS};
 use super::{thumb_instr::THUMB_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
 use std::borrow::{BorrowMut};
+use log::{info};
 
 
 
@@ -422,6 +423,7 @@ impl CPU {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use log::{debug};
 
     #[test]
     fn test_access_registers(){
@@ -440,7 +442,7 @@ mod tests {
         let result = cpu.decode(0x00F0F0F0);
         match result {
             Ok(instr) => {
-                println!("{:?}", instr.asm());
+                debug!("{:?}", instr.asm());
                 assert!(false);
             },
             Err(_) => {

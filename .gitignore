@@ -14,4 +14,5 @@ wasm-pack.log
 */pkg/
 */wasm-pack.log
 .idea/
-*/roms
+
+roms/games
