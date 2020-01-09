@@ -48,21 +48,20 @@ impl Instruction for LoadStoreSignExtended {
         } else if self.sign_extended && !self.h_flag {
             // load sign-extended byte
             let byte_from_memory = mem_map.read_u8(address);
-            let value_to_load: u32;
+            let mut value_to_load = byte_from_memory as u32;
             if (byte_from_memory & (1 << 7)) > 0 {
-                value_to_load = byte_from_memory as u32 & 0xFFFF_FFFF;
-            } else {
-                value_to_load = byte_from_memory as u32 & 0x0000_00FF;
+                value_to_load = byte_from_memory as u32 | 0xFFFF_FF00;
             }
+
             cpu.set_register(self.destination_register, value_to_load);
         } else {
             // load sign-extended halfword
             let halfword_from_memory = mem_map.read_u16(address);
             let value_to_load: u32;
-            if (byte_from_memory & (1 << 15)) > 0 {
-                value_to_load = byte_from_memory as u32 & 0xFFFF_FFFF;
+            if (halfword_from_memory & (1 << 15)) > 0 {
+                value_to_load = halfword_from_memory as u32 & 0xFFFF_FFFF;
             } else {
-                value_to_load = byte_from_memory as u32 & 0x0000_FFFF;
+                value_to_load = halfword_from_memory as u32 & 0x0000_FFFF;
             }
             cpu.set_register(self.destination_register, value_to_load);
         }
@@ -71,5 +70,60 @@ impl Instruction for LoadStoreSignExtended {
     fn asm(&self) -> String {
         // TODO
         return format!("TODO");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::memory::work_ram::WorkRam;
+
+    #[test]
+    fn test_store_halfword() {
+
+    }
+
+    #[test]
+    fn test_load_halfword() {
+        let format = LoadStoreSignExtended::from(0x5AA6);
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        let wram = WorkRam::new(256000, 0);
+        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+
+        cpu.set_register(2, 0x4);
+        cpu.set_register(4, 0x8);
+        mem_map.write_u32(0x8 + 0x4, 0xF1A1);
+
+        format.execute(&mut cpu, &mut mem_map);
+
+        assert_eq!(format.h_flag, true);
+        assert_eq!(format.sign_extended, false);
+        assert_eq!(format.offset_register, 2);
+        assert_eq!(format.base_register, 4);
+        assert_eq!(format.destination_register, 6);
+        assert_eq!(cpu.get_register(format.destination_register), 0x0000_F1A1)
+    }
+
+    #[test]
+    fn test_load_sign_extended_byte () {
+        let format = LoadStoreSignExtended::from(0x56A6);
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        let wram = WorkRam::new(256000, 0);
+        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+
+        cpu.set_register(2, 0x4);
+        cpu.set_register(4, 0x8);
+        mem_map.write_u32(0x8 + 0x4, 0xA1);
+
+        format.execute(&mut cpu, &mut mem_map);
+
+        assert_eq!(format.h_flag, false);
+        assert_eq!(format.sign_extended, true);
+        assert_eq!(format.offset_register, 2);
+        assert_eq!(format.base_register, 4);
+        assert_eq!(format.destination_register, 6);
+        assert_eq!(cpu.get_register(format.destination_register), 0xFFFF_FFA1)
     }
 }

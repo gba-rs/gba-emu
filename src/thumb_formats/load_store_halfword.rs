@@ -4,10 +4,10 @@ use crate::operations::instruction::Instruction;
 use crate::operations::load_store::{store, DataType, apply_offset};
 
 pub struct LoadStoreHalfword {
-    load: bool,
-    immediate_offset: u8,
-    rb: u8,
-    rd: u8,
+    pub load: bool,
+    pub immediate_offset: u8,
+    pub rb: u8,
+    pub rd: u8,
 }
 
 impl From<u16> for LoadStoreHalfword {
