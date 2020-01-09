@@ -1,4 +1,5 @@
-use crate::{arm_formats::common::Condition, arm_formats::common::Instruction};
+use crate::{arm_formats::common::Condition};
+use crate::operations::instruction::Instruction;
 use crate::{operations::arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::shift::{Shift, apply_shift};

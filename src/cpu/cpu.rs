@@ -1,4 +1,4 @@
-use crate::arm_formats::{data_processing::DataProcessing, common::Instruction, common::Condition, software_interrupt::SoftwareInterrupt};
+use crate::arm_formats::{data_processing::DataProcessing, common::Condition, software_interrupt::SoftwareInterrupt};
 use crate::arm_formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::arm_formats::{multiply::Multiply, multiply_long::MultiplyLong};
 use crate::arm_formats::{single_data_transfer::SingleDataTransfer};
@@ -15,6 +15,7 @@ use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
 use super::{thumb_instr::THUMB_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
+use crate::operations::instruction::Instruction;
 use std::borrow::{BorrowMut};
 use log::{info};
 

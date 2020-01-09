@@ -1,9 +1,11 @@
-use super::{common::Condition, common::Instruction};
+use super::{common::Condition};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::arm_arithmetic::add;
 use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC};
 use crate::cpu::cpu::ARM_LR;
+use crate::operations::instruction::Instruction;
 use std::fmt;
+
 
 pub struct Branch {
     pub condition: Condition,

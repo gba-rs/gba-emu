@@ -1,6 +1,6 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
-use crate::arm_formats::common::Instruction;
+use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]
 pub struct UnconditionalBranch {

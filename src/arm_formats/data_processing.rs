@@ -1,9 +1,10 @@
-use super::{common::Condition, common::Instruction};
+use super::{common::Condition};
 use crate::{operations::arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::shift::{Shift, apply_shift};
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
 use log::{info, debug};
+use crate::operations::instruction::Instruction;
 use std::fmt;
 
 #[derive(Debug, PartialEq)]

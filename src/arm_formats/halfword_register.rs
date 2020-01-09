@@ -1,7 +1,8 @@
-use super::{common::Condition, common::Instruction};
+use super::{common::Condition};
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::load_store::*;
+use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]
 pub struct HalfwordRegisterOffset {
