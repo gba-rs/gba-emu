@@ -1,5 +1,6 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
+use log::{debug};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {
@@ -124,25 +125,25 @@ pub fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 
 * If not signed, the bits 31-8 are 0s
 */
 pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
-    println!("Base value: {:X}", base_value);
-    println!("Is word aligned: {}", is_word_aligned(address));
+    debug!("Base value: {:X}", base_value);
+    debug!("Is word aligned: {}", is_word_aligned(address));
     let data: u8;
     // if is_word_aligned(address) { //0011
-    //     println!("word aligned");
+    //     debug!("word aligned");
     //     data = ((base_value & 0xFF000000) >> 24) as u8;
     // } else if is_word_plus_1_aligned(address) { //0010
-    //     println!("word plus 1 aligned");
+    //     debug!("word plus 1 aligned");
     //     data = ((base_value & 0x00FF0000) >> 16) as u8;
     // } else if is_halfword_aligned(address) {    //0001
-    //     println!("halfword aligned");
+    //     debug!("halfword aligned");
     //     data = ((base_value & 0x0000FF00) >> 8) as u8;
     // } else { // word + 3 byte aligned (3 more than mult of 4)
-    //     println!("Else");
+    //     debug!("Else");
     //     data = (base_value & 0x000000FF) as u8;
     // }
     data = (base_value & 0x000000FF) as u8;
 
-    println!("data: {:X}", data);
+    debug!("data: {:X}", data);
 
     let byte_to_load: u32;
 
@@ -152,7 +153,7 @@ pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
         byte_to_load = 0xFFFFFF00 | (data as u32);
     }
 
-    println!("Byte to load: {:X}", byte_to_load);
+    debug!("Byte to load: {:X}", byte_to_load);
     return byte_to_load as u32;
 }
 
@@ -200,7 +201,7 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
         address = base_address;
     }
 
-    println!("Address: {:X}", address);
+    debug!("Address: {:X}", address);
 
     if transfer_info.load {
         let value_from_memory = mem_map.read_u32(address);
