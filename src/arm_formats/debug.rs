@@ -1,4 +1,4 @@
-use super::common::Instruction;
+use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
 

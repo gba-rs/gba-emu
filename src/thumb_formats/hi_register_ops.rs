@@ -1,3 +1,5 @@
+use crate::operations::instruction::Instruction;
+
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum OpCodes {

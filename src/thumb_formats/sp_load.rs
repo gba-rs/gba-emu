@@ -1,3 +1,4 @@
+use crate::operations::instruction::Instruction;
 use std::fmt;
 
 pub struct STR {
