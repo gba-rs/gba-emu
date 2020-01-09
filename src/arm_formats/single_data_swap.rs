@@ -1,6 +1,5 @@
-use super::{common::Condition};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::CPU;
+use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]

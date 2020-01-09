@@ -1,9 +1,4 @@
-use crate::{arm_formats::common::Condition};
-use crate::operations::instruction::Instruction;
-use crate::{operations::arm_arithmetic};
-use crate::memory::memory_map::MemoryMap;
-use crate::operations::shift::{Shift, apply_shift};
-use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
+use crate::cpu::{program_status_register::ConditionFlags};
 
 fn _add(op1: u16, op2: u16, carry_in: bool) -> (u16, ConditionFlags) {
     let output: u32 = (op1 as u32) + (op2 as u32) + (carry_in as u32);
