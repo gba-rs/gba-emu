@@ -220,11 +220,7 @@ impl CPU {
                 })
             },
             ThumbInstructionFormat::ConditionalBranch => {
-                //return Ok(Box::new(ConditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(ConditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
             },
             ThumbInstructionFormat::HiRegister => {
                 //return Ok(Box::new(HiRegisterOp::from(thumb_instruction))); // Missing Instruction Implementation
