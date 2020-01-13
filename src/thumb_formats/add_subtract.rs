@@ -55,17 +55,17 @@ impl Instruction for AddSubtract {
                 cpu.cpsr.flags = flags;
             }
             OpCodes::SUB => {
-                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.op_register) as u16, cpu.get_register(self.source_register) as u16);
+                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.source_register) as u16, cpu.get_register(self.op_register) as u16);
                 cpu.set_register(self.destination_register, value.into());
                 cpu.cpsr.flags = flags;
             }
             OpCodes::ADD_I => {
-                let (value, flags) = thumb_arithmetic::add(cpu.get_register(self.op_register) as u16, cpu.get_register(self.source_register) as u16);
+                let (value, flags) = thumb_arithmetic::add(self.op_register as u16, cpu.get_register(self.source_register) as u16);
                 cpu.set_register(self.destination_register, value.into());
                 cpu.cpsr.flags = flags;
             }
             OpCodes::SUB_I => {
-                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.op_register) as u16, cpu.get_register(self.source_register) as u16);
+                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.source_register) as u16, self.op_register as u16);
                 cpu.set_register(self.destination_register, value.into());
                 cpu.cpsr.flags = flags;
             }
@@ -112,6 +112,7 @@ mod tests {
         assert_eq!(a.op_register, 3);
         assert_eq!(a.opcode, OpCodes::ADD);
         assert_eq!(a.immediate_operand, 0);
+        //196D
     }
 
     #[test]
