@@ -9,7 +9,7 @@ use crate::thumb_formats::{add_subtract::AddSubtract,alu::ALU,conditional_branch
 use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::ImmediateOp, load_address::LoadAddress, load_store_halfword::LoadStoreHalfword};
 use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_register_offset::LoadStoreRegisterOffset, load_store_sign_extended::LoadStoreSignExtended};
 use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
-use crate::thumb_formats::{sp_load::STR,unconditional_branch::UnconditionalBranch};
+use crate::thumb_formats::{sp_load_store::SpLoadStore,unconditional_branch::UnconditionalBranch};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
@@ -202,7 +202,7 @@ impl CPU {
 
     pub fn decode_thumb(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
         let thumb_instruction: u16 = instruction as u16;
-        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 7) & 0x0F)) as u16;
+        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 8) & 0x0F)) as u16;
         let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
         match instruction_format {
             ThumbInstructionFormat::MoveShiftedRegister => {
@@ -287,11 +287,7 @@ impl CPU {
                 })
             },
             ThumbInstructionFormat::LoadStoreSP => {
-                //return Ok(Box::new(STR::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(SpLoadStore::from(thumb_instruction)));
             },
             ThumbInstructionFormat::UnConditonalBranch => {
                 //return Ok(Box::new(UnconditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
