@@ -16,3 +16,4 @@ wasm-pack.log
 .idea/
 
 roms/games
+.BIOS
