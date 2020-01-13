@@ -263,11 +263,7 @@ impl CPU {
                 })
             },
             ThumbInstructionFormat::MultipleLoadStore => {
-                //return Ok(Box::new(MultipleLoadStore::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(MultipleLoadStore::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadPC => {
                 return Ok(Box::new(LDR::from(thumb_instruction)));
