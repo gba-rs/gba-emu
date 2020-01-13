@@ -18,7 +18,7 @@ impl From<u16> for LoadStoreImmediateOffset {
     fn from(value: u16) -> LoadStoreImmediateOffset {
         let data_type: DataType;
 
-        if (value & 0x1000 >> 12) == 0 {
+        if ((value & 0x1000) >> 12) == 0 {
             data_type = DataType::Word
         } else {
             data_type = DataType::Byte
@@ -26,7 +26,7 @@ impl From<u16> for LoadStoreImmediateOffset {
         return LoadStoreImmediateOffset {
             load: ((value & 0x800) >> 11) != 0,
             data_type,
-            offset_register: ((value & 0x1C0) >> 6) as u8,
+            offset_register: ((value & 0x7C0) >> 6) as u8,
             rb: ((value & 0x38) >> 3) as u8,
             rd: (value & 0x7) as u8,
         };
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn test_creation_0s() {
-        let format = LoadStoreImmediateOffset::from(0x5000);
+        let format = LoadStoreImmediateOffset::from(0x6000);
 
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Word);
@@ -104,23 +104,22 @@ mod tests {
 
     #[test]
     fn test_creation() {
-        let format = LoadStoreImmediateOffset::from(0x48B3);
+        let format = LoadStoreImmediateOffset::from(0x693B);
 
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset_register, 2);
-        assert_eq!(format.rb, 6);
+        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
     }
 
     #[test]
     fn test_creation_byte() {
-        let format = LoadStoreImmediateOffset::from(0x54B3);
-
+        let format = LoadStoreImmediateOffset::from(0x713B);
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Byte);
-        assert_eq!(format.offset_register, 2);
-        assert_eq!(format.rb, 6);
+        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
     }
     #[test]
@@ -222,7 +221,7 @@ mod tests {
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
         //let mem address = 3
-        let decode_result = gba.cpu.decode(0x613B);
+        let decode_result = gba.cpu.decode(0x713B);
         match decode_result {
             Ok(mut instr) => {
                 (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
