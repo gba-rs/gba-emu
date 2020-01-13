@@ -27,11 +27,11 @@ impl Instruction for LoadStoreHalfword {
         let base_address = apply_offset(base_register_value, self.immediate_offset, true);
         cpu.set_register(self.rb, base_address);
         if self.load {
-            let value_to_store = cpu.get_register(self.rd);
-            mem_map.write_u16(base_address, value_to_store as u16);
-        } else {
             let value = mem_map.read_u16(base_address);
             cpu.set_register(self.rd, value as u32);
+        } else {
+            let value_to_store = cpu.get_register(self.rd);
+            mem_map.write_u16(base_address, value_to_store as u16);
         }
 
     }
@@ -71,8 +71,8 @@ mod tests {
     }
 
     #[test]
-    fn test_store() {
-        let load_store_halfword = LoadStoreHalfword::from(0x8414);
+    fn test_load() {
+        let load_store_halfword = LoadStoreHalfword::from(0x8C14);
 
         let mut cpu = CPU::new();
         let mut mem_map = MemoryMap::new();
@@ -85,7 +85,7 @@ mod tests {
 
         load_store_halfword.execute(&mut cpu, &mut mem_map);
 
-        assert_eq!(load_store_halfword.load , false);
+        assert_eq!(load_store_halfword.load , true);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
@@ -94,8 +94,8 @@ mod tests {
     }
 
     #[test]
-    fn test_load() {
-        let load_store_halfword = LoadStoreHalfword::from(0x8C14);
+    fn test_store() {
+        let load_store_halfword = LoadStoreHalfword::from(0x8414);
 
         let mut cpu = CPU::new();
         let mut mem_map = MemoryMap::new();
@@ -108,7 +108,7 @@ mod tests {
 
         load_store_halfword.execute(&mut cpu, &mut mem_map);
 
-        assert_eq!(load_store_halfword.load , true);
+        assert_eq!(load_store_halfword.load , false);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
