@@ -46,3 +46,55 @@ impl fmt::Debug for AddOffsetSP {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gba::GBA;
+    use crate::cpu::{cpu::InstructionSet, cpu::THUMB_SP};
+    use std::borrow::{BorrowMut};
+
+    #[test]
+    fn add_positive_test() {
+        let mut gba: GBA = GBA::default(); 
+        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+
+        gba.cpu.set_register(THUMB_SP, 12);
+
+        // SP = 12
+        // #imm = 12
+        let decode_result = gba.cpu.decode(0xB003);
+        match decode_result {
+            Ok(mut instr) => {
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+            },
+            Err(e) => {
+                panic!("{:?}", e);
+            }
+        }
+
+        assert_eq!(24, gba.cpu.get_register(THUMB_SP));
+    }
+
+    #[test]
+    fn add_negative_test() {
+        let mut gba: GBA = GBA::default(); 
+        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+
+        gba.cpu.set_register(THUMB_SP, 12);
+
+        // SP = 12
+        // #imm = -12
+        let decode_result = gba.cpu.decode(0xB083);
+        match decode_result {
+            Ok(mut instr) => {
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+            },
+            Err(e) => {
+                panic!("{:?}", e);
+            }
+        }
+
+        assert_eq!(0, gba.cpu.get_register(THUMB_SP));
+    }
+}
