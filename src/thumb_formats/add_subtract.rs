@@ -1,8 +1,7 @@
-use crate::{arm_formats::common::Condition};
 use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::{cpu::CPU};
+use crate::cpu::{cpu::CPU, condition::Condition};
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {

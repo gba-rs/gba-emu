@@ -1,9 +1,8 @@
-use super::{common::Condition};
 use crate::{operations::arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::shift::{Shift, apply_shift};
-use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
-use log::{info, debug};
+use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags, program_status_register::ProgramStatusRegister, condition::Condition};
+use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
 
@@ -79,21 +78,21 @@ impl From<u32> for DataProcessing {
 impl fmt::Debug for DataProcessing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.set_condition {
-            write!(f, "{:?}S{:?}", self.opcode, self.condition);
+            write!(f, "{:?}S{:?}", self.opcode, self.condition)?;
         } else {
-            write!(f, "{:?}{:?}", self.opcode, self.condition);
+            write!(f, "{:?}{:?}", self.opcode, self.condition)?;
         }
         
-        write!(f, " r{}, ", self.destination_register);
+        write!(f, " r{}, ", self.destination_register)?;
         if !(self.opcode == OpCodes::MOV || self.opcode == OpCodes::MVN) {
-            write!(f, "r{}, ", self.op1_register);
+            write!(f, "r{}, ", self.op1_register)?;
         }
 
         if self.operand2.immediate {
             let op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
             write!(f, "#{:X}", op2)
         } else {
-            write!(f, "r{}, ", self.operand2.rm);
+            write!(f, "r{}, ", self.operand2.rm)?;
             write!(f, "{:?} ", self.operand2.shift)
         }
     }
