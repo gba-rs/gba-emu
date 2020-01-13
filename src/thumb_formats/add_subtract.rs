@@ -1,6 +1,6 @@
 use crate::{arm_formats::common::Condition};
 use crate::operations::instruction::Instruction;
-use crate::operations::{thumb_arithmetic};
+use crate::operations::{arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
 
@@ -50,22 +50,22 @@ impl Instruction for AddSubtract {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         match self.opcode {
             OpCodes::ADD => {
-                let (value, flags) = thumb_arithmetic::add(cpu.get_register(self.op_register) as u16, cpu.get_register(self.source_register) as u16);
+                let (value, flags) = arm_arithmetic::add(cpu.get_register(self.op_register), cpu.get_register(self.source_register));
                 cpu.set_register(self.destination_register, value.into());
                 cpu.cpsr.flags = flags;
             }
             OpCodes::SUB => {
-                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.source_register) as u16, cpu.get_register(self.op_register) as u16);
+                let (value, flags) = arm_arithmetic::sub(cpu.get_register(self.source_register), cpu.get_register(self.op_register));
                 cpu.set_register(self.destination_register, value.into());
                 cpu.cpsr.flags = flags;
             }
             OpCodes::ADD_I => {
-                let (value, flags) = thumb_arithmetic::add(self.op_register as u16, cpu.get_register(self.source_register) as u16);
+                let (value, flags) = arm_arithmetic::add(self.op_register as u32, cpu.get_register(self.source_register));
                 cpu.set_register(self.destination_register, value.into());
                 cpu.cpsr.flags = flags;
             }
             OpCodes::SUB_I => {
-                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.source_register) as u16, self.op_register as u16);
+                let (value, flags) = arm_arithmetic::sub(cpu.get_register(self.source_register), self.op_register as u32);
                 cpu.set_register(self.destination_register, value.into());
                 cpu.cpsr.flags = flags;
             }
