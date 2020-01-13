@@ -1,6 +1,5 @@
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::{thumb_arithmetic};
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU, condition::Condition, cpu::THUMB_PC};
 use std::fmt;

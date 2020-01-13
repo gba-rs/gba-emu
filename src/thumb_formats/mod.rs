@@ -13,6 +13,6 @@ pub mod software_interrupt;
 pub mod conditional_branch;
 pub mod alu;
 pub mod long_branch_link;
-pub mod sp_load;
+pub mod sp_load_store;
 pub mod immediate_ops;
 pub mod add_offset_sp;

@@ -23,7 +23,7 @@ ThumbInstructionFormat::ImmediateOp,ThumbInstructionFormat::ImmediateOp,ThumbIns
 ThumbInstructionFormat::ImmediateOp,ThumbInstructionFormat::ImmediateOp,ThumbInstructionFormat::ImmediateOp,ThumbInstructionFormat::ImmediateOp,
 //0100 0000
 ThumbInstructionFormat::ALU,ThumbInstructionFormat::ALU,ThumbInstructionFormat::ALU,ThumbInstructionFormat::ALU,
-ThumbInstructionFormat::ALU,ThumbInstructionFormat::ALU,ThumbInstructionFormat::ALU,ThumbInstructionFormat::ALU,
+ThumbInstructionFormat::HiRegister,ThumbInstructionFormat::HiRegister,ThumbInstructionFormat::HiRegister,ThumbInstructionFormat::HiRegister,
 ThumbInstructionFormat::LoadPC,ThumbInstructionFormat::LoadPC,ThumbInstructionFormat::LoadPC,ThumbInstructionFormat::LoadPC,
 ThumbInstructionFormat::LoadPC,ThumbInstructionFormat::LoadPC,ThumbInstructionFormat::LoadPC,ThumbInstructionFormat::LoadPC,
 //0101 0000
