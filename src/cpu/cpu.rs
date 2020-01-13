@@ -206,7 +206,6 @@ impl CPU {
         let thumb_instruction: u16 = instruction as u16;
         let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 8) & 0x0F)) as u16;
         let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
-        println!("{:?}", instruction_format);
         match instruction_format {
             ThumbInstructionFormat::MoveShiftedRegister => {
                 return Ok(Box::new(MoveShifted::from(thumb_instruction)));
@@ -255,11 +254,7 @@ impl CPU {
                 })
             },
             ThumbInstructionFormat::LongBranchLink => {
-                //return Ok(Box::new(BL::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(BL::from(thumb_instruction)));
             },
             ThumbInstructionFormat::MultipleLoadStore => {
                 //return Ok(Box::new(MultipleLoadStore::from(thumb_instruction))); // Missing Instruction Implementation
