@@ -59,10 +59,8 @@ impl Instruction for PushPop {
             for reg_num in self.register_list.iter() {
                 offset -= 4;
                 let value = cpu.get_register(*reg_num);
-                println!("r{} = {}", *reg_num, value);
                 let (offset_val, _) = arm_arithmetic::add(stack_pointer, offset as u32);
                 mem_map.write_u32(offset_val, value);
-                println!("[{:X}] = {}", offset_val, value);
             }
 
 
