@@ -206,7 +206,6 @@ mod tests {
         let target_address: u32 = (format.rb + (format.offset_register)) as u32;
         // target_address = 23.
         // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
-        println!("f{:?}", gba.mem_map.read_u32(target_address));
         assert_eq!(3, gba.mem_map.read_u32(target_address));
     }
 
