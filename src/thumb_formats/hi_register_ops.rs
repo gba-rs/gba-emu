@@ -136,7 +136,6 @@ impl HiRegisterOp {
 
         let (_, source) = self.get_register_vals(cpu);
         let mode_bit = (source & 0x1) != 0;
-        println!("Source: r{} = {}", self.source_register, source);
         if mode_bit {
             // Thumb
             cpu.current_instruction_set = InstructionSet::Thumb;
