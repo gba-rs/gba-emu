@@ -224,11 +224,7 @@ impl CPU {
                 return Ok(Box::new(ConditionalBranch::from(thumb_instruction)));
             },
             ThumbInstructionFormat::HiRegister => {
-                //return Ok(Box::new(HiRegisterOp::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(HiRegisterOp::from(thumb_instruction)));
             },
             ThumbInstructionFormat::ImmediateOp => {
                 return Ok(Box::new(ImmediateOp::from(thumb_instruction))); 
@@ -321,56 +317,46 @@ impl CPU {
         }
     }
 
-    pub fn get_register(&self, reg_num: u8) -> u32 {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
+    fn check_reg_range(reg_num: &u8, instr_set: &InstructionSet) {
+        if *instr_set == InstructionSet::Thumb {
+            if *reg_num > 10 {
                 panic!("Attempting to get register out of range for Thumb: {}", reg_num);
             }
         } else {
-            if reg_num > 15 {
+            if *reg_num > 15 {
                 panic!("Attempting to get register out of range for Arm: {}", reg_num);
             }
         }
+    }
+
+    pub fn get_register(&self, reg_num: u8) -> u32 {
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]];
     }
 
     pub fn set_register(&mut self, reg_num: u8, value: u32) {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
-                panic!("Attempting to set register out of range for Thumb: {}", reg_num);
-            }
-        } else {
-            if reg_num > 15 {
-                panic!("Attempting to set register out of range for Arm: {}", reg_num);
-            }
-        }
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
-    pub fn get_register_override(&self, reg_num: u8, op_mode: OperatingMode) -> u32 {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
-                panic!("Attempting to get register out of range for Thumb: {}", reg_num);
-            }
-        } else {
-            if reg_num > 15 {
-                panic!("Attempting to get register out of range for Arm: {}", reg_num);
-            }
-        }
+    pub fn get_register_override_opmode(&self, reg_num: u8, op_mode: OperatingMode) -> u32 {
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         return self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]];
     }
 
-    pub fn set_register_override(&mut self, reg_num: u8, op_mode: OperatingMode, value: u32) {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
-                panic!("Attempting to set register out of range for Thumb: {}", reg_num);
-            }
-        } else {
-            if reg_num > 15 {
-                panic!("Attempting to set register out of range for Arm: {}", reg_num);
-            }
-        }
+    pub fn set_register_override_opmode(&mut self, reg_num: u8, op_mode: OperatingMode, value: u32) {
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
+    }
+    
+    pub fn get_register_override_instr_set(&self, reg_num: u8, instr_set: InstructionSet) -> u32{
+        CPU::check_reg_range(&reg_num, &instr_set);
+        return self.registers[REG_MAP[instr_set as usize][self.operating_mode as usize][reg_num as usize]];
+    }
+
+    pub fn set_register_override_instr_set(&mut self, reg_num: u8, instr_set: InstructionSet, value: u32){
+        CPU::check_reg_range(&reg_num, &instr_set);
+        self.registers[REG_MAP[instr_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
     pub fn check_condition(&self, cond: &Condition) -> bool {
