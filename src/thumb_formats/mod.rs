@@ -7,7 +7,7 @@ pub mod hi_register_ops;
 pub mod push_pop;
 pub mod load_store_sign_extended;
 pub mod unconditional_branch;
-pub mod load_store_register_offset;
+pub mod load_store_immediate_offset;
 pub mod multiple_load_store;
 pub mod software_interrupt;
 pub mod conditional_branch;
