@@ -94,6 +94,7 @@ pub enum InstructionFormat {
     SoftwareInterrupt
 }
 
+#[derive(Debug)]
 pub enum ThumbInstructionFormat {
     MoveShiftedRegister,
     AddSubtract,
@@ -202,8 +203,9 @@ impl CPU {
 
     pub fn decode_thumb(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
         let thumb_instruction: u16 = instruction as u16;
-        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 7) & 0x0F)) as u16;
+        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 8) & 0x0F)) as u16;
         let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
+        println!("Format: {:?}, Opcode: {:X}, Instruction: {:X}", instruction_format, opcode, thumb_instruction);
         match instruction_format {
             ThumbInstructionFormat::MoveShiftedRegister => {
                 return Ok(Box::new(MoveShifted::from(thumb_instruction)));
@@ -273,11 +275,7 @@ impl CPU {
                 return Ok(Box::new(LDR::from(thumb_instruction)));
             },
             ThumbInstructionFormat::PushPopRegister => {
-                //return Ok(Box::new(PushPop::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(PushPop::from(thumb_instruction)));
             },
             ThumbInstructionFormat::BreakpointInterrupt => {
                 //return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction))); // Missing Instruction Implementation

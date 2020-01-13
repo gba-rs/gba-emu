@@ -59,8 +59,10 @@ impl Instruction for PushPop {
             for reg_num in self.register_list.iter() {
                 offset -= 4;
                 let value = cpu.get_register(*reg_num);
-                let (offset_val, _) = arm_arithmetic::sub(stack_pointer, offset as u32);
+                println!("r{} = {}", *reg_num, value);
+                let (offset_val, _) = arm_arithmetic::add(stack_pointer, offset as u32);
                 mem_map.write_u32(offset_val, value);
+                println!("[{:X}] = {}", offset_val, value);
             }
 
 
@@ -85,11 +87,93 @@ impl Instruction for PushPop {
 
 impl fmt::Debug for PushPop {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-        write!(f, "")
+        if self.load {
+            write!(f, "POP {{")?;
+        } else {
+            write!(f, "PUSH {{")?;
+        }
+
+        for reg_num in self.register_list.iter() {
+            write!(f, " r{} ", *reg_num)?;
+        }
+
+        if self.store_lr {
+            if self.load {
+                write!(f, " pc ")?;
+            } else {
+                write!(f, " lr ")?;
+            }
+        }
+
+        write!(f, "}}")
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::gba::GBA;
+    use crate::cpu::{cpu::InstructionSet, cpu::THUMB_PC};
+    use std::borrow::{BorrowMut};
 
+    #[test]
+    fn push_test() {
+        let mut gba: GBA = GBA::default(); 
+        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+
+        for i in 0..8 {
+            gba.cpu.set_register(i, (i as u32) * 100);
+        }
+
+        let base = 0x02000020;
+        gba.cpu.set_register(THUMB_SP, base);
+
+        // Store, rb = sp, rlist = {1, 3, 5, 7}
+        // STMDB sp!, {1, 3, 5, 7}
+        let decode_result = gba.cpu.decode(0xB4AA);
+        match decode_result {
+            Ok(mut instr) => {
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+            },
+            Err(e) => {
+                panic!("{:?}", e);
+            }
+        }
+
+        assert_eq!(100, gba.mem_map.read_u32(base - 4));
+        assert_eq!(300, gba.mem_map.read_u32(base - 8));
+        assert_eq!(500, gba.mem_map.read_u32(base - 12));
+        assert_eq!(700, gba.mem_map.read_u32(base - 16));
+    }
+
+    #[test]
+    fn pop_test() {
+        let mut gba: GBA = GBA::default(); 
+        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+
+        let base = 0x02000000;
+
+        for i in 0..8 {
+           gba.mem_map.write_u32(0x02000000 + (i * 4), (100 * i) as u32);
+        }
+
+        gba.cpu.set_register(THUMB_SP, base);
+
+        // Load, rb = sp, rlist = {1, 3, 5, 7}
+        // LDMIA sp!, {1, 3, 5, 7}
+        let decode_result = gba.cpu.decode(0xBCAA);
+        match decode_result {
+            Ok(mut instr) => {
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+            },
+            Err(e) => {
+                panic!("{:?}", e);
+            }
+        }
+
+        assert_eq!(0, gba.cpu.get_register(1));
+        assert_eq!(100, gba.cpu.get_register(3));
+        assert_eq!(200, gba.cpu.get_register(5));
+        assert_eq!(300, gba.cpu.get_register(7));
+    }
 }
