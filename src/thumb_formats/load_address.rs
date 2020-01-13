@@ -33,12 +33,10 @@ impl fmt::Debug for LoadAddress {
 impl Instruction for LoadAddress {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         if self.sp_pc {
-            println!("Doing SP");
             let sp = cpu.get_register(THUMB_SP);
             let (new, _) = arm_arithmetic::add(sp, self.word8 as u32);
             cpu.set_register(self.destination, new);
         } else {
-            println!("Doing PC");
             let mut pc = cpu.get_register(THUMB_PC) + 4;
             if pc & (1 << 0) != 0 {
                 //there is a 1 as the first bit so we need to swap that bit to 0
