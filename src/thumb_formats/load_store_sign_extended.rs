@@ -30,7 +30,6 @@ impl Instruction for LoadStoreSignExtended {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let address = cpu.get_register(self.base_register) +
             cpu.get_register(self.offset_register);
-        cpu.set_register(self.base_register, address);
         if !self.sign_extended && !self.h_flag {
             // store halfword
             let store_halfword = LoadStoreHalfword {
@@ -59,12 +58,13 @@ impl Instruction for LoadStoreSignExtended {
             let halfword_from_memory = mem_map.read_u16(address);
             let value_to_load: u32;
             if (halfword_from_memory & (1 << 15)) > 0 {
-                value_to_load = halfword_from_memory as u32 & 0xFFFF_FFFF;
+                value_to_load = halfword_from_memory as u32 | 0xFFFF_0000;
             } else {
                 value_to_load = halfword_from_memory as u32 & 0x0000_FFFF;
             }
             cpu.set_register(self.destination_register, value_to_load);
         }
+        cpu.set_register(self.base_register, address);
     }
 
     fn asm(&self) -> String {
@@ -80,7 +80,24 @@ mod tests {
 
     #[test]
     fn test_store_halfword() {
+        let format = LoadStoreSignExtended::from(0x52A6);
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        let wram = WorkRam::new(256000, 0);
+        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
+        cpu.set_register(2, 0x02);
+        cpu.set_register(4, 0x06);
+        cpu.set_register(6, 0xF2F1);
+
+        format.execute(&mut cpu, &mut mem_map);
+
+        assert_eq!(format.h_flag, false);
+        assert_eq!(format.sign_extended, false);
+        assert_eq!(format.offset_register, 2);
+        assert_eq!(format.base_register, 4);
+        assert_eq!(format.destination_register, 6);
+        assert_eq!(mem_map.read_u16(0x02 + 0x06), 0xF2F1);
     }
 
     #[test]
@@ -125,5 +142,49 @@ mod tests {
         assert_eq!(format.base_register, 4);
         assert_eq!(format.destination_register, 6);
         assert_eq!(cpu.get_register(format.destination_register), 0xFFFF_FFA1)
+    }
+
+    #[test]
+    fn test_load_sign_extended_halfword_negative () {
+        let format = LoadStoreSignExtended::from(0x5EA6);
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        let wram = WorkRam::new(256000, 0);
+        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+
+        cpu.set_register(2, 0x4);
+        cpu.set_register(4, 0x8);
+        mem_map.write_u32(0x8 + 0x4, 0xFF01);
+
+        format.execute(&mut cpu, &mut mem_map);
+
+        assert_eq!(format.h_flag, true);
+        assert_eq!(format.sign_extended, true);
+        assert_eq!(format.offset_register, 2);
+        assert_eq!(format.base_register, 4);
+        assert_eq!(format.destination_register, 6);
+        assert_eq!(cpu.get_register(format.destination_register), 0xFFFF_FF01);
+    }
+
+    #[test]
+    fn test_load_sign_extended_halfword_positive () {
+        let format = LoadStoreSignExtended::from(0x5EA6);
+        let mut cpu = CPU::new();
+        let mut mem_map = MemoryMap::new();
+        let wram = WorkRam::new(256000, 0);
+        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+
+        cpu.set_register(2, 0x4);
+        cpu.set_register(4, 0x8);
+        mem_map.write_u32(0x8 + 0x4, 0x1F01);
+
+        format.execute(&mut cpu, &mut mem_map);
+
+        assert_eq!(format.h_flag, true);
+        assert_eq!(format.sign_extended, true);
+        assert_eq!(format.offset_register, 2);
+        assert_eq!(format.base_register, 4);
+        assert_eq!(format.destination_register, 6);
+        assert_eq!(cpu.get_register(format.destination_register), 0x0000_1F01);
     }
 }
