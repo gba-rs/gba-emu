@@ -49,7 +49,7 @@ impl Instruction for LoadStoreRegisterOffset {
     }
 
     fn asm(&self) -> String {
-        let mut op;
+        let op;
         let mut b = "";
         if self.load {
             op = "LD";

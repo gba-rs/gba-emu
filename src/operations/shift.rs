@@ -21,7 +21,7 @@ impl From<u32> for Shift {
 
 impl fmt::Debug for Shift {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} ", self.shift_type);
+        write!(f, "{:?} ", self.shift_type)?;
         if self.immediate {
             write!(f, "{:X}", self.shift_amount)
         } else {

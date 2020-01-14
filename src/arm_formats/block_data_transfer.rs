@@ -1,6 +1,5 @@
-use super::{common::Condition};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::{cpu::CPU, cpu::OperatingMode};
+use crate::cpu::{cpu::CPU, cpu::OperatingMode, condition::Condition};
 use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]
@@ -70,12 +69,12 @@ impl BlockDataTransfer {
         }
 
         for reg_num in self.register_list.iter() {
-            cpu.set_register_override(*reg_num, current_operating_mode, mem_map.read_u32(current_address as u32));
+            cpu.set_register_override_opmode(*reg_num, current_operating_mode, mem_map.read_u32(current_address as u32));
             current_address += 4;
         }
 
         if write_back && !self.register_list.contains(&self.base_register) {
-            cpu.set_register_override(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
+            cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
         }
     }
 
@@ -94,12 +93,12 @@ impl BlockDataTransfer {
 
         for reg_num in self.register_list.iter() {
             // todo figure out write back with base in reg list
-            mem_map.write_u32(current_address as u32, cpu.get_register_override(*reg_num, current_operating_mode));
+            mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
             current_address += 4;
         }
 
         if write_back {
-            cpu.set_register_override(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
+            cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
         }
     }
 

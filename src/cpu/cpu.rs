@@ -1,4 +1,4 @@
-use crate::arm_formats::{data_processing::DataProcessing, common::Condition, software_interrupt::SoftwareInterrupt};
+use crate::arm_formats::{data_processing::DataProcessing, software_interrupt::SoftwareInterrupt};
 use crate::arm_formats::{halfword_register::HalfwordRegisterOffset, halfword_register::HalfwordImmediateOffset};
 use crate::arm_formats::{multiply::Multiply, multiply_long::MultiplyLong};
 use crate::arm_formats::{single_data_transfer::SingleDataTransfer};
@@ -9,12 +9,13 @@ use crate::thumb_formats::{add_subtract::AddSubtract,alu::ALU,conditional_branch
 use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::ImmediateOp, load_address::LoadAddress, load_store_halfword::LoadStoreHalfword};
 use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_register_offset::LoadStoreRegisterOffset, load_store_sign_extended::LoadStoreSignExtended};
 use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
-use crate::thumb_formats::{sp_load::STR,unconditional_branch::UnconditionalBranch};
+use crate::thumb_formats::{sp_load_store::SpLoadStore,unconditional_branch::UnconditionalBranch};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
 use super::{thumb_instr::THUMB_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
+use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::borrow::{BorrowMut};
 use log::{info};
@@ -94,6 +95,7 @@ pub enum InstructionFormat {
     SoftwareInterrupt
 }
 
+#[derive(Debug)]
 pub enum ThumbInstructionFormat {
     MoveShiftedRegister,
     AddSubtract,
@@ -202,8 +204,9 @@ impl CPU {
 
     pub fn decode_thumb(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
         let thumb_instruction: u16 = instruction as u16;
-        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 7) & 0x0F)) as u16;
+        let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 8) & 0x0F)) as u16;
         let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
+        println!("Format: {:?}, Opcode: {:X}, Instruction: {:X}", instruction_format, opcode, thumb_instruction);
         match instruction_format {
             ThumbInstructionFormat::MoveShiftedRegister => {
                 return Ok(Box::new(MoveShifted::from(thumb_instruction)));
@@ -219,18 +222,10 @@ impl CPU {
                 })
             },
             ThumbInstructionFormat::ConditionalBranch => {
-                //return Ok(Box::new(ConditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(ConditionalBranch::from(thumb_instruction)));
             },
             ThumbInstructionFormat::HiRegister => {
-                //return Ok(Box::new(HiRegisterOp::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(HiRegisterOp::from(thumb_instruction)));
             },
             ThumbInstructionFormat::ImmediateOp => {
                 return Ok(Box::new(ImmediateOp::from(thumb_instruction))); 
@@ -256,28 +251,16 @@ impl CPU {
                 })
             },
             ThumbInstructionFormat::LongBranchLink => {
-                //return Ok(Box::new(BL::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(BL::from(thumb_instruction)));
             },
             ThumbInstructionFormat::MultipleLoadStore => {
-                //return Ok(Box::new(MultipleLoadStore::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(MultipleLoadStore::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadPC => {
                 return Ok(Box::new(LDR::from(thumb_instruction)));
             },
             ThumbInstructionFormat::PushPopRegister => {
-                //return Ok(Box::new(PushPop::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(PushPop::from(thumb_instruction)));
             },
             ThumbInstructionFormat::BreakpointInterrupt => {
                 //return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction))); // Missing Instruction Implementation
@@ -287,18 +270,10 @@ impl CPU {
                 })
             },
             ThumbInstructionFormat::LoadStoreSP => {
-                //return Ok(Box::new(STR::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(SpLoadStore::from(thumb_instruction)));
             },
             ThumbInstructionFormat::UnConditonalBranch => {
-                //return Ok(Box::new(UnconditionalBranch::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(UnconditionalBranch::from(thumb_instruction)));
             },
             _ => Err(DecodeError{
                 instruction: instruction,
@@ -331,56 +306,46 @@ impl CPU {
         }
     }
 
-    pub fn get_register(&self, reg_num: u8) -> u32 {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
+    fn check_reg_range(reg_num: &u8, instr_set: &InstructionSet) {
+        if *instr_set == InstructionSet::Thumb {
+            if *reg_num > 10 {
                 panic!("Attempting to get register out of range for Thumb: {}", reg_num);
             }
         } else {
-            if reg_num > 15 {
+            if *reg_num > 15 {
                 panic!("Attempting to get register out of range for Arm: {}", reg_num);
             }
         }
+    }
+
+    pub fn get_register(&self, reg_num: u8) -> u32 {
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]];
     }
 
     pub fn set_register(&mut self, reg_num: u8, value: u32) {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
-                panic!("Attempting to set register out of range for Thumb: {}", reg_num);
-            }
-        } else {
-            if reg_num > 15 {
-                panic!("Attempting to set register out of range for Arm: {}", reg_num);
-            }
-        }
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
-    pub fn get_register_override(&self, reg_num: u8, op_mode: OperatingMode) -> u32 {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
-                panic!("Attempting to get register out of range for Thumb: {}", reg_num);
-            }
-        } else {
-            if reg_num > 15 {
-                panic!("Attempting to get register out of range for Arm: {}", reg_num);
-            }
-        }
+    pub fn get_register_override_opmode(&self, reg_num: u8, op_mode: OperatingMode) -> u32 {
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         return self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]];
     }
 
-    pub fn set_register_override(&mut self, reg_num: u8, op_mode: OperatingMode, value: u32) {
-        if self.current_instruction_set == InstructionSet::Thumb {
-            if reg_num > 10 {
-                panic!("Attempting to set register out of range for Thumb: {}", reg_num);
-            }
-        } else {
-            if reg_num > 15 {
-                panic!("Attempting to set register out of range for Arm: {}", reg_num);
-            }
-        }
+    pub fn set_register_override_opmode(&mut self, reg_num: u8, op_mode: OperatingMode, value: u32) {
+        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
+    }
+    
+    pub fn get_register_override_instr_set(&self, reg_num: u8, instr_set: InstructionSet) -> u32{
+        CPU::check_reg_range(&reg_num, &instr_set);
+        return self.registers[REG_MAP[instr_set as usize][self.operating_mode as usize][reg_num as usize]];
+    }
+
+    pub fn set_register_override_instr_set(&mut self, reg_num: u8, instr_set: InstructionSet, value: u32){
+        CPU::check_reg_range(&reg_num, &instr_set);
+        self.registers[REG_MAP[instr_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
     pub fn check_condition(&self, cond: &Condition) -> bool {
