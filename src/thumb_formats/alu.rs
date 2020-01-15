@@ -72,52 +72,47 @@ impl Instruction for ALU {
         match self.opcode {
             OpCodes::AND => {  
                 let value = cpu.get_register(self.rd) & cpu.get_register(self.rs);
-                cpu.set_register(self.rd, value)
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::EOR =>{
                 let value = cpu.get_register(self.rd) ^ cpu.get_register(self.rs);
-                cpu.set_register(self.rd, value)
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::LSL => {
                 let value = cpu.get_register(self.rd) << cpu.get_register(self.rs);
-                cpu.set_register(self.rd, value)
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::LSR => {
                 let value = cpu.get_register(self.rd) >> cpu.get_register(self.rs);
-                cpu.set_register(self.rd, value)
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::ASR =>{
                 let value = cpu.get_register(self.rd) as i32 >> cpu.get_register(self.rs) as i32;
                 cpu.set_register(self.rd, value as u32);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::ADC => {
                 cpu.set_register(self.rd, adc(cpu.get_register(self.rd),cpu.get_register(self.rs)).0);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::SBC => {
                 cpu.set_register(self.rd, sbc(cpu.get_register(self.rd),cpu.get_register(self.rs)).0);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::ROR =>{
                 cpu.set_register(self.rd, cpu.get_register(self.rd).rotate_right(cpu.get_register(self.rs)));
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::TST => {
-                let op1 = cpu.get_register(self.rd);
-                let op2 = cpu.get_register(self.rs);
-                let value = (op1 & op2) as u64;
-                let carryout: bool = (value >> 32) != 0;
-                let op1_sign: bool = (op1 >> 31) != 0;
-                let op2_sign: bool = (op2 >> 31) != 0;
-                let value_sign: bool = ((value >> 31) & 0x01) != 0;
-                cpu.cpsr.flags = ConditionFlags {
-                    negative: (value & (0x1 << 31)) != 0,
-                    zero: value == 0,
-                    carry: carryout,
-                    signed_overflow: (op1_sign == op2_sign) && (op1_sign != value_sign)
-                };
-                
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::NEG=>{
                 cpu.set_register(self.rd, ((cpu.get_register(self.rs) as i32) * -1) as u32);
-                
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::CMP=>{
                 cpu.cpsr.flags = cmp(cpu.get_register(self.rd), cpu.get_register(self.rs));
@@ -127,15 +122,19 @@ impl Instruction for ALU {
             },
             OpCodes::ORR=>{
                 cpu.set_register(self.rd, cpu.get_register(self.rd) | cpu.get_register(self.rs));
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::MUL=>{
                 cpu.set_register(self.rd, mul(cpu.get_register(self.rd), cpu.get_register(self.rs)).0);
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::BIC=>{
                 cpu.set_register(self.rd, cpu.get_register(self.rd) & !cpu.get_register(self.rs));
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::MVN=>{
                 cpu.set_register(self.rd, !cpu.get_register(self.rs));
+                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             _ => {
                 panic!("Error in processing Thumb ALU instruction");
@@ -147,6 +146,21 @@ impl Instruction for ALU {
     }
 }
 
+fn set_flags(rd: u8, rs: u8, cpu: &mut CPU) -> ConditionFlags{
+    let op1 = cpu.get_register(rd);
+    let op2 = cpu.get_register(rs);
+    let value = (op1 & op2) as u64;
+    let carryout: bool = (value >> 32) != 0;
+    let op1_sign: bool = (op1 >> 31) != 0;
+    let op2_sign: bool = (op2 >> 31) != 0;
+    let value_sign: bool = ((value >> 31) & 0x01) != 0;
+    return ConditionFlags {
+        negative: (value & (0x1 << 31)) != 0,
+        zero: value == 0,
+        carry: carryout,
+        signed_overflow: (op1_sign == op2_sign) && (op1_sign != value_sign)
+    };
+}
 //Unit Tests
 
 #[cfg(test)]
