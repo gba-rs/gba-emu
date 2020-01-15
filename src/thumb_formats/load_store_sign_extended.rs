@@ -4,8 +4,8 @@ use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::ThumbInstructionFormat::LoadStoreHalfWord;
 use crate::thumb_formats::load_store_halfword::LoadStoreHalfword;
 use crate::operations::arm_arithmetic::add;
+use core::fmt;
 
-#[derive(Debug)]
 pub struct LoadStoreSignExtended {
     h_flag: bool,
     sign_extended: bool,
@@ -23,6 +23,23 @@ impl From<u16> for LoadStoreSignExtended {
             base_register: ((value & 0x38) >> 3) as u8,
             destination_register: (value & 0x7) as u8,
         };
+    }
+}
+
+impl fmt::Debug for LoadStoreSignExtended {
+    fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
+        let instruction = format!("r{:?}, [r{:?}, r{:?}]", self.destination_register, self.base_register, self.offset_register);
+        let mut instr_type = format!("");
+        if !self.sign_extended && !self.h_flag {
+            instr_type = format!("STRH");
+        } else if !self.sign_extended && self.h_flag {
+            instr_type = format!("LDRH");
+        } else if self.sign_extended && !self.h_flag {
+            instr_type = format!("LDSB");
+        } else {
+            instr_type = format!("LDSH");
+        }
+        write!(f, "{} {}", instr_type, instruction )
     }
 }
 
@@ -68,8 +85,7 @@ impl Instruction for LoadStoreSignExtended {
     }
 
     fn asm(&self) -> String {
-        // TODO
-        return format!("TODO");
+        return format!("{:?}", self);
     }
 }
 
@@ -91,7 +107,6 @@ mod tests {
         cpu.set_register(6, 0xF2F1);
 
         format.execute(&mut cpu, &mut mem_map);
-
         assert_eq!(format.h_flag, false);
         assert_eq!(format.sign_extended, false);
         assert_eq!(format.offset_register, 2);
