@@ -118,6 +118,7 @@ pub enum ThumbInstructionFormat {
     UnConditonalBranch,
     LongBranchLink,
     BreakpointInterrupt,
+    SoftwareInterrupt,
     Undefined
 }
 
@@ -278,6 +279,9 @@ impl CPU {
             ThumbInstructionFormat::UnConditonalBranch => {
                 return Ok(Box::new(UnconditionalBranch::from(thumb_instruction)));
             },
+            ThumbInstructionFormat::SoftwareInterrupt => {
+                return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction)));
+            }
             _ => Err(DecodeError{
                 instruction: instruction,
                 opcode: opcode
