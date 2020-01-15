@@ -139,7 +139,7 @@ impl HiRegisterOp {
         if mode_bit {
             // Thumb
             cpu.current_instruction_set = InstructionSet::Thumb;
-            cpu.set_register(THUMB_PC, source);
+            cpu.set_register(THUMB_PC, source - 1);
         } else {
             // Arm
             cpu.current_instruction_set = InstructionSet::Arm;
