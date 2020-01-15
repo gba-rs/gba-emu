@@ -57,7 +57,7 @@ ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::LoadAddress,ThumbIns
 ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::LoadAddress,
 ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::LoadAddress,
 //1011 0000
-ThumbInstructionFormat::LoadAddress,ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined, 
+ThumbInstructionFormat::AddOffsetSP,ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined, 
 ThumbInstructionFormat::PushPopRegister, ThumbInstructionFormat::PushPopRegister,ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined,
 ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined,ThumbInstructionFormat::Undefined,
 ThumbInstructionFormat::PushPopRegister, ThumbInstructionFormat::PushPopRegister, ThumbInstructionFormat::BreakpointInterrupt,ThumbInstructionFormat::Undefined,
