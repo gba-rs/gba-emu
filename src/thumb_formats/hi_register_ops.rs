@@ -312,6 +312,6 @@ mod tests {
         }
 
         assert_eq!(InstructionSet::Thumb, gba.cpu.current_instruction_set);
-        assert_eq!(201, gba.cpu.get_register(THUMB_PC));
+        assert_eq!(200, gba.cpu.get_register(THUMB_PC));
     }
 }
