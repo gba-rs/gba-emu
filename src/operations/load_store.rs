@@ -26,7 +26,7 @@ impl From<u32> for DataType {
 */
 pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU,
             value_from_memory: u32, address: u32) {
-    let mut value_to_load = 0;
+    let value_to_load;
     if !is_signed && data_type == DataType::Byte {
         value_to_load = get_byte_to_load(value_from_memory, address, false);
     } else if is_signed && data_type == DataType::Byte {
@@ -35,6 +35,8 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
         value_to_load = get_halfword_to_load(value_from_memory, address, false);
     } else if is_signed && data_type == DataType::Halfword {
         value_to_load = get_halfword_to_load(value_from_memory, address, true);
+    } else {
+        value_to_load = value_from_memory;
     }
 
     cpu.set_register(destination, value_to_load);
