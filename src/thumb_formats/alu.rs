@@ -96,12 +96,14 @@ impl Instruction for ALU {
                 cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::ADC => {
-                cpu.set_register(self.rd, adc(cpu.get_register(self.rd),cpu.get_register(self.rs)).0);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let (value, flags) = adc(cpu.get_register(self.rd),cpu.get_register(self.rs));
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::SBC => {
-                cpu.set_register(self.rd, sbc(cpu.get_register(self.rd),cpu.get_register(self.rs)).0);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let (value, flags) = sbc(cpu.get_register(self.rd),cpu.get_register(self.rs));
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::ROR =>{
                 cpu.set_register(self.rd, cpu.get_register(self.rd).rotate_right(cpu.get_register(self.rs)));
@@ -125,8 +127,9 @@ impl Instruction for ALU {
                 cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::MUL=>{
-                cpu.set_register(self.rd, mul(cpu.get_register(self.rd), cpu.get_register(self.rs)).0);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let (value, flags) = mul(cpu.get_register(self.rd), cpu.get_register(self.rs));
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::BIC=>{
                 cpu.set_register(self.rd, cpu.get_register(self.rd) & !cpu.get_register(self.rs));
