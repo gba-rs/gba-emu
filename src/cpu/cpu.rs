@@ -290,18 +290,24 @@ impl CPU {
     }
 
     pub fn fetch(&mut self, map: &mut MemoryMap) {
-        let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { map.read_u32(self.registers[15]) } else { map.read_u16(self.registers[15]).into() };
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
-        if self.current_instruction_set == InstructionSet::Arm { self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) } else { self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) };
+
+        let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { map.read_u32(pc_contents) } else { map.read_u16(pc_contents) as u32 };
+
+        if self.current_instruction_set == InstructionSet::Arm { 
+            self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) 
+        } else { 
+            self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) 
+        };
 
         let condition = if self.current_instruction_set == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {(Condition::from(0x0))};//THUMB codes don't include conditions 
-        let check_condition = if self.current_instruction_set == InstructionSet::Arm { self.check_condition(&condition) } else { false };//fine
+        let check_condition = if self.current_instruction_set == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
 
         let decode_result = self.decode(instruction);
         match decode_result {
             Ok(mut instr) => {
-                self.last_instruction = instr.asm();
+                info!("Condition: {}, Instruction: {:?}", check_condition, instr.asm());
 
                 if check_condition {
                     (instr.borrow_mut() as &mut dyn Instruction).execute(self, map);

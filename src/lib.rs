@@ -5,6 +5,7 @@ pub mod cpu;
 pub mod memory;
 pub mod gba;
 pub mod thumb_formats;
+pub mod gpu;
 
 use wasm_bindgen::prelude::*;
 

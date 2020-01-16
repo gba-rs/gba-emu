@@ -36,7 +36,7 @@ impl Instruction for BranchExchange {
             // Flush Pipeline
         } else if mode_bit == 1 {
             cpu.current_instruction_set = InstructionSet::Thumb;
-            cpu.set_register(THUMB_PC, new_pc);
+            cpu.set_register(THUMB_PC, new_pc - 1);
             // Flush Pipeline
         }
     }

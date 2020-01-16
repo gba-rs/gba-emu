@@ -1,9 +1,11 @@
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_registers::IORegisters};
+use crate::gpu::gpu::GPU;
 
 
 pub struct GBA {
     pub cpu: CPU,
+    pub gpu: GPU,
     pub mem_map: MemoryMap,
     pub game_pack_memory: [GamePackRom; 3],
     pub io_reg: IORegisters
@@ -19,6 +21,7 @@ impl Default for GBA {
 
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
+            gpu: GPU::new(),
             mem_map: MemoryMap::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0)
@@ -41,6 +44,7 @@ impl Default for GBA {
         temp.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
         temp.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
         temp.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
+        temp.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
         temp.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
         temp.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
         temp.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
@@ -60,6 +64,7 @@ impl GBA {
 
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
+            gpu: GPU::new(),
             mem_map: MemoryMap::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0)
@@ -84,6 +89,7 @@ impl GBA {
         temp.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
         temp.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
         temp.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
+        temp.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
         temp.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
         temp.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
         temp.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
