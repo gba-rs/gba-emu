@@ -24,7 +24,7 @@ impl From<u16> for MoveShifted {
 }
 
 impl Instruction for MoveShifted {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         match self.op {
             0 => {
                 let shift = Shift {

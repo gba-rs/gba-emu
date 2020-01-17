@@ -1,10 +1,8 @@
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::arm_arithmetic;
-use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
+use crate::cpu::{cpu::CPU, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
 use std::fmt;
-use log::{error};
-
 
 pub struct PushPop {
     pub load: bool,

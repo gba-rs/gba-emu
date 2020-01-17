@@ -1,6 +1,5 @@
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR};
 use std::fmt;
 
@@ -20,7 +19,7 @@ impl Instruction for ThumbSoftwareInterrupt {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         cpu.set_spsr(cpu.cpsr);
         let current_pc = cpu.get_register(THUMB_PC);
-        cpu.set_register(THUMB_LR, current_pc + 4); // set LR to the next instruction        
+        cpu.set_register(THUMB_LR, current_pc + 2); // set LR to the next instruction (fetch does the other +2)      
         cpu.set_register(THUMB_PC, 0x08);
         cpu.current_instruction_set = InstructionSet::Arm;
         cpu.operating_mode = OperatingMode::Supervisor;
@@ -64,6 +63,6 @@ mod tests {
         assert_eq!(InstructionSet::Arm, gba.cpu.current_instruction_set);
         assert_eq!(OperatingMode::Supervisor, gba.cpu.operating_mode);
         assert_eq!(0x8, gba.cpu.get_register(ARM_PC));
-        assert_eq!(28, gba.cpu.get_register(ARM_LR));
+        assert_eq!(26, gba.cpu.get_register(ARM_LR));
     }
 }

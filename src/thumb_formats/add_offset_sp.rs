@@ -1,9 +1,8 @@
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
+use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::THUMB_SP};
 use std::fmt;
-use log::{debug};
 
 pub struct AddOffsetSP{
     pub sign: bool,

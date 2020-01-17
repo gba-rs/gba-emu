@@ -1,6 +1,6 @@
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, condition::Condition};
-use log::{info, debug};
+use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
 

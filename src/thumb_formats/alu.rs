@@ -1,7 +1,6 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
-use crate::arm_formats::data_processing::{DataProcessing};
 use crate::operations::arm_arithmetic::{adc,sbc,cmp,cmn,mul};
 use crate::cpu::program_status_register::ConditionFlags;
 

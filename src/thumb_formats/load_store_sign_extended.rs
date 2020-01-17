@@ -1,9 +1,7 @@
 use crate::operations::instruction::Instruction;
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::ThumbInstructionFormat::LoadStoreHalfWord;
 use crate::thumb_formats::load_store_halfword::LoadStoreHalfword;
-use crate::operations::arm_arithmetic::add;
 use core::fmt;
 
 pub struct LoadStoreSignExtended {
@@ -29,7 +27,7 @@ impl From<u16> for LoadStoreSignExtended {
 impl fmt::Debug for LoadStoreSignExtended {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         let instruction = format!("r{:?}, [r{:?}, r{:?}]", self.destination_register, self.base_register, self.offset_register);
-        let mut instr_type = format!("");
+        let instr_type;
         if !self.sign_extended && !self.h_flag {
             instr_type = format!("STRH");
         } else if !self.sign_extended && self.h_flag {
@@ -60,7 +58,7 @@ impl Instruction for LoadStoreSignExtended {
             // load halfword
             cpu.set_register(self.base_register, address);
             cpu.set_register(self.destination_register,
-                             (mem_map.read_u16(address) as u32 & 0x0000_FFFF));
+                             mem_map.read_u16(address) as u32 & 0x0000_FFFF);
         } else if self.sign_extended && !self.h_flag {
             // load sign-extended byte
             let byte_from_memory = mem_map.read_u8(address);

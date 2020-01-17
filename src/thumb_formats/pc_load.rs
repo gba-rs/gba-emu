@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
-use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
+use crate::cpu::{cpu::CPU};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
+use crate::cpu::cpu::{THUMB_PC};
 use std::fmt;
 
 pub struct LDR {
@@ -20,16 +20,16 @@ impl From<u16> for LDR {
 
 impl fmt::Debug for LDR {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-            write!(f, "LDR {:?}, {:?}", self.destination, self.word8)
+            write!(f, "LDR {:?}, [PC, #0x{:X}]", self.destination, self.word8)
     }
 }
 
 impl Instruction for LDR {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
-        let mut result = cpu.get_register(THUMB_PC as u8);
+    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+        let current_pc = cpu.get_register(THUMB_PC) + 2; // another +2 in 
+        let value = mem_map.read_u32(current_pc + self.word8 as u32);
         //add PC and Word8
-        result = result + self.word8 as u32;
-        cpu.set_register(self.destination, result);
+        cpu.set_register(self.destination, value);
     }
     fn asm(&self) -> String {
         return format!("{:?}", self);
@@ -37,13 +37,12 @@ impl Instruction for LDR {
 }
 
 
-// Note: The value of the PC will be 4 bytes greater than the address of this instruction, but bit
-//1 of the PC is forced to 0 to ensure it is word aligned.
-// This should always be 0, but if there are problems this could be the reason.
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
+    use crate::gba::GBA;
+    use crate::cpu::{cpu::InstructionSet, cpu::THUMB_PC};
+    use std::borrow::{BorrowMut};
 
     #[test]
     fn load_non_zero() {
@@ -59,10 +58,24 @@ mod tests {
 
     #[test]
     fn pc_set() {
-        let mut cpu = CPU::new();
-        let mut map = MemoryMap::new();
-        let b: LDR = LDR::from(0x8808);
-        b.execute(&mut cpu, &mut map);
-        assert_eq!(cpu.get_register(0), 32);
+        let mut gba: GBA = GBA::default(); 
+        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+
+        gba.cpu.set_register(THUMB_PC, 0x08000000);
+        gba.mem_map.write_u32(0x08000000 + 42, 2000);
+
+        // RD = r1, offset = 20
+        let decode_result = gba.cpu.decode(0x490A);
+        match decode_result {
+            Ok(mut instr) => {
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+            },
+            Err(e) => {
+                panic!("{:?}", e);
+            }
+        }
+
+        assert_eq!(2000, gba.cpu.get_register(1));
+
     }
 }
