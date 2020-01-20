@@ -35,13 +35,13 @@ impl From<u16> for LoadStoreImmediateOffset {
 impl fmt::Debug for LoadStoreImmediateOffset {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if !self.load && self.data_type ==  DataType::Word {
-            write!(f, "STR {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STR {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if self.load && self.data_type ==  DataType::Word {
-            write!(f, "LDR {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDR {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if !self.load && self.data_type ==  DataType::Byte {
-            write!(f, "STRB {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STRB {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if self.load && self.data_type ==  DataType::Byte {
-            write!(f, "LDRB {:?}, [{:?},{:?}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDRB {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         }
         else {
             write!(f, "error")
@@ -55,34 +55,24 @@ impl Instruction for LoadStoreImmediateOffset {
             //calculating target address by adding together Rb and offset. Store Rd at target
             //assuming word is u32 as shown in load_store
             let target_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
-            mem_map.write_u32(target_address as u32,cpu.get_register(self.rd) as u32); //is this as u32 okay?
-            println!("STR Target: {:?}", target_address);
-            println!("STR write: {:?}", cpu.get_register(self.rd) as u32);
-
+            mem_map.write_u32(target_address as u32,cpu.get_register(self.rd));
 
         } else if self.load && self.data_type ==  DataType::Word { //ldr
             //calculate source address by adding Rb and offset. Load rd form source
             let source_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
             let response = mem_map.read_u32(source_address as u32);
             cpu.set_register(self.rd, response);
-            println!("LDR Source: {:?}", source_address);
-            println!("LDR Response: {:?}", response);
-            println!("LDR Reg: {:?}", self.rd);
 
         } else if !self.load && self.data_type ==  DataType::Byte { //strb
             //calculating target address by adding together Rb and offset. Store Rd at target
             //assuming word is u32 as shown in load_store
             let target_address: u32 = (cpu.get_register(self.rb) + self.offset_register as u32) as u32;
-            mem_map.write_u8(target_address as u32, cpu.get_register(self.rd) as u8); //okay as u8?
-            println!("STRB Target: {:?}", target_address)
+            mem_map.write_u8(target_address as u32, cpu.get_register(self.rd) as u8);
 
         } else if self.load && self.data_type ==  DataType::Byte { //ldrb
             //calculate source address by adding Rb and offset. Load rd form source
             let source_address: u8 = (cpu.get_register(self.rb) + self.offset_register as u32) as u8;
             let response = mem_map.read_u8(source_address as u32);
-            println!("LDRB Source: {:?}", source_address);
-            println!("LDRB Response: {:?}", response);
-            println!("LDRB Reg: {:?}", self.rd);
             cpu.set_register(self.rd, response as u32);
         }
     }
