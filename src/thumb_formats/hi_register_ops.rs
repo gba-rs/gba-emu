@@ -79,7 +79,7 @@ impl HiRegisterOp {
             // r8-r15
             destination = cpu.get_register_override_instr_set(15 - self.destination_register, InstructionSet::Arm);
             if self.destination_register == 0 { // R15 special case
-                destination = destination + 4;
+                destination = destination + 2;  // Fetch adds the other +2
             }
         } else {
             // r0-r7
@@ -91,7 +91,7 @@ impl HiRegisterOp {
             // r8-r15
             source = cpu.get_register_override_instr_set(15 - self.source_register, InstructionSet::Arm);
             if self.source_register == 0 {  // R15 Special case
-                source = source + 4;
+                source = source + 2;        // Fetch adds the other +2
             }
         } else {
             // r0-r7

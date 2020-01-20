@@ -1,5 +1,5 @@
 use crate::operations::{instruction::Instruction, arm_arithmetic};
-use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
+use crate::cpu::{cpu::CPU};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
 use std::fmt;
@@ -37,8 +37,8 @@ impl Instruction for LoadAddress {
             let (new, _) = arm_arithmetic::add(sp, self.word8 as u32);
             cpu.set_register(self.destination, new);
         } else {
-            let mut pc = cpu.get_register(THUMB_PC) + 4;
-            if pc & (1 << 0) != 0 {
+            let mut pc = cpu.get_register(THUMB_PC) + 2;    // Fetch handles other + 2
+            if pc % 2 != 0 {
                 //there is a 1 as the first bit so we need to swap that bit to 0
                 pc = pc - 1;
             }
@@ -77,7 +77,7 @@ mod tests {
         let mut map = MemoryMap::new();
         let b: LoadAddress = LoadAddress::from(0xA000);
         b.execute(&mut cpu, &mut map);
-        assert_eq!(cpu.get_register(0), 4);
+        assert_eq!(cpu.get_register(0), 2);     // 2 here because we are skipping the fetch
     }
     #[test]
     fn sp_set() {

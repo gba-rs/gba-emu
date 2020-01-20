@@ -1,7 +1,7 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
-use crate::operations::load_store::{store, DataType, apply_offset};
+use crate::operations::load_store::{apply_offset};
 
 pub struct LoadStoreHalfword {
     pub load: bool,

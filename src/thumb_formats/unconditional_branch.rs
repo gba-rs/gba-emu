@@ -1,9 +1,8 @@
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
-use crate::cpu::{cpu::CPU, condition::Condition, cpu::THUMB_PC};
+use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
 use std::fmt;
-use log::{debug};
 
 pub struct UnconditionalBranch {
     pub offset: u32
@@ -20,7 +19,7 @@ impl From<u16> for UnconditionalBranch {
 impl Instruction for UnconditionalBranch {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         // execute
-        let (signed_offset, _) = arm_arithmetic::add(self.offset, 4);
+        let (signed_offset, _) = arm_arithmetic::add(self.offset, 2);
         let (new_pc, _) = arm_arithmetic::add(cpu.get_register(THUMB_PC), signed_offset);
         cpu.set_register(THUMB_PC, new_pc);
     }
@@ -58,7 +57,7 @@ mod tests {
             }
         }
 
-        assert_eq!(0x08000000 + 4 - 20, gba.cpu.get_register(THUMB_PC));
+        assert_eq!(0x08000000 + 2 - 20, gba.cpu.get_register(THUMB_PC));
     }
 
     #[test]
@@ -76,6 +75,6 @@ mod tests {
             }
         }
 
-        assert_eq!(0x08000000 + 4 + 20, gba.cpu.get_register(THUMB_PC));
+        assert_eq!(0x08000000 + 2 + 20, gba.cpu.get_register(THUMB_PC));
     }
 }

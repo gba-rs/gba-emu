@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
-use crate::cpu::{cpu::CPU, condition::Condition, cpu::THUMB_PC, cpu::THUMB_LR};
+use crate::cpu::{cpu::CPU, cpu::THUMB_PC, cpu::THUMB_LR};
 use std::fmt;
 
 pub struct BL {
@@ -26,9 +26,9 @@ impl Instruction for BL {
             let offset: u32 = self.offset << 1;
             let pc: u32 = cpu.get_register(THUMB_PC);
             let (lr, _) = arm_arithmetic::add(cpu.get_register(THUMB_LR), offset);
-            let (final_lr, _) = arm_arithmetic::add(lr, 4);
+            let (final_lr, _) = arm_arithmetic::add(lr, 2);
             cpu.set_register(THUMB_PC, final_lr);
-            cpu.set_register(THUMB_LR, pc + 4);
+            cpu.set_register(THUMB_LR, pc + 2); // Other + 2 handled by fetch
         } else {
             // H = 0
             // Top half of the 23 bit offset (bits 23-12)
@@ -85,10 +85,10 @@ mod tests {
         }
 
         // PC should be offset by -20
-        assert_eq!(0x08000000 + 4 - 20, gba.cpu.get_register(THUMB_PC));
+        assert_eq!(0x08000000 + 2 - 20, gba.cpu.get_register(THUMB_PC));
 
-        // LR should be PC + 4
-        assert_eq!(0x08000000 + 4, gba.cpu.get_register(THUMB_LR));
+        // LR should be PC + 2
+        assert_eq!(0x08000000 + 2, gba.cpu.get_register(THUMB_LR));
     }
 
     #[test]
@@ -119,9 +119,9 @@ mod tests {
         }
 
         // PC should be offset by -20
-        assert_eq!(0x08000000 + 4 + 20, gba.cpu.get_register(THUMB_PC));
+        assert_eq!(0x08000000 + 2 + 20, gba.cpu.get_register(THUMB_PC));
 
         // LR should be PC + 4
-        assert_eq!(0x08000000 + 4, gba.cpu.get_register(THUMB_LR));
+        assert_eq!(0x08000000 + 2, gba.cpu.get_register(THUMB_LR));
     }
 }
