@@ -51,28 +51,38 @@ impl fmt::Debug for LoadStoreImmediateOffset {
 
 impl Instruction for LoadStoreImmediateOffset {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        if !self.load && self.data_type ==  DataType::Word {
+        if !self.load && self.data_type ==  DataType::Word { //str
             //calculating target address by adding together Rb and offset. Store Rd at target
             //assuming word is u32 as shown in load_store
-            let target_address: u32 = (self.rb + (self.offset_register << 2)) as u32;
-            mem_map.write_u32(target_address as u32,self.rd as u32);
+            let target_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
+            mem_map.write_u32(target_address as u32,cpu.get_register(self.rd) as u32); //is this as u32 okay?
+            println!("STR Target: {:?}", target_address);
+            println!("STR write: {:?}", cpu.get_register(self.rd) as u32);
 
-        } else if self.load && self.data_type ==  DataType::Word {
+
+        } else if self.load && self.data_type ==  DataType::Word { //ldr
             //calculate source address by adding Rb and offset. Load rd form source
-            let source_address: u32 = (self.rb + (self.offset_register << 2)) as u32;
+            let source_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
             let response = mem_map.read_u32(source_address as u32);
             cpu.set_register(self.rd, response);
+            println!("LDR Source: {:?}", source_address);
+            println!("LDR Response: {:?}", response);
+            println!("LDR Reg: {:?}", self.rd);
 
-        } else if !self.load && self.data_type ==  DataType::Byte {
+        } else if !self.load && self.data_type ==  DataType::Byte { //strb
             //calculating target address by adding together Rb and offset. Store Rd at target
             //assuming word is u32 as shown in load_store
-            let target_address: u32 = (self.rb + self.offset_register) as u32;
-            mem_map.write_u8(target_address as u32,self.rd);
+            let target_address: u32 = (cpu.get_register(self.rb) + self.offset_register as u32) as u32;
+            mem_map.write_u8(target_address as u32, cpu.get_register(self.rd) as u8); //okay as u8?
+            println!("STRB Target: {:?}", target_address)
 
-        } else if self.load && self.data_type ==  DataType::Byte {
+        } else if self.load && self.data_type ==  DataType::Byte { //ldrb
             //calculate source address by adding Rb and offset. Load rd form source
-            let source_address: u8 = self.rb + self.offset_register;
+            let source_address: u8 = (cpu.get_register(self.rb) + self.offset_register as u32) as u8;
             let response = mem_map.read_u8(source_address as u32);
+            println!("LDRB Source: {:?}", source_address);
+            println!("LDRB Response: {:?}", response);
+            println!("LDRB Reg: {:?}", self.rd);
             cpu.set_register(self.rd, response as u32);
         }
     }
@@ -94,7 +104,6 @@ mod tests {
     #[test]
     fn test_creation_0s() {
         let format = LoadStoreImmediateOffset::from(0x6000);
-
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Word);
         assert_eq!(format.offset_register, 0);
@@ -132,6 +141,8 @@ mod tests {
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_register(format.rb,1);
+        gba.cpu.set_register(format.rd,2);
 
         let decode_result = gba.cpu.decode(0x613B);
         match decode_result {
@@ -142,15 +153,14 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
-        let target_address: u32 = (format.rb + (format.offset_register << 2)) as u32;
-        // target_address = 23.
-        // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
-        assert_eq!(3, gba.mem_map.read_u32(target_address));
+
+        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset_register << 2) as u32) as u32;
+        assert_eq!(2, gba.mem_map.read_u32(target_address));
     }
 
         #[test]
     fn test_ldr() {
-        let format = LoadStoreImmediateOffset::from(0x693B);
+        let format = LoadStoreImmediateOffset::from(0x693B); //ldr
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Word);
         assert_eq!(format.offset_register, 4);
@@ -158,8 +168,11 @@ mod tests {
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_register(format.rb,1);
+        gba.cpu.set_register(format.rd,2);
+
         //let mem address = 3
-        let decode_result = gba.cpu.decode(0x613B);
+        let decode_result = gba.cpu.decode(0x613B); //str
         match decode_result {
             Ok(mut instr) => {
                 (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
@@ -168,8 +181,9 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
-        //set address at 3 = 3
-        let decode_result = gba.cpu.decode(0x693B);
+        gba.cpu.set_register(3,0); //make sure its changing after ldr
+
+        let decode_result = gba.cpu.decode(0x693B); //ldr
         match decode_result {
             Ok(mut instr) => {
                 (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
@@ -178,14 +192,14 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
-        let target_address: u32 = (format.rb + (format.offset_register << 2)) as u32;
+        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset_register << 2) as u32) as u32;
         // target_address = 23.
         // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
-        assert_eq!(3, gba.cpu.get_register(3));
+        assert_eq!(2, gba.cpu.get_register(3));
     }
     #[test]
     fn test_strb() {
-        let format = LoadStoreImmediateOffset::from(0x713B);
+        let format = LoadStoreImmediateOffset::from(0x713B); //strb
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Byte);
         assert_eq!(format.offset_register, 4);
@@ -193,8 +207,10 @@ mod tests {
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
-
-        let decode_result = gba.cpu.decode(0x713B);
+        gba.cpu.set_register(format.rb,7);
+        gba.cpu.set_register(format.rd,3);
+        //let mem address = 3
+        let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
             Ok(mut instr) => {
                 (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
@@ -203,15 +219,15 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
-        let target_address: u32 = (format.rb + (format.offset_register)) as u32;
+        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset_register << 2) as u32) as u32;
         // target_address = 23.
         // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
-        assert_eq!(3, gba.mem_map.read_u32(target_address));
+        assert_eq!(3, gba.cpu.get_register(3));
     }
 
     #[test]
     fn test_ldrb() {
-        let format = LoadStoreImmediateOffset::from(0x793B);
+        let format = LoadStoreImmediateOffset::from(0x793B);//ldrb
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Byte);
         assert_eq!(format.offset_register, 4);
@@ -220,7 +236,9 @@ mod tests {
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
         //let mem address = 3
-        let decode_result = gba.cpu.decode(0x713B);
+        gba.cpu.set_register(format.rb,1);
+        gba.cpu.set_register(format.rd,2); //value we want to get
+        let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
             Ok(mut instr) => {
                 (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
@@ -229,8 +247,10 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
+        gba.cpu.set_register(3,0); //make sure its changing after ldr
+
         //set address at 3 = 3
-        let decode_result = gba.cpu.decode(0x793B);
+        let decode_result = gba.cpu.decode(0x793B); //ldrb
         match decode_result {
             Ok(mut instr) => {
                 (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
@@ -239,9 +259,8 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
-        let target_address: u32 = (format.rb + (format.offset_register)) as u32;
-        // target_address = 23.
-        // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
-        assert_eq!(3, gba.cpu.get_register(3));
+
+        assert_eq!(2, gba.cpu.get_register(3));
+
     }
 }
