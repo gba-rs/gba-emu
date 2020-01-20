@@ -7,7 +7,7 @@ use crate::arm_formats::{branch::Branch, branch_exchange::BranchExchange};
 use crate::arm_formats::{block_data_transfer::BlockDataTransfer};
 use crate::thumb_formats::{add_subtract::AddSubtract,alu::ALU,conditional_branch::ConditionalBranch};
 use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::ImmediateOp, load_address::LoadAddress, load_store_halfword::LoadStoreHalfword};
-use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_register_offset::LoadStoreRegisterOffset, load_store_sign_extended::LoadStoreSignExtended};
+use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_immediate_offset::LoadStoreImmediateOffset, load_store_sign_extended::LoadStoreSignExtended};
 use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
 use crate::thumb_formats::{sp_load_store::SpLoadStore,unconditional_branch::UnconditionalBranch, add_offset_sp::AddOffsetSP};
 use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
@@ -237,12 +237,8 @@ impl CPU {
             ThumbInstructionFormat::LoadStoreHalfWord => {
                 return Ok(Box::new(LoadStoreHalfword::from(thumb_instruction)));
             },
-            ThumbInstructionFormat::LoadStoreOffset => {
-                //return Ok(Box::new(LoadStoreRegisterOffset::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+            ThumbInstructionFormat::LoadStoreImmediateOffset => {
+                return Ok(Box::new(LoadStoreImmediateOffset::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreExtended => {
                 //return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction))); // Missing Instruction 
