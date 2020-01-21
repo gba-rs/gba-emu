@@ -1,6 +1,8 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use log::{debug};
+use crate::operations::bitutils::sign_extend_u32;
+use crate::operations::arm_arithmetic;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {
@@ -66,12 +68,17 @@ pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_
     mem_map.write_u32(memory_address, formatted_value);
 }
 
-pub fn apply_offset(base_value: u32, offset: u8, add: bool) -> u32 {
-    if add {
-        return base_value + (offset as u32);
+pub fn apply_offset(base_value: u32, offset: u32, add: bool, sign_bit_index: u8) -> u32 {
+    let adjusted_offset;
+    if sign_bit_index > 0 {
+        adjusted_offset = sign_extend_u32(offset, sign_bit_index);
+    } else {
+        adjusted_offset = offset;
     }
-    let val = base_value - (offset as u32);
-    return val;
+    if add {
+        return arm_arithmetic::add(base_value, offset).0;
+    }
+    return arm_arithmetic::sub(base_value, offset).0;
 }
 
 pub fn is_word_aligned(memory_address: u32) -> bool {
@@ -227,8 +234,8 @@ mod tests {
 
     #[test]
     fn test_apply_offset() {
-        assert_eq!(apply_offset(0x0004, 0x0002, true), 0x0006);
-        assert_eq!(apply_offset(0x0004, 0x0002, false), 0x0002);
+        assert_eq!(apply_offset(0x0004, 0x0002, true, 0), 0x0006);
+        assert_eq!(apply_offset(0x0004, 0x0002, false, 0), 0x0002);
     }
 
     #[test]
