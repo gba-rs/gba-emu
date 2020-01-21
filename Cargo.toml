@@ -17,6 +17,7 @@ default = ["console_error_panic_hook"]
 wasm-bindgen = "0.2.19"
 num-derive = "0.3.0"
 log = "0.4.8"
+memory-macros = {path = "memory-macros"}
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
