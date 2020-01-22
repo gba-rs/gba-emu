@@ -83,7 +83,6 @@ pub fn bit_field(attr: TokenStream, item: TokenStream) -> TokenStream {
         impl #name {
             pub fn #function_get_ident(&self) -> #min_type {
                 let value = self.get_register();
-                println!("Got the register value: {:b}", value);
                 return ((1 << #num_bits) - 1) & (value >> (#start_bit)) as #min_type;
             }
 
