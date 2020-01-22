@@ -47,9 +47,8 @@ pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
 
             pub fn set_register(&self, value: u32) {
                 let mut memory = self.memory.borrow_mut();
-                let corrected_value = value as #segment_type;
                 for i in 0..#name::SEGMENT_SIZE {
-                    memory[i] = ((corrected_value & (0xFF << (i * 8))) >> (i * 8)) as u8;
+                    memory[i] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
                 }
             }
         }
@@ -82,8 +81,8 @@ pub fn bit_field(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         impl #name {
             pub fn #function_get_ident(&self) -> #min_type {
-                let value = self.get_register();
-                return ((1 << #num_bits) - 1) & (value >> (#start_bit)) as #min_type;
+                let value: u32 = self.get_register() as u32;
+                return (((1u32 << #num_bits) - 1u32) & (value >> (#start_bit))) as #min_type;
             }
 
             pub fn #function_set_ident(&mut self, value: #min_type) {
