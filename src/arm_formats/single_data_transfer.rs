@@ -50,7 +50,7 @@ impl From<u32> for SingleDataTransfer {
 pub struct SingleDataTransferOperand {
     pub shift: Shift,
     pub rm: u8,
-    pub immediate_value: u8,
+    pub immediate_value: u16,
     pub immediate: bool,
 }
 
@@ -59,7 +59,7 @@ impl From<u32> for SingleDataTransferOperand {
         return SingleDataTransferOperand {
             shift: Shift::from(value),
             rm: (value & 0xF) as u8,
-            immediate_value: (value & 0xFF) as u8,
+            immediate_value: (value & 0xFFF) as u16,
             immediate: ((value & 0x0200_0000) >> 25) == 0,
         };
     }
@@ -75,10 +75,10 @@ impl Instruction for SingleDataTransfer {
             base = cpu.get_register(self.op1_register);
         }
         if !self.offset_is_register {
-            address_with_offset = apply_offset(base, self.offset.immediate_value, self.up_down);
+            address_with_offset = apply_offset(base, self.offset.immediate_value as u32, self.up_down, 0);
         } else {
             let shifted_register = apply_shift(cpu.get_register(self.offset.rm), &self.offset.shift, cpu);
-            address_with_offset = apply_offset(base, shifted_register as u8, self.up_down);
+            address_with_offset = apply_offset(base, shifted_register, self.up_down, 0);
             debug!("Shifted Register: {:X}", shifted_register);
             debug!("Address with offset: {:X}", address_with_offset);
         }
