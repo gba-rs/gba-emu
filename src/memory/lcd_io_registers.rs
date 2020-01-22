@@ -53,18 +53,7 @@ pub struct VerticalCount {
 #[bit_field(colors, 7, 1)]
 #[bit_field(screen_base_block, 8, 4)]
 #[bit_field(screen_size, 14, 2)]
-pub struct BG0Control {
-    pub memory: Rc<RefCell<Vec<u8>>>
-}
-
-#[memory_segment(2)]
-#[bit_field(bg_priority, 0, 2)]
-#[bit_field(character_base_block, 2, 2)]
-#[bit_field(mosaic, 6, 1)]
-#[bit_field(colors, 7, 1)]
-#[bit_field(screen_base_block, 8, 4)]
-#[bit_field(screen_size, 14, 2)]
-pub struct BG1Control {
+pub struct BG_0_1_Control {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
 
@@ -76,106 +65,45 @@ pub struct BG1Control {
 #[bit_field(screen_base_block, 8, 4)]
 #[bit_field(display_area_overflow, 13, 1)]
 #[bit_field(screen_size, 14, 2)]
-pub struct BG2Control {
+pub struct BG_2_3_Control {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
 
 #[memory_segment(2)]
-#[bit_field(bg_priority, 0, 2)]
-#[bit_field(character_base_block, 2, 2)]
-#[bit_field(mosaic, 6, 1)]
-#[bit_field(colors, 7, 1)]
-#[bit_field(screen_base_block, 8, 4)]
-#[bit_field(display_area_overflow, 13, 1)]
-#[bit_field(screen_size, 14, 2)]
-pub struct BG3Control {
+#[bit_field(offset, 0, 9)]
+pub struct BGOffset {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
 
-macro_rules! bg_offset {
-    ($name:ident) => {
-        #[memory_segment(2)]
-        #[bit_field(offset, 0, 9)]
-        pub struct $name {
-            pub memory: Rc<RefCell<Vec<u8>>>
-        }
-    };
+#[memory_segment(4)]
+#[bit_field(fractional_portion, 0, 8)]
+#[bit_field(integer_portion, 8, 19)]
+#[bit_field(sign, 27, 1)]
+pub struct BGRefrencePoint {
+    pub memory: Rc<RefCell<Vec<u8>>>
 }
 
-bg_offset!(BG0HorizontalOffset);
-bg_offset!(BG0VerticalOffset);
-
-bg_offset!(BG1HorizontalOffset);
-bg_offset!(BG1VerticalOffset);
-
-bg_offset!(BG2HorizontalOffset);
-bg_offset!(BG2VerticalOffset);
-
-bg_offset!(BG3HorizontalOffset);
-bg_offset!(BG3VerticalOffset);
-
-macro_rules! bg_refrence_point {
-    ($name:ident) => {
-        #[memory_segment(4)]
-        #[bit_field(fractional_portion, 0, 8)]
-        #[bit_field(integer_portion, 8, 19)]
-        #[bit_field(sign, 27, 1)]
-        pub struct $name {
-            pub memory: Rc<RefCell<Vec<u8>>>
-        }
-    };
+#[memory_segment(2)]
+#[bit_field(fractional_portion, 0, 8)]
+#[bit_field(integer_portion, 8, 7)]
+#[bit_field(sign, 15, 1)]
+pub struct BGRotScaleParam {
+    pub memory: Rc<RefCell<Vec<u8>>>
 }
 
-macro_rules! bg_rot_scale_param {
-    ($name:ident) => {
-        #[memory_segment(2)]
-        #[bit_field(fractional_portion, 0, 8)]
-        #[bit_field(integer_portion, 8, 7)]
-        #[bit_field(sign, 15, 1)]
-        pub struct $name {
-            pub memory: Rc<RefCell<Vec<u8>>>
-        }
-    };
+#[memory_segment(2)]
+#[bit_field(X2, 0, 8)]
+#[bit_field(X1, 8, 8)]
+pub struct WindowHorizontalDimension {
+    pub memory: Rc<RefCell<Vec<u8>>>
 }
 
-// TODO remember to put both the internal and copy into the gpu
-bg_refrence_point!(BG2RefrencePointX);
-bg_refrence_point!(BG2RefrencePointY);
-bg_rot_scale_param!(BG2RotationScalingParamA);
-bg_rot_scale_param!(BG2RotationScalingParamB);
-bg_rot_scale_param!(BG2RotationScalingParamC);
-bg_rot_scale_param!(BG2RotationScalingParamD);
-
-bg_refrence_point!(BG3RefrencePointX);
-bg_refrence_point!(BG3RefrencePointY);
-bg_rot_scale_param!(BG3RotationScalingParamA);
-bg_rot_scale_param!(BG3RotationScalingParamB);
-bg_rot_scale_param!(BG3RotationScalingParamC);
-bg_rot_scale_param!(BG3RotationScalingParamD);
-
-macro_rules! window_dimensions {
-    ($name:ident, x) => {
-        #[memory_segment(2)]
-        #[bit_field(X2, 0, 8)]
-        #[bit_field(X1, 8, 8)]
-        pub struct $name {
-            pub memory: Rc<RefCell<Vec<u8>>>
-        }
-    };
-    ($name:ident, y) => {
-        #[memory_segment(2)]
-        #[bit_field(Y2, 0, 8)]
-        #[bit_field(Y1, 8, 8)]
-        pub struct $name {
-            pub memory: Rc<RefCell<Vec<u8>>>
-        }
-    };
+#[memory_segment(2)]
+#[bit_field(Y2, 0, 8)]
+#[bit_field(Y1, 8, 8)]
+pub struct WindowVerticalDimension {
+    pub memory: Rc<RefCell<Vec<u8>>>
 }
-
-window_dimensions!(Window0HorizontalDimensions, x);
-window_dimensions!(Window1HorizontalDimensions, x);
-window_dimensions!(Window0VerticalDimensions, y);
-window_dimensions!(Window1VerticalDimensions, y);
 
 #[memory_segment(2)]
 #[bit_field(window0_bg_enable_bits, 0, 4)]
@@ -253,7 +181,7 @@ mod tests {
         a.set_window_0_display_flag(1);
         assert_eq!(1, a.get_window_0_display_flag());
 
-        let mut b = BG0HorizontalOffset::new();
+        let mut b = BGOffset::new();
         b.set_offset(510);
         assert_eq!(510, b.get_offset());
     }

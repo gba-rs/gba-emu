@@ -27,7 +27,7 @@ pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
         #input
 
         impl #name {
-            const SEGMENT_SIZE: usize = #segment_size;
+            pub const SEGMENT_SIZE: usize = #segment_size;
 
             pub fn new() -> #name {
                 return #name {
