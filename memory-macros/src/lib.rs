@@ -3,8 +3,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use quote::format_ident;
-use syn::{parse_macro_input, DeriveInput, ItemFn, ItemStruct};
-use proc_macro2::{Ident, Span};
+use syn::{parse_macro_input, ItemStruct};
 
 #[proc_macro_attribute]
 pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -12,6 +11,17 @@ pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attr_string = attr.to_string();
     let segment_size = attr_string.trim().parse::<usize>().unwrap();
     let name = &input.ident;
+
+    if segment_size != 1 && segment_size != 2 && segment_size != 4 {
+        panic!("Unsupported segment size: {}", segment_size);
+    }
+
+    let segment_type = match segment_size {
+        1 => quote!{u8},
+        2 => quote!{u16},
+        4 => quote!{u32},
+        _ => panic!("Unsupported segment size: {}", segment_size)
+    };
 
     let expanded = quote! {
         #input
@@ -23,6 +33,24 @@ pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
                 return #name {
                     memory: Rc::new(RefCell::new(vec![0; #segment_size]))
                 };
+            }
+
+            pub fn get_register(&self) -> #segment_type {
+                let mut value: #segment_type = 0;
+                let memory = self.memory.borrow();
+                for i in 0..#name::SEGMENT_SIZE {
+                    value |= (memory[i as usize] as #segment_type) <<  (i * 8);
+                }
+
+                return value;
+            }
+
+            pub fn set_register(&self, value: u32) {
+                let mut memory = self.memory.borrow_mut();
+                let corrected_value = value as #segment_type;
+                for i in 0..#name::SEGMENT_SIZE {
+                    memory[i] = ((corrected_value & (0xFF << (i * 8))) >> (i * 8)) as u8;
+                }
             }
         }
     };
@@ -46,35 +74,32 @@ pub fn bit_field(attr: TokenStream, item: TokenStream) -> TokenStream {
         1..=8 => quote!{u8},
         9..=16 => quote!{u16},
         17..=32 => quote!{u32},
-        33..=64 => quote!{u64},
-        65..=128 => quote!{u128},
-        _ => panic!("Can't do bitfields greater than 128 bits")
+        _ => panic!("Can't do bitfields greater than 32 bits")
     };
-
-    let byte_number = start_bit / 8;
-    let offset_start_bit = start_bit - (8 * byte_number);
     
     let expanded = quote! {
         #input
 
         impl #name {
             pub fn #function_get_ident(&self) -> #min_type {
-                let byte = self.memory.borrow()[#byte_number as usize];
-                return ((1 << #num_bits) - 1) & (byte >> (#offset_start_bit)) as #min_type;
+                let value = self.get_register();
+                println!("Got the register value: {:b}", value);
+                return ((1 << #num_bits) - 1) & (value >> (#start_bit)) as #min_type;
             }
 
             pub fn #function_set_ident(&mut self, value: #min_type) {
-                if value as u32 > #num_bits.pow(2) {
-                    panic!("Attempting to set number out of range of bit field");
+                if value as u32 > 2u32.pow(#num_bits) {
+                    panic!("Attempting to set number out of range of bit field: {}", value);
                 }
 
-                let mut current_val = self.memory.borrow()[#byte_number as usize];
-                for i in (#offset_start_bit)..(#num_bits + #offset_start_bit) {
+                let mut current_val: u32 = self.get_register() as u32;
+                let shifted_val: u32 = ((value as u32) << #start_bit) as u32;
+
+                for i in #start_bit..(#num_bits + #start_bit) {
                     current_val &= !(1 << i);
                 }
 
-                let shifted_val = (value << #offset_start_bit) as u8;
-                self.memory.borrow_mut()[#byte_number as usize] = current_val | shifted_val;
+                self.set_register(current_val | shifted_val);
             }
         }
     };
