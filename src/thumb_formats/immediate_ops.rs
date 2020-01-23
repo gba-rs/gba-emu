@@ -54,9 +54,12 @@ impl Instruction for ImmediateOp {
             }
             OpCodes::MOV => {
                 cpu.set_register(self.destination_register, self.immediate as u32);
+
+                cpu.cpsr.flags.zero = if self.immediate == 0 { true } else { false };
+                cpu.cpsr.flags.negative = false;    // immediate is 8bit unsigned
             }
             OpCodes::CMP => {
-                let (value, flags) = arm_arithmetic::sub(cpu.get_register(self.destination_register) as u32, self.immediate as u32);
+                let flags = arm_arithmetic::cmp(cpu.get_register(self.destination_register) as u32, self.immediate as u32);
                 cpu.cpsr.flags = flags;
             }
             _ => {
