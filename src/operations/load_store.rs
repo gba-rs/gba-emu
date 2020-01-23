@@ -75,10 +75,12 @@ pub fn apply_offset(base_value: u32, offset: u32, add: bool, sign_bit_index: u8)
     } else {
         adjusted_offset = offset;
     }
+    
     if add {
-        return arm_arithmetic::add(base_value, offset).0;
+        return arm_arithmetic::add(base_value, adjusted_offset).0;
     }
-    return arm_arithmetic::sub(base_value, offset).0;
+
+    return arm_arithmetic::sub(base_value, adjusted_offset).0;
 }
 
 pub fn is_word_aligned(memory_address: u32) -> bool {

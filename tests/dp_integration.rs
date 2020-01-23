@@ -3,7 +3,7 @@ extern crate gba_emulator;
 
 #[cfg(test)]
 mod tests {
-    use gba_emulator::cpu::cpu::{CPU};
+    use gba_emulator::cpu::cpu::{CPU, OperatingMode};
     use gba_emulator::cpu::program_status_register::ProgramStatusRegister;
     use gba_emulator::arm_formats::data_processing::DataProcessing;
     use gba_emulator::operations::instruction::Instruction;
@@ -146,6 +146,7 @@ mod tests {
         fn correct_operation_called_mrs_cpsr() {
             let a: DataProcessing = DataProcessing::from(0xE10F_1000);
             let mut cpu = CPU::new();
+            cpu.operating_mode = OperatingMode::Supervisor;
             cpu.set_register(1,1);
             let mut map = MemoryMap::new();
             a.execute(&mut cpu,&mut map);
@@ -158,6 +159,7 @@ mod tests {
         fn correct_operation_called_mrs_spsr() {
             let a: DataProcessing = DataProcessing::from(0xE14F_1000);
             let mut cpu = CPU::new();
+            cpu.operating_mode = OperatingMode::Supervisor;
             cpu.set_register(1,1);
             let mut map = MemoryMap::new();
             a.execute(&mut cpu,&mut map);
@@ -170,6 +172,7 @@ mod tests {
         fn correct_operation_called_msr_cpsr() {
             let a: DataProcessing = DataProcessing::from(0xE12F_F001);
             let mut cpu = CPU::new();
+            cpu.operating_mode = OperatingMode::Supervisor;
             cpu.set_register(1,1);
             let mut map = MemoryMap::new();
             a.execute(&mut cpu,&mut map);
@@ -182,6 +185,7 @@ mod tests {
         fn correct_operation_called_msr_spsr() {
             let a: DataProcessing = DataProcessing::from(0xE16F_F001);
             let mut cpu = CPU::new();
+            cpu.operating_mode = OperatingMode::Supervisor;
             cpu.set_register(1,1);
             cpu.set_register(2,2);
             let mut map = MemoryMap::new();

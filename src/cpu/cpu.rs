@@ -143,7 +143,7 @@ impl CPU {
             wram: WorkRam::new(256000, 0),
             onchip_wram: WorkRam::new(0x7FFF, 0),
             bios_ram: BiosRam::new(0),
-            operating_mode: OperatingMode::Supervisor,
+            operating_mode: OperatingMode::User,
             current_instruction_set: InstructionSet::Arm,
             last_instruction: "".to_string()
         };

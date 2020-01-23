@@ -1,6 +1,6 @@
 use crate::{operations::arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::shift::{Shift, apply_shift};
+use crate::operations::shift::{Shift, apply_shift, BarrelCarryOut};
 use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags, program_status_register::ProgramStatusRegister, condition::Condition};
 use log::{debug};
 use crate::operations::instruction::Instruction;
@@ -99,18 +99,20 @@ impl fmt::Debug for DataProcessing {
 }
 
 impl DataProcessing {
-    pub fn barrel_shifter(&self, cpu: &mut CPU) -> u32 {
+    pub fn barrel_shifter(&self, cpu: &mut CPU) -> (u32, BarrelCarryOut) {
         let op2: u32;
-
+        let carry_out;
         if self.operand2.immediate {
             op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
+            carry_out = BarrelCarryOut::OldValue;
         } else {
-            op2 = cpu.get_register(self.operand2.rm);
             // let shift_register_amount = cpu.get_register(self.operand2.shift.shift_register);
-            apply_shift(op2, &self.operand2.shift, cpu);
+            let (shifted_value, c) = apply_shift(cpu.get_register(self.operand2.rm), &self.operand2.shift, cpu);
+            op2 = shifted_value;
+            carry_out = c;
         }
 
-        return op2;
+        return (op2, carry_out);
     }
     
     fn set_flags(&self, _cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
@@ -149,51 +151,74 @@ impl From<u32> for DataProcessingOperand {
 
 impl Instruction for DataProcessing {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
-        let op2 = self.barrel_shifter(cpu);
+        let (op2, carry_out) = self.barrel_shifter(cpu);
+        let mut op1 = cpu.get_register(self.op1_register);
+        let current_v = cpu.cpsr.flags.signed_overflow;
+        let mut logical_op = false;
+        let mut logical_op_value = 0;
+        if self.op1_register == 15 {
+            op1 += 4;
+        }
         match self.opcode {
             OpCodes::AND => { //and
-                let value = cpu.get_register(self.op1_register) & op2;
+                let value = op1 & op2;
                 cpu.set_register(self.destination_register, value);
+                logical_op_value = value;
+                logical_op = true;
             }
             OpCodes::EOR => { //eor
-                let value = cpu.get_register(self.op1_register) ^ op2;
+                let value = op1 ^ op2;
                 cpu.set_register(self.destination_register, value);
+                logical_op_value = value;
+                logical_op = true;
             }
             OpCodes::SUB  => { //sub
                 let (value, flags) =
-                    arm_arithmetic::sub(cpu.get_register(self.op1_register), op2);
+                    arm_arithmetic::sub(op1, op2);
                 cpu.set_register(self.destination_register, value);
-                cpu.cpsr.flags = flags;
+                if self.set_condition {
+                    cpu.cpsr.flags = flags;
+                }
             },
             OpCodes::RSB => { //rsb
                 let (value, flags) =
-                    arm_arithmetic::rsb(cpu.get_register(self.op1_register), op2);
+                    arm_arithmetic::rsb(op1, op2);
                 cpu.set_register(self.destination_register, value);
-                cpu.cpsr.flags = flags;
+                if self.set_condition {
+                    cpu.cpsr.flags = flags;
+                }
             },
             OpCodes::ADD => { //add
                let (value, flags) =
-                    arm_arithmetic::add(cpu.get_register(self.op1_register), op2);
+                    arm_arithmetic::add(op1, op2);
                 cpu.set_register(self.destination_register, value);
-                cpu.cpsr.flags = flags;
+                if self.set_condition {
+                    cpu.cpsr.flags = flags;
+                }
             },
             OpCodes::ADC => { //ADC
                 let (value, flags) =
-                    arm_arithmetic::adc(cpu.get_register(self.op1_register), op2);
+                    arm_arithmetic::adc(op1, op2);
                 cpu.set_register(self.destination_register, value);
-                cpu.cpsr.flags = flags;
+                if self.set_condition {
+                    cpu.cpsr.flags = flags;
+                }
             },
             OpCodes::SBC => { //SBC
                 let (value, flags) =
-                    arm_arithmetic::sbc(cpu.get_register(self.op1_register), op2);
+                    arm_arithmetic::sbc(op1, op2);
                 cpu.set_register(self.destination_register, value);
-                cpu.cpsr.flags = flags;
+                if self.set_condition {
+                    cpu.cpsr.flags = flags;
+                }
             },
             OpCodes::RSC => { //RSC
                 let (value, flags) =
-                    arm_arithmetic::rsc(cpu.get_register(self.op1_register), op2);
+                    arm_arithmetic::rsc(op1, op2);
                 cpu.set_register(self.destination_register, value);
-                cpu.cpsr.flags = flags;
+                if self.set_condition {
+                    cpu.cpsr.flags = flags;
+                }
             },
             OpCodes::TST => { //TST AND
                 if !self.set_condition { //MRS CPSR
@@ -201,7 +226,6 @@ impl Instruction for DataProcessing {
                     cpu.cpsr = ProgramStatusRegister::from(value);
                 }
                 else{
-                    let op1 = cpu.get_register(self.op1_register);
                     let value = (op1 & op2) as u64;
                     cpu.cpsr.flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
                 }
@@ -222,7 +246,6 @@ impl Instruction for DataProcessing {
                     cpu.set_register(self.op1_register, value);
                 }
                 else{
-                    let op1 = cpu.get_register(self.op1_register);
                     let value = (op1 ^ op2) as u64;
                     cpu.cpsr.flags = DataProcessing::set_flags(self, cpu, value, op1, op2);
                 }
@@ -234,7 +257,7 @@ impl Instruction for DataProcessing {
                     cpu.set_spsr(ProgramStatusRegister::from(value));
                 }
                 else {
-                    cpu.cpsr.flags = arm_arithmetic::cmp(cpu.get_register(self.op1_register), op2);
+                    cpu.cpsr.flags = arm_arithmetic::cmp(op1, op2);
                 }
             },
             OpCodes::CMN => { //cmn
@@ -255,20 +278,47 @@ impl Instruction for DataProcessing {
                     cpu.set_register(self.op1_register, value);
                 }
                 else{
-                    cpu.cpsr.flags = arm_arithmetic::cmn(cpu.get_register(self.op1_register), op2);
+                    cpu.cpsr.flags = arm_arithmetic::cmn(op1, op2);
                 }
             },
             OpCodes::MOV => { //mov
+                logical_op_value = op2;
                 cpu.set_register(self.destination_register, op2);
+                logical_op = true;
             },
             OpCodes::BIC => { // bic
-                cpu.set_register(self.destination_register,!op2 & self.op1_register as u32);
+                logical_op_value = !op2 & op1;
+                cpu.set_register(self.destination_register, logical_op_value);
+                logical_op = true;
             },
             OpCodes::MVN => { // MVN
-                cpu.set_register(self.destination_register,!op2);
+                logical_op_value = !op2;
+                cpu.set_register(self.destination_register, logical_op_value);
+                logical_op = true;
             },
             _ => {
                 panic!("{:?}", self.opcode);
+            }
+        }
+
+        if self.set_condition {
+            if self.destination_register == 15 {
+                cpu.cpsr = cpu.get_spsr();  // Arm docs 4.5.4
+            } else {
+                cpu.cpsr.flags.signed_overflow = current_v; // Arm docs 4.5.1
+            }
+
+            // set carry out
+            if logical_op {
+                match carry_out {
+                    BarrelCarryOut::NewValue(val) => {
+                        cpu.cpsr.flags.carry = val != 0;
+                    },
+                    BarrelCarryOut::OldValue => {}
+                }
+
+                cpu.cpsr.flags.negative = if (logical_op_value as i32) < 0 { true } else { false };
+                cpu.cpsr.flags.zero = if logical_op_value == 0 { true } else { false };
             }
         }
     }
