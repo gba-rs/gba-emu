@@ -41,7 +41,7 @@ impl From<u16> for ImmediateOp {
 
 impl Instruction for ImmediateOp {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        match self.opcode {
+        match self.op {
             OpCodes::ADD => {
                 let (value, flags) = thumb_arithmetic::add(cpu.get_register(self.destination_register) as u16, self.immediate as u16);
                 cpu.set_register(self.destination_register, value.into());
@@ -56,11 +56,11 @@ impl Instruction for ImmediateOp {
                 cpu.set_register(self.destination_register, self.immediate as u32);
             }
             OpCodes::CMP => {
-                let (value, flags) = thumb_arithmetic::cmp(cpu.get_register(self.destination_register) as u16, self.immediate as u16);
+                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.destination_register) as u16, self.immediate as u16);
                 cpu.cpsr.flags = flags;
             }
             _ => {
-                panic!("{:?}", self.opcode);
+                panic!("{:?}", self.op);
             }
         }
     }
