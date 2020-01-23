@@ -1,12 +1,13 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
-use crate::arm_formats::common::Instruction;
+use crate::{arm_formats::common::Condition, arm_formats::common::Instruction};
+use crate::operations::{thumb_arithmetic};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum OpCodes {
     MOV = 0,
     CMP = 1,
-    ADD  = 2,
+    ADD = 2,
     SUB = 3,
 }
 
@@ -40,7 +41,28 @@ impl From<u16> for ImmediateOp {
 
 impl Instruction for ImmediateOp {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        // Unimplemented
+        match self.opcode {
+            OpCodes::ADD => {
+                let (value, flags) = thumb_arithmetic::add(cpu.get_register(self.destination_register) as u16, self.immediate as u16);
+                cpu.set_register(self.destination_register, value.into());
+                cpu.cpsr.flags = flags;
+            }
+            OpCodes::SUB => {
+                let (value, flags) = thumb_arithmetic::sub(cpu.get_register(self.destination_register) as u16, self.immediate as u16);
+                cpu.set_register(self.destination_register, value.into());
+                cpu.cpsr.flags = flags;
+            }
+            OpCodes::MOV => {
+                cpu.set_register(self.destination_register, self.immediate as u32);
+            }
+            OpCodes::CMP => {
+                let (value, flags) = thumb_arithmetic::cmp(cpu.get_register(self.destination_register) as u16, self.immediate as u16);
+                cpu.cpsr.flags = flags;
+            }
+            _ => {
+                panic!("{:?}", self.opcode);
+            }
+        }
     }
     fn asm(&self) -> String {
         return format!("{:?} r{}, #0x{:X}", self.op, self.destination_register, self.immediate);

@@ -28,6 +28,11 @@ pub fn sub(op1: u16, op2: u16) -> (u16, ConditionFlags) {
     return _add(op1, !op2, true);
 }
 
+pub fn cmp(op1: u16, op2: u16) -> ConditionFlags {
+    let (_, flags) = sub(op1, op2);
+    return flags;
+}
+
 // pub fn mul(op1: u16, op2: u16) -> (u16, ConditionFlags) {
 //     let result = op1.overflowing_mul(op2);
 //     let product = result.0;
