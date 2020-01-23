@@ -171,7 +171,6 @@ impl CPU {
                 return Ok(Box::new(MultiplyLong::from(instruction)));
             },
             InstructionFormat::SingleDataSwap => {
-                // panic!("Single data swap not implemented");
                 return Ok(Box::new(SingleDataSwap::from(instruction)));
             },
             InstructionFormat::SingleDataTransfer => {
@@ -216,11 +215,7 @@ impl CPU {
                 return Ok(Box::new(AddSubtract::from(thumb_instruction)));
             },
             ThumbInstructionFormat::ALU => {
-                //return Ok(Box::new(ALU::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(ALU::from(thumb_instruction)));
             },
             ThumbInstructionFormat::ConditionalBranch => {
                 return Ok(Box::new(ConditionalBranch::from(thumb_instruction)));
@@ -241,11 +236,7 @@ impl CPU {
                 return Ok(Box::new(LoadStoreImmediateOffset::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreExtended => {
-                //return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction))); // Missing Instruction 
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LongBranchLink => {
                 return Ok(Box::new(BL::from(thumb_instruction)));
@@ -260,11 +251,7 @@ impl CPU {
                 return Ok(Box::new(PushPop::from(thumb_instruction)));
             },
             ThumbInstructionFormat::BreakpointInterrupt => {
-                //return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction))); // Missing Instruction Implementation
-                return Err(DecodeError{
-                    instruction: instruction,
-                    opcode: opcode
-                })
+                return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreSP => {
                 return Ok(Box::new(SpLoadStore::from(thumb_instruction)));
