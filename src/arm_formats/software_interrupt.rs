@@ -1,6 +1,6 @@
-use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::OperatingMode, cpu::ARM_PC, cpu::ARM_LR};
+use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::OperatingMode, cpu::ARM_PC, cpu::ARM_LR, condition::Condition};
+use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]
 pub struct SoftwareInterrupt {

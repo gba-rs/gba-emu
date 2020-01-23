@@ -1,7 +1,7 @@
-use super::{common::Condition, common::Instruction};
-use crate::cpu::cpu::CPU;
+use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::load_store::*;
+use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]
 pub struct HalfwordRegisterOffset {
@@ -60,7 +60,7 @@ impl Instruction for HalfwordRegisterOffset {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = cpu.get_register(self.offset_register);
-        let address_with_offset = apply_offset(base, offset as u8, self.halfword_common.up_down_bit);
+        let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit, 0);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
     }
@@ -83,7 +83,7 @@ impl Instruction for HalfwordImmediateOffset {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
-        let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit);
+        let address_with_offset = apply_offset(base, offset as u32, self.halfword_common.up_down_bit, 0);
 
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
     }

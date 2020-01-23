@@ -1,6 +1,6 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
-use crate::arm_formats::common::Instruction;
+use crate::operations::instruction::Instruction;
 use crate::operations::shift::{Shift, apply_shift};
 use crate::operations::shift::ShiftType::{LogicalLeft, LogicalRight, ArithmeticRight};
 
@@ -24,7 +24,7 @@ impl From<u16> for MoveShifted {
 }
 
 impl Instruction for MoveShifted {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         match self.op {
             0 => {
                 let shift = Shift {

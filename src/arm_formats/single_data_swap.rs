@@ -1,6 +1,6 @@
-use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::CPU;
+use crate::cpu::{cpu::CPU, condition::Condition};
+use crate::operations::instruction::Instruction;
 
 #[derive(Debug)]
 pub struct SingleDataSwap {

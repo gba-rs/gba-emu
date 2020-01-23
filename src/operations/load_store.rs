@@ -1,5 +1,8 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
+use log::{debug};
+use crate::operations::bitutils::sign_extend_u32;
+use crate::operations::arm_arithmetic;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {
@@ -25,7 +28,7 @@ impl From<u32> for DataType {
 */
 pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU,
             value_from_memory: u32, address: u32) {
-    let mut value_to_load = 0;
+    let value_to_load;
     if !is_signed && data_type == DataType::Byte {
         value_to_load = get_byte_to_load(value_from_memory, address, false);
     } else if is_signed && data_type == DataType::Byte {
@@ -34,6 +37,8 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
         value_to_load = get_halfword_to_load(value_from_memory, address, false);
     } else if is_signed && data_type == DataType::Halfword {
         value_to_load = get_halfword_to_load(value_from_memory, address, true);
+    } else {
+        value_to_load = value_from_memory;
     }
 
     cpu.set_register(destination, value_to_load);
@@ -63,12 +68,17 @@ pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_
     mem_map.write_u32(memory_address, formatted_value);
 }
 
-pub fn apply_offset(base_value: u32, offset: u8, add: bool) -> u32 {
-    if add {
-        return base_value + (offset as u32);
+pub fn apply_offset(base_value: u32, offset: u32, add: bool, sign_bit_index: u8) -> u32 {
+    let adjusted_offset;
+    if sign_bit_index > 0 {
+        adjusted_offset = sign_extend_u32(offset, sign_bit_index);
+    } else {
+        adjusted_offset = offset;
     }
-    let val = base_value - (offset as u32);
-    return val;
+    if add {
+        return arm_arithmetic::add(base_value, offset).0;
+    }
+    return arm_arithmetic::sub(base_value, offset).0;
 }
 
 pub fn is_word_aligned(memory_address: u32) -> bool {
@@ -124,25 +134,25 @@ pub fn get_halfword_to_load(base_value: u32, address: u32, signed: bool) -> u32 
 * If not signed, the bits 31-8 are 0s
 */
 pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
-    println!("Base value: {:X}", base_value);
-    println!("Is word aligned: {}", is_word_aligned(address));
+    debug!("Base value: {:X}", base_value);
+    debug!("Is word aligned: {}", is_word_aligned(address));
     let data: u8;
     // if is_word_aligned(address) { //0011
-    //     println!("word aligned");
+    //     debug!("word aligned");
     //     data = ((base_value & 0xFF000000) >> 24) as u8;
     // } else if is_word_plus_1_aligned(address) { //0010
-    //     println!("word plus 1 aligned");
+    //     debug!("word plus 1 aligned");
     //     data = ((base_value & 0x00FF0000) >> 16) as u8;
     // } else if is_halfword_aligned(address) {    //0001
-    //     println!("halfword aligned");
+    //     debug!("halfword aligned");
     //     data = ((base_value & 0x0000FF00) >> 8) as u8;
     // } else { // word + 3 byte aligned (3 more than mult of 4)
-    //     println!("Else");
+    //     debug!("Else");
     //     data = (base_value & 0x000000FF) as u8;
     // }
     data = (base_value & 0x000000FF) as u8;
 
-    println!("data: {:X}", data);
+    debug!("data: {:X}", data);
 
     let byte_to_load: u32;
 
@@ -152,7 +162,7 @@ pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
         byte_to_load = 0xFFFFFF00 | (data as u32);
     }
 
-    println!("Byte to load: {:X}", byte_to_load);
+    debug!("Byte to load: {:X}", byte_to_load);
     return byte_to_load as u32;
 }
 
@@ -200,7 +210,7 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
         address = base_address;
     }
 
-    println!("Address: {:X}", address);
+    debug!("Address: {:X}", address);
 
     if transfer_info.load {
         let value_from_memory = mem_map.read_u32(address);
@@ -224,8 +234,8 @@ mod tests {
 
     #[test]
     fn test_apply_offset() {
-        assert_eq!(apply_offset(0x0004, 0x0002, true), 0x0006);
-        assert_eq!(apply_offset(0x0004, 0x0002, false), 0x0002);
+        assert_eq!(apply_offset(0x0004, 0x0002, true, 0), 0x0006);
+        assert_eq!(apply_offset(0x0004, 0x0002, false, 0), 0x0002);
     }
 
     #[test]

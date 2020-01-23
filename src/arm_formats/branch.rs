@@ -1,9 +1,9 @@
-use super::{common::Condition, common::Instruction};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::arm_arithmetic::add;
-use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::THUMB_PC};
-use crate::cpu::cpu::ARM_LR;
+use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, cpu::ARM_LR, condition::Condition};
+use crate::operations::instruction::Instruction;
 use std::fmt;
+
 
 pub struct Branch {
     pub condition: Condition,
@@ -23,12 +23,12 @@ impl From<u32> for Branch {
 
 impl fmt::Debug for Branch {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "B");
+        write!(f, "B")?;
         if self.link {
-            write!(f, "L");
+            write!(f, "L")?;
         }
 
-        write!(f, "{:?}", self.condition);
+        write!(f, "{:?}", self.condition)?;
 
         let mut offset = (self.offset << 2) as u32;
 

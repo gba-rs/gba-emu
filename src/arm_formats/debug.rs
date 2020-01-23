@@ -1,6 +1,7 @@
-use super::common::Instruction;
+use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
+use log::{debug};
 
 #[derive(Debug)]
 pub struct Debug {
@@ -23,9 +24,9 @@ impl Instruction for Debug {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         if self.immidiete {
             if self.hex {
-                println!("{:X}", cpu.get_register(self.source_register));
+                debug!("{:X}", cpu.get_register(self.source_register));
             } else {
-                println!("{}", cpu.get_register(self.source_register));
+                debug!("{}", cpu.get_register(self.source_register));
             }
         } else {
             // TODO implement null terminated strings here

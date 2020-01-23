@@ -5,9 +5,7 @@ pub mod cpu;
 pub mod memory;
 pub mod gba;
 pub mod thumb_formats;
-
-use wasm_bindgen::prelude::*;
-
+pub mod gpu;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
