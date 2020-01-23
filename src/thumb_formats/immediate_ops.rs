@@ -1,12 +1,13 @@
-use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
+use crate::cpu::{cpu::CPU, condition::Condition};
+use crate::operations::{arm_arithmetic};
 use crate::operations::instruction::Instruction;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum OpCodes {
     MOV = 0,
     CMP = 1,
-    ADD  = 2,
+    ADD = 2,
     SUB = 3,
 }
 
@@ -40,7 +41,31 @@ impl From<u16> for ImmediateOp {
 
 impl Instruction for ImmediateOp {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        // Unimplemented
+        match self.op {
+            OpCodes::ADD => {
+                let (value, flags) = arm_arithmetic::add(cpu.get_register(self.destination_register) as u32, self.immediate as u32);
+                cpu.set_register(self.destination_register, value.into());
+                cpu.cpsr.flags = flags;
+            }
+            OpCodes::SUB => {
+                let (value, flags) = arm_arithmetic::sub(cpu.get_register(self.destination_register) as u32, self.immediate as u32);
+                cpu.set_register(self.destination_register, value.into());
+                cpu.cpsr.flags = flags;
+            }
+            OpCodes::MOV => {
+                cpu.set_register(self.destination_register, self.immediate as u32);
+
+                cpu.cpsr.flags.zero = if self.immediate == 0 { true } else { false };
+                cpu.cpsr.flags.negative = false;    // immediate is 8bit unsigned
+            }
+            OpCodes::CMP => {
+                let flags = arm_arithmetic::cmp(cpu.get_register(self.destination_register) as u32, self.immediate as u32);
+                cpu.cpsr.flags = flags;
+            }
+            _ => {
+                panic!("{:?}", self.op);
+            }
+        }
     }
     fn asm(&self) -> String {
         return format!("{:?} r{}, #0x{:X}", self.op, self.destination_register, self.immediate);
