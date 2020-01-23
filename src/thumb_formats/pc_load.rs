@@ -3,6 +3,7 @@ use crate::cpu::{cpu::CPU};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::{THUMB_PC};
 use std::fmt;
+use log::{info};
 
 pub struct LDR {
     pub destination: u8,
@@ -20,14 +21,15 @@ impl From<u16> for LDR {
 
 impl fmt::Debug for LDR {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-            write!(f, "LDR {:?}, [PC, #0x{:X}]", self.destination, self.word8)
+            write!(f, "LDR r{:?}, [PC, #0x{:X}]", self.destination, self.word8)
     }
 }
 
 impl Instruction for LDR {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let current_pc = cpu.get_register(THUMB_PC) + 2; // another +2 in 
-        let value = mem_map.read_u32(current_pc + self.word8 as u32);
+        info!("Reading from: [{:X}]", current_pc + (self.word8 as u32));
+        let value = mem_map.read_u32(current_pc + (self.word8 as u32));
         //add PC and Word8
         cpu.set_register(self.destination, value);
     }

@@ -28,7 +28,7 @@ impl Instruction for BL {
             let (lr, _) = arm_arithmetic::add(cpu.get_register(THUMB_LR), offset);
             let (final_lr, _) = arm_arithmetic::add(lr, 2);
             cpu.set_register(THUMB_PC, final_lr);
-            cpu.set_register(THUMB_LR, pc + 2); // Other + 2 handled by fetch
+            cpu.set_register(THUMB_LR, pc + 1); // need to set first bit
         } else {
             // H = 0
             // Top half of the 23 bit offset (bits 23-12)
