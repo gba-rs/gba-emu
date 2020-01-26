@@ -34,10 +34,10 @@ impl Instruction for MoveShifted {
 
         // flags
         match carry_out {
-            BarrelCarryOut::NewValue(val) => {
+            Some(val) => {
                 cpu.cpsr.flags.carry = val != 0;
             },
-            BarrelCarryOut::OldValue => {}
+            None => {}
         }
 
         cpu.cpsr.flags.negative = if (shifted_value as i32) < 0 { true } else { false };

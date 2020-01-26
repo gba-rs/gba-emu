@@ -1,5 +1,5 @@
 use crate::cpu::cpu::CPU;
-use std::fmt;
+use std::{fmt, option::Option};
 
 pub struct Shift {
     pub shift_type: ShiftType,
@@ -69,7 +69,7 @@ pub enum BarrelCarryOut {
 }
 
 /// Returns val, carryout
-pub fn apply_shift(base_value: u32, shift: &Shift, cpu: &mut CPU) -> (u32, BarrelCarryOut) {
+pub fn apply_shift(base_value: u32, shift: &Shift, cpu: &mut CPU) -> (u32, Option<u32>) {
     let shift_amount;
     if shift.immediate {
         return apply_shift_imm(base_value, &shift.shift_type, shift.shift_amount as u32, cpu)
@@ -82,27 +82,27 @@ pub fn apply_shift(base_value: u32, shift: &Shift, cpu: &mut CPU) -> (u32, Barre
     }
 }
 
-fn apply_shift_imm(base_value: u32, shift_type: &ShiftType, shift_amount: u32, cpu: &mut CPU) -> (u32, BarrelCarryOut) {
+fn apply_shift_imm(base_value: u32, shift_type: &ShiftType, shift_amount: u32, cpu: &mut CPU) -> (u32, Option<u32>) {
     let mut shifted_value;
-    let carry_out: BarrelCarryOut;
+    let carry_out;
     match shift_type {
         ShiftType::LogicalLeft => {
             if shift_amount == 0 {
-                carry_out = BarrelCarryOut::OldValue;
+                carry_out = None;
                 shifted_value = base_value << (shift_amount as u32);
             } else {
                 shifted_value = base_value << ((shift_amount as i32) - 1);
-                carry_out = BarrelCarryOut::NewValue(shifted_value >> 31);
+                carry_out = Some(shifted_value >> 31);
                 shifted_value = shifted_value << 1;
             }
         }
         ShiftType::LogicalRight => {
             if shift_amount == 0 {
                 shifted_value = 0;
-                carry_out = BarrelCarryOut::NewValue(base_value >> 31);
+                carry_out = Some(base_value >> 31);
             } else {
                 shifted_value = base_value >> ((shift_amount as u32) - 1);
-                carry_out = BarrelCarryOut::NewValue(shifted_value & 0x1);
+                carry_out = Some(shifted_value & 0x1);
                 shifted_value = shifted_value >> 1;
             }
         }
@@ -111,26 +111,26 @@ fn apply_shift_imm(base_value: u32, shift_type: &ShiftType, shift_amount: u32, c
                 let bit = base_value >> 31;
                 if bit == 0 {
                     shifted_value = 0;
-                    carry_out = BarrelCarryOut::NewValue(0);
+                    carry_out = Some(0);
                 } else {
                     shifted_value = 0xFFFFFFFF;
-                    carry_out = BarrelCarryOut::NewValue(1);                    
+                    carry_out = Some(1);                    
                 }
             } else {
                 shifted_value = ((base_value as i32) >> (shift_amount - 1) as u32) as u32;
-                carry_out = BarrelCarryOut::NewValue(shifted_value & 0x1);
+                carry_out = Some(shifted_value & 0x1);
                 shifted_value = ((shifted_value as i32) >> 1 as u32) as u32;
             }
         }
         ShiftType::RotateRight => {
             if shift_amount == 0 {
                 let c_in: u32 = (cpu.cpsr.flags.carry as u32) << 31;
-                carry_out = BarrelCarryOut::NewValue(base_value & 0x1);
+                carry_out = Some(base_value & 0x1);
                 shifted_value = base_value >> 1;
                 shifted_value |= c_in;
             } else {
                 shifted_value = base_value.rotate_right(shift_amount as u32);
-                carry_out = BarrelCarryOut::NewValue(shifted_value >> 31);
+                carry_out = Some(shifted_value >> 31);
             }
         }
         _ => panic!("Shifts fucked up")
@@ -139,43 +139,43 @@ fn apply_shift_imm(base_value: u32, shift_type: &ShiftType, shift_amount: u32, c
     return (shifted_value, carry_out);
 }
 
-fn apply_shift_reg(base_value: u32, shift_type: &ShiftType, shift_amount: u32, cpu: &mut CPU) -> (u32, BarrelCarryOut) {
+fn apply_shift_reg(base_value: u32, shift_type: &ShiftType, shift_amount: u32, cpu: &mut CPU) -> (u32, Option<u32>) {
     if shift_amount > 0 && shift_amount < 32 {
         return apply_shift_imm(base_value, shift_type, shift_amount, cpu);
     }
 
     if shift_amount == 0 {
-        return (base_value, BarrelCarryOut::OldValue);
+        return (base_value, None);
     }
 
     match shift_type {
         ShiftType::LogicalLeft => {
             if shift_amount == 32 {
-                return (0, BarrelCarryOut::NewValue(base_value & 0x1));
+                return (0, Some(base_value & 0x1));
             } else {
-                return (0, BarrelCarryOut::NewValue(0));
+                return (0, Some(0));
             }
         }
         ShiftType::LogicalRight => {
             if shift_amount == 32 {
-                return (0, BarrelCarryOut::NewValue(base_value >> 31));
+                return (0, Some(base_value >> 31));
             } else {
-                return (0, BarrelCarryOut::NewValue(0));
+                return (0, Some(0));
             }
         }
         ShiftType::ArithmeticRight => {
             let bit = base_value >> 31;
             if bit == 0 {
-                return (0, BarrelCarryOut::NewValue(0));
+                return (0, Some(0));
             } else {
-                return (0xFFFFFFFF, BarrelCarryOut::NewValue(1));
+                return (0xFFFFFFFF, Some(1));
             }
         }
         ShiftType::RotateRight => {
             let new_shift_amount = shift_amount % 32;
 
             if new_shift_amount == 0 {
-                return (base_value, BarrelCarryOut::NewValue(base_value >> 31));
+                return (base_value, Some(base_value >> 31));
             } else {
                 return apply_shift_imm(base_value, shift_type, new_shift_amount, cpu);
             }

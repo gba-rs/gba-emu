@@ -1,7 +1,8 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
-use crate::operations::arm_arithmetic::{adc,sbc,cmp,cmn,mul};
+use crate::operations::{arm_arithmetic, logical};
+use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::cpu::program_status_register::ConditionFlags;
 
 #[derive(Debug, PartialEq)]
@@ -68,39 +69,95 @@ impl From<u16> for ALU{
 
 impl Instruction for ALU {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+        let op1 = cpu.get_register(self.rd);
+        let op2 = cpu.get_register(self.rs);
+
         match self.opcode {
             OpCodes::AND => {  
-                let value = cpu.get_register(self.rd) & cpu.get_register(self.rs);
+                let (value, (n, z)) = logical::and(op1, op2);
                 cpu.set_register(self.rd, value);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
             },
             OpCodes::EOR =>{
-                let value = cpu.get_register(self.rd) ^ cpu.get_register(self.rs);
+                let (value, (n, z)) = logical::eor(op1, op2);
                 cpu.set_register(self.rd, value);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
             },
             OpCodes::LSL => {
-                let value = cpu.get_register(self.rd) << cpu.get_register(self.rs);
+                let shift = Shift {
+                    shift_type: ShiftType::LogicalLeft,
+                    shift_amount: 0,
+                    shift_register: self.rs,
+                    immediate: false
+                };
+
+                let (value, carry_out) = apply_shift(op1, &shift, cpu);
+                let (n, z) = logical::check_flags(value);
+
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
+                match carry_out {
+                    Some(new_c_val) => {
+                        cpu.cpsr.flags.carry = new_c_val != 0;
+                    },
+                    None => {}
+                }
+
                 cpu.set_register(self.rd, value);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::LSR => {
-                let value = cpu.get_register(self.rd) >> cpu.get_register(self.rs);
+                let shift = Shift {
+                    shift_type: ShiftType::LogicalRight,
+                    shift_amount: 0,
+                    shift_register: self.rs,
+                    immediate: false
+                };
+
+                let (value, carry_out) = apply_shift(op1, &shift, cpu);
+                let (n, z) = logical::check_flags(value);
+
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
+                match carry_out {
+                    Some(new_c_val) => {
+                        cpu.cpsr.flags.carry = new_c_val != 0;
+                    },
+                    None => {}
+                }
+
                 cpu.set_register(self.rd, value);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::ASR =>{
-                let value = cpu.get_register(self.rd) as i32 >> cpu.get_register(self.rs) as i32;
+                let shift = Shift {
+                    shift_type: ShiftType::ArithmeticRight,
+                    shift_amount: 0,
+                    shift_register: self.rs,
+                    immediate: false
+                };
+
+                let (value, carry_out) = apply_shift(op1, &shift, cpu);
+                let (n, z) = logical::check_flags(value);
+
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
+                match carry_out {
+                    Some(new_c_val) => {
+                        cpu.cpsr.flags.carry = new_c_val != 0;
+                    },
+                    None => {}
+                }
+
                 cpu.set_register(self.rd, value as u32);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::ADC => {
-                let (value, flags) = adc(cpu.get_register(self.rd),cpu.get_register(self.rs));
+                let (value, flags) = arm_arithmetic::adc(cpu.get_register(self.rd),cpu.get_register(self.rs));
                 cpu.set_register(self.rd, value);
                 cpu.cpsr.flags = flags;
             },
             OpCodes::SBC => {
-                let (value, flags) = sbc(cpu.get_register(self.rd),cpu.get_register(self.rs));
+                let (value, flags) = arm_arithmetic::sbc(cpu.get_register(self.rd),cpu.get_register(self.rs));
                 cpu.set_register(self.rd, value);
                 cpu.cpsr.flags = flags;
             },
@@ -109,40 +166,50 @@ impl Instruction for ALU {
                 cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
             },
             OpCodes::TST => {
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let (_, (n, z)) = logical::and(op1, op2);
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
             },
             OpCodes::NEG=>{
-                cpu.set_register(self.rd, ((cpu.get_register(self.rs) as i32) * -1) as u32);
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let (value, flags) = arm_arithmetic::rsb(op2, 0);
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags = flags;
             },
             OpCodes::CMP=>{
-                cpu.cpsr.flags = cmp(cpu.get_register(self.rd), cpu.get_register(self.rs));
+                cpu.cpsr.flags = arm_arithmetic::cmp(op1, op2);
             },
             OpCodes::CMN=>{
-                cpu.cpsr.flags = cmn(cpu.get_register(self.rd), cpu.get_register(self.rs));
+                cpu.cpsr.flags = arm_arithmetic::cmn(op1, op2);
             },
             OpCodes::ORR=>{
-                cpu.set_register(self.rd, cpu.get_register(self.rd) | cpu.get_register(self.rs));
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let (value, (n, z)) = logical::orr(op1, op2);
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
             },
             OpCodes::MUL=>{
-                let (value, flags) = mul(cpu.get_register(self.rd), cpu.get_register(self.rs));
+                let (value, flags) = arm_arithmetic::mul(op1, op2);
                 cpu.set_register(self.rd, value);
                 cpu.cpsr.flags = flags;
             },
             OpCodes::BIC=>{
-                cpu.set_register(self.rd, cpu.get_register(self.rd) & !cpu.get_register(self.rs));
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let (value, (n, z)) = logical::bic(op1, op2);
+                cpu.set_register(self.rd, value);
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
             },
             OpCodes::MVN=>{
-                cpu.set_register(self.rd, !cpu.get_register(self.rs));
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                cpu.set_register(self.rd, !op2);
+                let (n, z) = logical::check_flags(!op2);
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
             },
             _ => {
                 panic!("Error in processing Thumb ALU instruction");
             }
         }
     }
+    
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }

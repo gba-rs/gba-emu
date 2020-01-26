@@ -88,7 +88,7 @@ mod tests {
         assert_eq!(0x08000000 + 2 - 20, gba.cpu.get_register(THUMB_PC));
 
         // LR should be PC + 2
-        assert_eq!(0x08000000 + 2, gba.cpu.get_register(THUMB_LR));
+        assert_eq!(0x08000000 + 1, gba.cpu.get_register(THUMB_LR));
     }
 
     #[test]
@@ -122,6 +122,6 @@ mod tests {
         assert_eq!(0x08000000 + 2 + 20, gba.cpu.get_register(THUMB_PC));
 
         // LR should be PC + 4
-        assert_eq!(0x08000000 + 2, gba.cpu.get_register(THUMB_LR));
+        assert_eq!(0x08000000 + 1, gba.cpu.get_register(THUMB_LR));
     }
 }
