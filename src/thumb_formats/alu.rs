@@ -4,6 +4,7 @@ use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic, logical};
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::cpu::program_status_register::ConditionFlags;
+use std::fmt;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {
@@ -50,7 +51,6 @@ impl From<u8> for OpCodes {
     }
 }
 
-#[derive(Debug)]
 pub struct ALU {
     pub opcode: OpCodes,
     pub rs: u8,
@@ -64,6 +64,12 @@ impl From<u16> for ALU{
             rs:((value >> 3) & 0x7) as u8,
             rd: (value & 0x7) as u8
         }
+    }
+}
+
+impl fmt::Debug for ALU {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?} r{}, r{}", self.opcode, self.rd, self.rs)
     }
 }
 
