@@ -4,6 +4,7 @@ use crate::operations::load_store::{apply_offset, DataType, DataTransfer, data_t
 use crate::operations::shift::{Shift, apply_shift};
 use log::{debug};
 use crate::operations::instruction::Instruction;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct SingleDataTransfer {
@@ -46,6 +47,11 @@ impl From<u32> for SingleDataTransfer {
     }
 }
 
+// impl fmt::Debug for BranchExchange {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//     }
+// }
+
 #[derive(Debug)]
 pub struct SingleDataTransferOperand {
     pub shift: Shift,
@@ -77,9 +83,9 @@ impl Instruction for SingleDataTransfer {
         if !self.offset_is_register {
             address_with_offset = apply_offset(base, self.offset.immediate_value as u32, self.up_down, 0);
         } else {
-            let shifted_register = apply_shift(cpu.get_register(self.offset.rm), &self.offset.shift, cpu);
-            address_with_offset = apply_offset(base, shifted_register, self.up_down, 0);
-            debug!("Shifted Register: {:X}", shifted_register);
+            let (value, _) = apply_shift(cpu.get_register(self.offset.rm), &self.offset.shift, cpu);
+            address_with_offset = apply_offset(base, value, self.up_down, 0);
+            debug!("Shifted Register: {:X}", value);
             debug!("Address with offset: {:X}", address_with_offset);
         }
 

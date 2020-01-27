@@ -77,7 +77,7 @@ impl HiRegisterOp {
         let mut destination: u32;
         if self.hi_flag_1 {
             // r8-r15
-            destination = cpu.get_register_override_instr_set(15 - self.destination_register, InstructionSet::Arm);
+            destination = cpu.get_register_unsafe(15 - self.destination_register);
             if self.destination_register == 0 { // R15 special case
                 destination = destination + 2;  // Fetch adds the other +2
             }
@@ -89,7 +89,7 @@ impl HiRegisterOp {
         let mut source: u32;
         if self.hi_flag_2 {
             // r8-r15
-            source = cpu.get_register_override_instr_set(15 - self.source_register, InstructionSet::Arm);
+            source = cpu.get_register_unsafe(15 - self.source_register);
             if self.source_register == 0 {  // R15 Special case
                 source = source + 2;        // Fetch adds the other +2
             }
@@ -104,7 +104,7 @@ impl HiRegisterOp {
     // Sets the destination register value based on the hi flags
     fn set_destniation_register(&self, cpu: &mut CPU, value: u32) {
         if self.hi_flag_1 {
-            cpu.set_register_override_instr_set(15 - self.destination_register, InstructionSet::Arm, value);
+            cpu.set_register_unsafe(15 - self.destination_register, value);
         } else {
             cpu.set_register(self.destination_register, value);
         }
@@ -139,10 +139,12 @@ impl HiRegisterOp {
         if mode_bit {
             // Thumb
             cpu.current_instruction_set = InstructionSet::Thumb;
+            error!("Setting to thumb");
             cpu.set_register(THUMB_PC, source - 1);
         } else {
             // Arm
             cpu.current_instruction_set = InstructionSet::Arm;
+            error!("Setting to arm");
             cpu.set_register(ARM_PC, source);
         }
     }
@@ -150,10 +152,12 @@ impl HiRegisterOp {
 
 impl fmt::Debug for HiRegisterOp {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
+        let dest_reg = if self.hi_flag_1 { 15 - self.destination_register } else { self.destination_register };
+        let source_reg = if self.hi_flag_2 { 15 - self.source_register } else { self.source_register };
         if self.op == OpCodes::BX {
-            write!(f, "BX r{}", self.source_register)
+            write!(f, "BX r{}", source_reg)
         } else {
-            write!(f, "{:?} r{}, r{}", self.op, self.destination_register, self.source_register)
+            write!(f, "{:?} r{}, r{}", self.op, dest_reg, source_reg)
         }
     }
 }
@@ -201,12 +205,13 @@ mod tests {
     #[test]
     fn add_test() {
         let mut gba: GBA = GBA::default(); 
+        // hs = r12 = 200
+        gba.cpu.set_register(12, 200);
+        
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
         // rd = r3 = 10
         gba.cpu.set_register(3, 10);
-        // hs = r12 = 200
-        gba.cpu.set_register_override_instr_set(12, InstructionSet::Arm, 200);
 
         // ADD r3, r12 = 210
         // 0x445B
@@ -219,16 +224,17 @@ mod tests {
             }
         }
 
-        assert_eq!(210, gba.cpu.get_register_override_instr_set(3, InstructionSet::Arm));
+        assert_eq!(210, gba.cpu.get_register(3));
     }
 
     #[test]
     fn cmp_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
         // hd = r12 = 10
-        gba.cpu.set_register_override_instr_set(12, InstructionSet::Arm, 10);
+        gba.cpu.set_register(12, 10);
+        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+
         // rs = r3 = 10
         gba.cpu.set_register(3, 10);
 
@@ -252,12 +258,15 @@ mod tests {
     #[test]
     fn mov_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
         // hd = r11 = 10
-        gba.cpu.set_register_override_instr_set(11, InstructionSet::Arm, 10);
+        gba.cpu.set_register(11, 10);
         // hs = r12 = 200
-        gba.cpu.set_register_override_instr_set(12, InstructionSet::Arm, 200);
+        gba.cpu.set_register(12, 200);
+
+        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+
+
 
         gba.cpu.cpsr.flags.zero = false;
 
@@ -272,7 +281,7 @@ mod tests {
             }
         }
 
-        assert_eq!(200, gba.cpu.get_register_override_instr_set(11, InstructionSet::Arm));
+        assert_eq!(200, gba.cpu.get_register_unsafe(11));
     }
 
     #[test]

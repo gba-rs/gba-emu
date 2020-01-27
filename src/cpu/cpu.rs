@@ -46,13 +46,13 @@ pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     ],
     // thumb
     [
-        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 0, 0, 0, 0, 0],        // System
-        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 0, 0, 0, 0, 0],        // User
-        [0, 1, 2, 3, 4, 5, 6, 7, 21, 22, 15, 0, 0, 0, 0, 0],        // FIQ
-        [0, 1, 2, 3, 4, 5, 6, 7, 23, 24, 15, 0, 0, 0, 0, 0],        // Supervisor
-        [0, 1, 2, 3, 4, 5, 6, 7, 25, 26, 15, 0, 0, 0, 0, 0],        // Abort
-        [0, 1, 2, 3, 4, 5, 6, 7, 27, 28, 15, 0, 0, 0, 0, 0],        // IRQ
-        [0, 1, 2, 3, 4, 5, 6, 7, 29, 30, 15, 0, 0, 0, 0, 0]         // Undefiend
+        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 11, 12, 13, 14, 15],        // System
+        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 11, 12, 13, 14, 15],        // User
+        [0, 1, 2, 3, 4, 5, 6, 7, 21, 22, 15, 11, 12, 13, 14, 15],        // FIQ
+        [0, 1, 2, 3, 4, 5, 6, 7, 23, 24, 15, 11, 12, 13, 14, 15],        // Supervisor
+        [0, 1, 2, 3, 4, 5, 6, 7, 25, 26, 15, 11, 12, 13, 14, 15],        // Abort
+        [0, 1, 2, 3, 4, 5, 6, 7, 27, 28, 15, 11, 12, 13, 14, 15],        // IRQ
+        [0, 1, 2, 3, 4, 5, 6, 7, 29, 30, 15, 11, 12, 13, 14, 15]         // Undefiend
     ]
 ];
 
@@ -143,7 +143,7 @@ impl CPU {
             wram: WorkRam::new(256000, 0),
             onchip_wram: WorkRam::new(0x7FFF, 0),
             bios_ram: BiosRam::new(0),
-            operating_mode: OperatingMode::Supervisor,
+            operating_mode: OperatingMode::User,
             current_instruction_set: InstructionSet::Arm,
             last_instruction: "".to_string()
         };
@@ -334,14 +334,12 @@ impl CPU {
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
     }
     
-    pub fn get_register_override_instr_set(&self, reg_num: u8, instr_set: InstructionSet) -> u32{
-        CPU::check_reg_range(&reg_num, &instr_set);
-        return self.registers[REG_MAP[instr_set as usize][self.operating_mode as usize][reg_num as usize]];
+    pub fn get_register_unsafe(&self, reg_num: u8, ) -> u32{
+        return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]];
     }
 
-    pub fn set_register_override_instr_set(&mut self, reg_num: u8, instr_set: InstructionSet, value: u32){
-        CPU::check_reg_range(&reg_num, &instr_set);
-        self.registers[REG_MAP[instr_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
+    pub fn set_register_unsafe(&mut self, reg_num: u8, value: u32){
+        self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
     pub fn check_condition(&self, cond: &Condition) -> bool {
