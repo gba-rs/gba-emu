@@ -7,32 +7,32 @@ use log::{info};
 
 pub struct LDR {
     pub destination: u8,
-    pub word8: u16,
+    pub offset: u16,
 }
 
 impl From<u16> for LDR {
     fn from(value: u16) -> LDR {
         return LDR {
             destination: ((value & 0x700) >> 8) as u8,
-            word8: (value & 0xFF) << 2,
+            offset: (value & 0xFF) << 2,
         }
     }
 }
 
 impl fmt::Debug for LDR {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-            write!(f, "LDR r{:?}, [PC, #0x{:X}]", self.destination, self.word8)
+            write!(f, "LDR r{:?}, [PC, #0x{:X}]", self.destination, self.offset)
     }
 }
 
 impl Instruction for LDR {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        let current_pc = cpu.get_register(THUMB_PC) + 2; // another +2 in 
-        info!("Reading from: [{:X}]", current_pc + (self.word8 as u32));
-        let value = mem_map.read_u32(current_pc + (self.word8 as u32));
-        //add PC and Word8
+        let mut current_pc = cpu.get_register(THUMB_PC) + 2; // another +2 in 
+        current_pc &= !0x02;
+        let value = mem_map.read_u32(current_pc + (self.offset as u32));
         cpu.set_register(self.destination, value);
     }
+
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
@@ -49,13 +49,13 @@ mod tests {
     #[test]
     fn load_non_zero() {
         let b: LDR = LDR::from(0x8800);
-        assert_eq!(b.word8, 0);
+        assert_eq!(b.offset, 0);
     }
 
     #[test]
     fn load_zero() {
         let b: LDR = LDR::from(0x8802);
-        assert_eq!(b.word8, 8);
+        assert_eq!(b.offset, 8);
     }
 
     #[test]

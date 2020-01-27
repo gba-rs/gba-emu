@@ -23,7 +23,7 @@ impl fmt::Debug for Shift {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?} ", self.shift_type)?;
         if self.immediate {
-            write!(f, "{:X}", self.shift_amount)
+            write!(f, "#0x{:X}", self.shift_amount)
         } else {
             write!(f, "r{}", self.shift_register)
         }

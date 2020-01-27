@@ -114,19 +114,6 @@ impl DataProcessing {
 
         return (op2, carry_out);
     }
-    
-    fn set_flags(&self, _cpu: &mut CPU, value: u64, op1: u32, op2: u32) -> ConditionFlags {
-        let carryout: bool = (value >> 32) != 0;
-        let op1_sign: bool = (op1 >> 31) != 0;
-        let op2_sign: bool = (op2 >> 31) != 0;
-        let value_sign: bool = ((value >> 31) & 0x01) != 0;
-        return ConditionFlags {
-            negative: (value & (0x1 << 31)) != 0,
-            zero: value == 0,
-            carry: carryout,
-            signed_overflow: (op1_sign == op2_sign) && (op1_sign != value_sign)
-        };
-    }
 }
 
 pub struct DataProcessingOperand {

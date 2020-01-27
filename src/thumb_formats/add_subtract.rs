@@ -2,6 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
+use std::fmt;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {
@@ -24,13 +25,34 @@ impl From<u8> for OpCodes {
     }
 }
 
-#[derive(Debug)]
 pub struct AddSubtract {
     pub op_register: u8,
     pub source_register: u8,
     pub destination_register: u8,
     pub opcode: OpCodes,
-    pub immediate_operand: u8
+    pub immediate: u8
+}
+
+impl fmt::Debug for AddSubtract {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.opcode {
+            OpCodes::ADD => {
+                write!(f, "ADD r{}, r{}, r{}", self.destination_register, self.source_register, self.op_register)
+            },
+            OpCodes::SUB => {
+                write!(f, "SUB r{}, r{}, r{}", self.destination_register, self.source_register, self.op_register)
+            },
+            OpCodes::ADD_I => {
+                write!(f, "ADD r{}, r{}, #0x{:X}", self.destination_register, self.source_register, self.op_register)
+            },
+            OpCodes::SUB_I => {
+                write!(f, "SUB r{}, r{}, #0x{:X}", self.destination_register, self.source_register, self.op_register)
+            },
+            OpCodes::Error => {
+                write!(f, "Error in add subtract")
+            }
+        }
+    }
 }
 
 impl From<u16> for AddSubtract {
@@ -40,7 +62,7 @@ impl From<u16> for AddSubtract {
             source_register: ((value >> 3) & 0x7) as u8,
             destination_register: (value & 0x7) as u8,
             opcode: OpCodes::from(((value >> 9) & 0x3) as u8),
-            immediate_operand: ((value >> 10) &0x1) as u8
+            immediate: ((value >> 10) &0x1) as u8
         }
     }
 }
@@ -73,6 +95,7 @@ impl Instruction for AddSubtract {
             }
         }
     }
+    
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
@@ -90,7 +113,7 @@ mod tests {
         assert_eq!(a.source_register, 2);
         assert_eq!(a.op_register, 3);
         assert_eq!(a.opcode, OpCodes::ADD_I);
-        assert_eq!(a.immediate_operand, 1);
+        assert_eq!(a.immediate, 1);
     }
 
     #[test]
@@ -100,7 +123,7 @@ mod tests {
         assert_eq!(a.source_register, 2);
         assert_eq!(a.op_register, 3);
         assert_eq!(a.opcode, OpCodes::SUB_I);
-        assert_eq!(a.immediate_operand, 1);
+        assert_eq!(a.immediate, 1);
     }
 
     #[test]
@@ -110,7 +133,7 @@ mod tests {
         assert_eq!(a.source_register, 2);
         assert_eq!(a.op_register, 3);
         assert_eq!(a.opcode, OpCodes::ADD);
-        assert_eq!(a.immediate_operand, 0);
+        assert_eq!(a.immediate, 0);
         //196D
     }
 
@@ -121,6 +144,6 @@ mod tests {
         assert_eq!(a.source_register, 2);
         assert_eq!(a.op_register, 3);
         assert_eq!(a.opcode, OpCodes::SUB);
-        assert_eq!(a.immediate_operand, 0);
+        assert_eq!(a.immediate, 0);
     }
 }

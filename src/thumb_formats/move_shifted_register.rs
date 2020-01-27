@@ -46,7 +46,7 @@ impl Instruction for MoveShifted {
     }
 
     fn asm(&self) -> String {
-        return format!("MOVS r{}, r{}, {:?}, #0x{:X} ", self.rd, self.rs, self.shift, self.shift.shift_amount);
+        return format!("MOVS r{}, r{}, {:?}", self.rd, self.rs, self.shift);
     }
 }
 
