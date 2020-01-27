@@ -42,6 +42,7 @@ impl Instruction for BL {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 4;} // for more info look at 10.3 in dwedit.org/files/arm7tdmi.pdf
 }
 
 impl fmt::Debug for BL {

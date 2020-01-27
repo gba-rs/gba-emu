@@ -219,6 +219,8 @@ impl Instruction for ALU {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 1;} // 1s
+
 }
 
 fn set_flags(rd: u8, rs: u8, cpu: &mut CPU) -> ConditionFlags{

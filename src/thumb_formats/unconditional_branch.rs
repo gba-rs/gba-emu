@@ -27,6 +27,8 @@ impl Instruction for UnconditionalBranch {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 3;} // 2s + 1n
+
 }
 
 impl fmt::Debug for UnconditionalBranch {

@@ -79,6 +79,7 @@ impl Instruction for PushPop {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 3;} //nS + 1N + 1I
 }
 
 impl fmt::Debug for PushPop {

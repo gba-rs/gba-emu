@@ -58,6 +58,7 @@ impl Instruction for Multiply {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 0;}
 }
 
 // Unit Tests

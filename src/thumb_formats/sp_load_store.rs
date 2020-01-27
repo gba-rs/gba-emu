@@ -36,6 +36,8 @@ impl Instruction for SpLoadStore {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 3;} // 1s + 1n + 1l
+
 }
 
 impl fmt::Debug for SpLoadStore {
