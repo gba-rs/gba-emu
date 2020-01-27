@@ -63,6 +63,8 @@ impl Instruction for LoadStoreRegisterOffset {
 
         return format!("{}{} r{}, [r{}, r{}]", op, b, self.rd, self.rb, self.offset_register );
     }
+    fn cycles(&self) -> u32 {return 3;} // 1s + 1n + 1l
+    // unless pc then its 5 2s + 2n + 1l but that isn't known till later.
 }
 
 #[cfg(test)]

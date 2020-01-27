@@ -68,6 +68,7 @@ impl Instruction for HalfwordRegisterOffset {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 0;}
 }
 
 impl From<u32> for HalfwordRegisterOffset {
@@ -91,6 +92,7 @@ impl Instruction for HalfwordImmediateOffset {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 0;}
 }
 
 impl From<u32> for HalfwordImmediateOffset {

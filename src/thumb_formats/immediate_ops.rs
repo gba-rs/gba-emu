@@ -67,6 +67,8 @@ impl Instruction for ImmediateOp {
     fn asm(&self) -> String {
         return format!("{:?} r{}, #0x{:X}", self.op, self.destination_register, self.immediate);
     }
+    fn cycles(&self) -> u32 {return 1;} // 1s
+
 }
 
 #[cfg(test)]
