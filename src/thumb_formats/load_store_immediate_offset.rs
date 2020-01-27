@@ -35,13 +35,13 @@ impl From<u16> for LoadStoreImmediateOffset {
 impl fmt::Debug for LoadStoreImmediateOffset {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if !self.load && self.data_type ==  DataType::Word {
-            write!(f, "STR {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if self.load && self.data_type ==  DataType::Word {
-            write!(f, "LDR {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if !self.load && self.data_type ==  DataType::Byte {
-            write!(f, "STRB {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if self.load && self.data_type ==  DataType::Byte {
-            write!(f, "LDRB {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         }
         else {
             write!(f, "error")

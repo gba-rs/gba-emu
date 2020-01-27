@@ -1,7 +1,8 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
-use crate::operations::shift::{Shift, ShiftType, apply_shift, BarrelCarryOut};
+use crate::operations::shift::{Shift, ShiftType, apply_shift};
+use crate::operations::logical;
 use crate::operations::shift::ShiftType::{LogicalLeft, LogicalRight, ArithmeticRight};
 
 #[derive(Debug)]
@@ -40,9 +41,9 @@ impl Instruction for MoveShifted {
             None => {}
         }
 
-        cpu.cpsr.flags.negative = if (shifted_value as i32) < 0 { true } else { false };
-        cpu.cpsr.flags.zero = if shifted_value == 0 { true } else { false };
-
+        let (n, z) = logical::check_flags(shifted_value);
+        cpu.cpsr.flags.negative = n;
+        cpu.cpsr.flags.zero = z;
     }
 
     fn asm(&self) -> String {

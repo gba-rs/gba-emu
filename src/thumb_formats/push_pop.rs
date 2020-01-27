@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
 use std::fmt;
+use log::info;
 
 pub struct PushPop {
     pub load: bool,
@@ -40,7 +41,6 @@ impl Instruction for PushPop {
                 offset += 4;
             }
 
-
             if self.store_lr {
                 // thumb PC
                 let (address, _) = arm_arithmetic::add(stack_pointer, offset as u32);
@@ -54,19 +54,18 @@ impl Instruction for PushPop {
             cpu.set_register(THUMB_SP, new_sp)
         } else {// STMDB (Store Multiple Decrement Before) = PUSH
 
-            for reg_num in self.register_list.iter() {
-                offset -= 4;
-                let value = cpu.get_register(*reg_num);
-                let (offset_val, _) = arm_arithmetic::add(stack_pointer, offset as u32);
-                mem_map.write_u32(offset_val, value);
-            }
-
-
             if self.store_lr {  
                 // thumb lr
                 offset -= 4;
                 let value = cpu.get_register(THUMB_LR);
-                let (offset_val, _) = arm_arithmetic::sub(stack_pointer, offset as u32);
+                let (offset_val, _) = arm_arithmetic::add(stack_pointer, offset as u32);
+                mem_map.write_u32(offset_val, value);
+            }
+
+            for reg_num in self.register_list.iter().rev() {
+                offset -= 4;
+                let value = cpu.get_register(*reg_num);
+                let (offset_val, _) = arm_arithmetic::add(stack_pointer, offset as u32);
                 mem_map.write_u32(offset_val, value);
             }
 
@@ -89,16 +88,16 @@ impl fmt::Debug for PushPop {
             write!(f, "PUSH {{")?;
         }
 
-        for reg_num in self.register_list.iter() {
-            write!(f, " r{} ", *reg_num)?;
-        }
-
         if self.store_lr {
             if self.load {
                 write!(f, " pc ")?;
             } else {
                 write!(f, " lr ")?;
             }
+        }
+
+        for reg_num in self.register_list.iter() {
+            write!(f, " r{} ", *reg_num)?;
         }
 
         write!(f, "}}")
