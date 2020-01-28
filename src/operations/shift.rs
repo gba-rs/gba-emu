@@ -1,5 +1,6 @@
 use crate::cpu::cpu::CPU;
 use std::{fmt, option::Option};
+use log::debug;
 
 pub struct Shift {
     pub shift_type: ShiftType,
@@ -84,7 +85,7 @@ fn apply_shift_imm(base_value: u32, shift_type: &ShiftType, shift_amount: u32, c
         ShiftType::LogicalLeft => {
             if shift_amount == 0 {
                 carry_out = None;
-                shifted_value = base_value << (shift_amount as u32);
+                shifted_value = base_value;
             } else {
                 shifted_value = base_value << ((shift_amount as i32) - 1);
                 carry_out = Some(shifted_value >> 31);

@@ -80,16 +80,16 @@ pub fn rsb(op1: u32, op2: u32) -> (u32, ConditionFlags) {
     return _add(!op1, op2, true);
 }
 
-pub fn sbc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
-    return _add(op1, !op2, false);
+pub fn sbc(op1: u32, op2: u32, carry_flag: bool) -> (u32, ConditionFlags) {
+    return _add(op1, !op2, carry_flag);
 }
 
-pub fn rsc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
-    return _add(!op1, op2, false);
+pub fn rsc(op1: u32, op2: u32, carry_flag: bool) -> (u32, ConditionFlags) {
+    return _add(!op1, op2, carry_flag);
 }
 
-pub fn adc(op1: u32, op2: u32) -> (u32, ConditionFlags) {
-    return _add(op1, op2, true);
+pub fn adc(op1: u32, op2: u32, carry_flag: bool) -> (u32, ConditionFlags) {
+    return _add(op1, op2, carry_flag);
 }
 
 pub fn cmp(op1: u32, op2: u32) -> ConditionFlags {

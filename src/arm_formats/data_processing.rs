@@ -1,5 +1,5 @@
 use crate::operations::{arm_arithmetic, logical};
-use crate::operations::shift::{Shift, apply_shift};
+use crate::operations::shift::{Shift, apply_shift, ShiftType};
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, program_status_register::ProgramStatusRegister, condition::Condition, cpu::OperatingMode};
@@ -120,8 +120,24 @@ impl DataProcessing {
         let op2: u32;
         let carry_out;
         if self.operand2.immediate {
+            // let shift = Shift {
+            //     shift_type: ShiftType::RotateRight,
+            //     shift_amount: self.operand2.rotate * 2,
+            //     shift_register: 0,
+            //     immediate: true
+            // };
+            // let (shifted_value, c) = apply_shift(self.operand2.immediate_value as u32, &shift, cpu);
+            // op2 = shifted_value;
+            // carry_out = c;
             op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
-            carry_out = None;
+            
+            // https://stackoverflow.com/questions/52243393/what-is-the-carry-out-from-the-shifter-of-arm-cpu
+            if self.operand2.rotate != 0 {
+                carry_out = Some(op2 >> 31);
+            } else {
+                carry_out = None;
+            }
+            
         } else {
             // let shift_register_amount = cpu.get_register(self.operand2.shift.shift_register);
             let (shifted_value, c) = apply_shift(cpu.get_register(self.operand2.rm), &self.operand2.shift, cpu);
@@ -210,7 +226,7 @@ impl Instruction for DataProcessing {
             },
             OpCodes::ADC => { //ADC
                 let (value, flags) =
-                    arm_arithmetic::adc(op1, op2);
+                    arm_arithmetic::adc(op1, op2, cpu.cpsr.flags.carry);
                 cpu.set_register(self.destination_register, value);
                 if self.set_condition {
                     cpu.cpsr.flags = flags;
@@ -218,7 +234,7 @@ impl Instruction for DataProcessing {
             },
             OpCodes::SBC => { //SBC
                 let (value, flags) =
-                    arm_arithmetic::sbc(op1, op2);
+                    arm_arithmetic::sbc(op1, op2, cpu.cpsr.flags.carry);
                 cpu.set_register(self.destination_register, value);
                 if self.set_condition {
                     cpu.cpsr.flags = flags;
@@ -226,7 +242,7 @@ impl Instruction for DataProcessing {
             },
             OpCodes::RSC => { //RSC
                 let (value, flags) =
-                    arm_arithmetic::rsc(op1, op2);
+                    arm_arithmetic::rsc(op1, op2, cpu.cpsr.flags.carry);
                 cpu.set_register(self.destination_register, value);
                 if self.set_condition {
                     cpu.cpsr.flags = flags;
