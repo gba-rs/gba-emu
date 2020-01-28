@@ -375,7 +375,7 @@ mod tests {
         let mut mem_map = store_set_up();
         store(DataType::Halfword, value_to_store, memory_address, &mut mem_map);
 
-        assert_eq!(0x8080_8080, mem_map.read_u32(memory_address));
+        assert_eq!(0x8080, mem_map.read_u16(memory_address));
     }
 
     #[test]
@@ -385,7 +385,7 @@ mod tests {
         let mut mem_map = store_set_up();
         store(DataType::Byte, value_to_store, memory_address, &mut mem_map);
 
-        assert_eq!(0x8080_8080, mem_map.read_u32(memory_address));
+        assert_eq!(0x80, mem_map.read_u8(memory_address));
     }
 
     #[test]

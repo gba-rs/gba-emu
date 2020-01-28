@@ -135,10 +135,10 @@ mod tests {
             }
         }
 
-        assert_eq!(100, gba.mem_map.read_u32(base - 4));
-        assert_eq!(300, gba.mem_map.read_u32(base - 8));
-        assert_eq!(500, gba.mem_map.read_u32(base - 12));
-        assert_eq!(700, gba.mem_map.read_u32(base - 16));
+        assert_eq!(100, gba.mem_map.read_u32(base - 16));
+        assert_eq!(300, gba.mem_map.read_u32(base - 12));
+        assert_eq!(500, gba.mem_map.read_u32(base - 8));
+        assert_eq!(700, gba.mem_map.read_u32(base - 4));
     }
 
     #[test]

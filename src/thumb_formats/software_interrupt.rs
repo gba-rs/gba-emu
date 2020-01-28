@@ -47,6 +47,7 @@ mod tests {
     fn swi_test() {
         let mut gba: GBA = GBA::default(); 
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.operating_mode = OperatingMode::Supervisor;
 
         gba.cpu.set_register(THUMB_PC, 24);
 
