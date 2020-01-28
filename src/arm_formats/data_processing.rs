@@ -1,8 +1,8 @@
 use crate::operations::{arm_arithmetic, logical};
-use crate::operations::shift::{Shift, apply_shift, BarrelCarryOut};
+use crate::operations::shift::{Shift, apply_shift};
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags, program_status_register::ProgramStatusRegister, condition::Condition};
+use crate::cpu::{cpu::CPU, program_status_register::ProgramStatusRegister, condition::Condition};
 use log::{debug};
 use std::fmt;
 

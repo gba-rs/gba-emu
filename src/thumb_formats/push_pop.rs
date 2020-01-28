@@ -3,7 +3,6 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
 use std::fmt;
-use log::info;
 
 pub struct PushPop {
     pub load: bool,
@@ -108,7 +107,7 @@ impl fmt::Debug for PushPop {
 mod tests {
     use super::*;
     use crate::gba::GBA;
-    use crate::cpu::{cpu::InstructionSet, cpu::THUMB_PC};
+    use crate::cpu::{cpu::InstructionSet};
     use std::borrow::{BorrowMut};
 
     #[test]

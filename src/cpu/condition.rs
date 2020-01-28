@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use std::fmt;
 
 #[derive(PartialEq)]
@@ -23,22 +24,22 @@ pub enum Condition {
 impl fmt::Debug for Condition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EQ => { write!(f, "EQ") },
-            NE => { write!(f, "NE") },
-            CS => { write!(f, "CS") },
-            CC => { write!(f, "CC") },
-            MI => { write!(f, "MI") },
-            PL => { write!(f, "PL") },
-            VS => { write!(f, "VS") },
-            VC => { write!(f, "VC") },
-            HI => { write!(f, "HI") },
-            LS => { write!(f, "LS") },
-            GE => { write!(f, "GE") },
-            LT => { write!(f, "LT") },
-            GT => { write!(f, "GT") },
-            LE => { write!(f, "LE") },
-            AL => { write!(f, "") },
-            Error => { write!(f, "Error") }
+            Condition::EQ => { write!(f, "EQ") },
+            Condition::NE => { write!(f, "NE") },
+            Condition::CS => { write!(f, "CS") },
+            Condition::CC => { write!(f, "CC") },
+            Condition::MI => { write!(f, "MI") },
+            Condition::PL => { write!(f, "PL") },
+            Condition::VS => { write!(f, "VS") },
+            Condition::VC => { write!(f, "VC") },
+            Condition::HI => { write!(f, "HI") },
+            Condition::LS => { write!(f, "LS") },
+            Condition::GE => { write!(f, "GE") },
+            Condition::LT => { write!(f, "LT") },
+            Condition::GT => { write!(f, "GT") },
+            Condition::LE => { write!(f, "LE") },
+            Condition::AL => { write!(f, "") },
+            Condition::Error => { write!(f, "Error") }
         }
     }
 }

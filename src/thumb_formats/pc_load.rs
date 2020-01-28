@@ -3,7 +3,6 @@ use crate::cpu::{cpu::CPU};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::{THUMB_PC};
 use std::fmt;
-use log::{info};
 
 pub struct LDR {
     pub destination: u8,

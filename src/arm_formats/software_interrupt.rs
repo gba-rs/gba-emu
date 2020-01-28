@@ -33,13 +33,3 @@ impl Instruction for SoftwareInterrupt {
         return format!("{:?}", self);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_execute() {
-
-    }
-}

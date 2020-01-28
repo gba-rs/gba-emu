@@ -63,11 +63,6 @@ impl fmt::Debug for ShiftType {
     }
 }
 
-pub enum BarrelCarryOut {
-    NewValue(u32),
-    OldValue
-}
-
 /// Returns val, carryout
 pub fn apply_shift(base_value: u32, shift: &Shift, cpu: &mut CPU) -> (u32, Option<u32>) {
     let shift_amount;

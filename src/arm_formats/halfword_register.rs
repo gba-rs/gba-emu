@@ -2,7 +2,6 @@ use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::load_store::*;
 use crate::operations::instruction::Instruction;
-use log::info;
 
 #[derive(Debug)]
 pub struct HalfwordRegisterOffset {

@@ -3,7 +3,6 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::operations::logical;
-use crate::operations::shift::ShiftType::{LogicalLeft, LogicalRight, ArithmeticRight};
 
 #[derive(Debug)]
 pub struct MoveShifted {
@@ -54,11 +53,10 @@ impl Instruction for MoveShifted {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::work_ram::WorkRam;
 
     #[test]
     fn test_execute_op0() {
-        let mut instruction = MoveShifted::from(0x54);
+        let instruction = MoveShifted::from(0x54);
 
         let rs = 0x02;
         let rd = 0x04;
@@ -79,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_execute_op1() {
-        let mut instruction = MoveShifted::from(0x894);
+        let instruction = MoveShifted::from(0x894);
 
         let rs = 0x02;
         let rd = 0x04;
@@ -100,7 +98,7 @@ mod tests {
 
     #[test]
     fn test_execute_op2() {
-        let mut instruction = MoveShifted::from(0x1094);
+        let instruction = MoveShifted::from(0x1094);
 
         let rs = 0x02;
         let rd = 0x04;

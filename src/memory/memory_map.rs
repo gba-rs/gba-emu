@@ -174,7 +174,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_memory_map_out_of_range() {
-        let mut map = MemoryMap::new();
+        let map = MemoryMap::new();
         map.read_u8(0xFFFFFFFF);
     }
 }
