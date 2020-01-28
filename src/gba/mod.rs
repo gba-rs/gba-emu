@@ -41,6 +41,8 @@ impl Default for GBA {
         temp.cpu.operating_mode = OperatingMode::Supervisor;
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
 
+        temp.cpu.operating_mode = OperatingMode::User;
+
         // setup the memory
         temp.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
         temp.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
@@ -84,12 +86,15 @@ impl GBA {
         temp.cpu.operating_mode = OperatingMode::Supervisor;
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
 
+        temp.cpu.operating_mode = OperatingMode::User;
+
         // setup the memory
         temp.cpu.bios_ram.load(bios);
         temp.game_pack_memory[0].load(rom);
         temp.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
         temp.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
         temp.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
+        temp.mem_map.register_memory(0x05000000, 0x050003FF, &temp.gpu.bg_obj_palette_ram.memory);
         temp.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
         temp.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
         temp.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);

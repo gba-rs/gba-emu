@@ -52,20 +52,18 @@ pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_
         panic!("Attempting to store halfword in a memory location that is not word aligned or halfword aligned!");
     }
 
-    let formatted_value;
     match data_type {
         DataType::Word => {
-            formatted_value = value_to_store;
+            mem_map.write_u32(memory_address, value_to_store);
         }
         DataType::Halfword => {
-            formatted_value = format_halfword_to_store(value_to_store as u16);
+            mem_map.write_u16(memory_address, value_to_store as u16);
         }
         DataType::Byte => {
-            formatted_value = format_byte_to_store(value_to_store as u8);
+            mem_map.write_u8(memory_address, value_to_store as u8);
         }
         _ => panic!("Trying to store invalid data type.")
     }
-    mem_map.write_u32(memory_address, formatted_value);
 }
 
 pub fn apply_offset(base_value: u32, offset: u32, add: bool, sign_bit_index: u8) -> u32 {
@@ -170,6 +168,7 @@ pub fn get_byte_to_load(base_value: u32, address: u32, signed: bool) -> u32 {
 
 // Repeats a 16-bit halfword over 32-bits
 pub fn format_halfword_to_store(value_to_store: u16) -> u32 {
+    debug!("In format halfword to store: {}", value_to_store);
     // repeat the bottom 16 bits over a 32-bit value
     let repeat = value_to_store & 0x0000_FFFF;
     let top = (repeat as u32) << 16;

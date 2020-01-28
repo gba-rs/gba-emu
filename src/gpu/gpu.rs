@@ -2,6 +2,7 @@ use crate::memory::work_ram::WorkRam;
 use crate::memory::lcd_io_registers::*;
 
 pub struct GPU {
+    pub bg_obj_palette_ram: WorkRam,
     pub not_used_mem_2: WorkRam,
     pub display_control: DisplayControl,
     pub green_swap: GreenSwap,
@@ -58,6 +59,7 @@ pub struct GPU {
 impl GPU {
     pub fn new() -> GPU {
         return GPU {
+            bg_obj_palette_ram: WorkRam::new(0x3FF, 0),
             not_used_mem_2: WorkRam::new(0xFFFFBF, 0),
             display_control: DisplayControl::new(),
             green_swap: GreenSwap::new(),
