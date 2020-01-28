@@ -2,7 +2,7 @@ use crate::operations::{arm_arithmetic, logical};
 use crate::operations::shift::{Shift, apply_shift};
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::{cpu::CPU, program_status_register::ProgramStatusRegister, condition::Condition};
+use crate::cpu::{cpu::CPU, program_status_register::ProgramStatusRegister, condition::Condition, cpu::OperatingMode};
 use log::{debug};
 use std::fmt;
 
@@ -80,11 +80,28 @@ impl fmt::Debug for DataProcessing {
         if self.set_condition {
             write!(f, "{:?}S{:?}", self.opcode, self.condition)?;
         } else {
-            write!(f, "{:?}{:?}", self.opcode, self.condition)?;
+            match self.opcode {
+                OpCodes::TST => {
+                    return write!(f, "MRS r{}, cpsr", self.destination_register);
+                },
+                OpCodes::CMP => {
+                    return write!(f, "MRS r{}, spsr", self.destination_register);
+                },
+                OpCodes::TEQ => {
+                    write!(f, "MSR cpsr, ")?;
+
+                },
+                OpCodes::CMN => {
+                    write!(f, "MSR cpsr, ")?;
+                },
+                _ => {
+                    write!(f, "{:?}{:?}", self.opcode, self.condition)?;
+                    write!(f, " r{}, ", self.destination_register)?;
+                }
+            }
         }
         
-        write!(f, " r{}, ", self.destination_register)?;
-        if !(self.opcode == OpCodes::MOV || self.opcode == OpCodes::MVN) {
+        if !(self.opcode == OpCodes::MOV || self.opcode == OpCodes::MVN || (self.opcode == OpCodes::TEQ && !self.set_condition) || (self.opcode == OpCodes::CMN && !self.set_condition)) {
             write!(f, "r{}, ", self.op1_register)?;
         }
 
@@ -217,8 +234,8 @@ impl Instruction for DataProcessing {
             },
             OpCodes::TST => { //TST AND
                 if !self.set_condition { //MRS CPSR
-                    let value = cpu.get_register(self.destination_register);
-                    cpu.cpsr = ProgramStatusRegister::from(value);
+                    let psr_value = u32::from(cpu.cpsr);
+                    cpu.set_register(self.destination_register, psr_value);
                 }
                 else{
                     logical_op = true;
@@ -228,18 +245,32 @@ impl Instruction for DataProcessing {
             },
             OpCodes::TEQ => { //TEQ EOR
                 if !self.set_condition { //MSR CPSR
-                    let negative = if cpu.cpsr.flags.negative {0b1000} else {0};
-                    let zero = if cpu.cpsr.flags.zero {0b0100} else {0};
-                    let carry = if cpu.cpsr.flags.carry {0b0010} else {0};
-                    let overflow = if cpu.cpsr.flags.signed_overflow {0b0001} else {0};
-                    let mut value = (negative + zero + carry + overflow) as u32;
-                    value = value << 26;
-                    let irq = if cpu.cpsr.control_bits.irq_disable {0b10000000} else {0};
-                    let fiq = if cpu.cpsr.control_bits.fiq_disable {0b01000000} else {0};
-                    let state = if cpu.cpsr.control_bits.state_bit {0b00100000} else {0};
-                    value += irq + fiq + state;
-                    value += cpu.cpsr.control_bits.mode_bits as u32;
-                    cpu.set_register(self.op1_register, value);
+                    // let negative = if cpu.cpsr.flags.negative {0b1000} else {0};
+                    // let zero = if cpu.cpsr.flags.zero {0b0100} else {0};
+                    // let carry = if cpu.cpsr.flags.carry {0b0010} else {0};
+                    // let overflow = if cpu.cpsr.flags.signed_overflow {0b0001} else {0};
+                    // let mut value = (negative + zero + carry + overflow) as u32;
+                    // value = value << 26;
+                    // let irq = if cpu.cpsr.control_bits.irq_disable {0b10000000} else {0};
+                    // let fiq = if cpu.cpsr.control_bits.fiq_disable {0b01000000} else {0};
+                    // let state = if cpu.cpsr.control_bits.state_bit {0b00100000} else {0};
+                    // value += irq + fiq + state;
+                    // value += cpu.cpsr.control_bits.mode_bits as u32;
+                    // cpu.set_register(self.op1_register, value);
+                    let new_psr = ProgramStatusRegister::from(op2);
+                    if self.immediate_operand {
+                        // only set the flags
+                        cpu.cpsr.flags = new_psr.flags;
+                    } else {
+                        if cpu.operating_mode != OperatingMode::User {
+                            // set the entire thing
+                            cpu.cpsr = new_psr;
+                        } else {
+                            // only set the flags
+                            cpu.cpsr.flags = new_psr.flags;
+                        }
+                    }
+
                 }
                 else{
                     logical_op = true;
@@ -249,9 +280,8 @@ impl Instruction for DataProcessing {
             },
             OpCodes::CMP => { //cmp
                 if !self.set_condition { //MRS SPSR
-                    debug!("Going into an SPR");
-                    let value = cpu.get_register(self.destination_register);
-                    cpu.set_spsr(ProgramStatusRegister::from(value));
+                    let psr_value = u32::from(cpu.get_spsr());
+                    cpu.set_register(self.destination_register, psr_value);
                 }
                 else {
                     cpu.cpsr.flags = arm_arithmetic::cmp(op1, op2);
@@ -260,19 +290,36 @@ impl Instruction for DataProcessing {
             OpCodes::CMN => { //cmn
                 //check bit 20 is a 0, if so then it is MSR
                 if !self.set_condition { // MSR SPSR
-                    let spsr = cpu.get_spsr();
-                    let negative = if spsr.flags.negative {0b1000} else {0};
-                    let zero = if spsr.flags.zero {0b0100} else {0};
-                    let carry = if spsr.flags.carry {0b0010} else {0};
-                    let overflow = if spsr.flags.signed_overflow {0b0001} else {0};
-                    let mut value = (negative + zero + carry + overflow) as u32;
-                    value = value << 26;
-                    let irq = if spsr.control_bits.irq_disable {0b10000000} else {0};
-                    let fiq = if spsr.control_bits.fiq_disable {0b01000000} else {0};
-                    let state = if spsr.control_bits.state_bit {0b00100000} else {0};
-                    value += irq + fiq + state;
-                    value += spsr.control_bits.mode_bits as u32;
-                    cpu.set_register(self.op1_register, value);
+                    // let spsr = cpu.get_spsr();
+                    // let negative = if spsr.flags.negative {0b1000} else {0};
+                    // let zero = if spsr.flags.zero {0b0100} else {0};
+                    // let carry = if spsr.flags.carry {0b0010} else {0};
+                    // let overflow = if spsr.flags.signed_overflow {0b0001} else {0};
+                    // let mut value = (negative + zero + carry + overflow) as u32;
+                    // value = value << 26;
+                    // let irq = if spsr.control_bits.irq_disable {0b10000000} else {0};
+                    // let fiq = if spsr.control_bits.fiq_disable {0b01000000} else {0};
+                    // let state = if spsr.control_bits.state_bit {0b00100000} else {0};
+                    // value += irq + fiq + state;
+                    // value += spsr.control_bits.mode_bits as u32;
+                    // cpu.set_register(self.op1_register, value);
+
+                    let mut new_psr = ProgramStatusRegister::from(op2);
+                    let old_psr = cpu.get_spsr();
+                    if self.immediate_operand {
+                        // only set the flags
+                        new_psr.control_bits = old_psr.control_bits;
+                        cpu.set_spsr(new_psr);
+                    } else {
+                        if cpu.operating_mode != OperatingMode::User {
+                            // set the entire thing
+                            cpu.set_spsr(new_psr);
+                        } else {
+                            // only set the flags
+                            new_psr.control_bits = old_psr.control_bits;
+                            cpu.set_spsr(new_psr);
+                        }
+                    }
                 }
                 else{
                     cpu.cpsr.flags = arm_arithmetic::cmn(op1, op2);
@@ -299,11 +346,10 @@ impl Instruction for DataProcessing {
             }
         }
 
+        // TODO check 4.5.4 and make sure this logic is okay
         if self.set_condition {
             if self.destination_register == 15 {
                 cpu.cpsr = cpu.get_spsr();  // Arm docs 4.5.4
-            } else {
-                cpu.cpsr.flags.signed_overflow = current_v; // Arm docs 4.5.1
             }
 
             if logical_op {
@@ -317,6 +363,10 @@ impl Instruction for DataProcessing {
                 let (n, z) = logical_flags;
                 cpu.cpsr.flags.negative = n;
                 cpu.cpsr.flags.zero = z;
+
+                if self.destination_register != 15 {
+                    cpu.cpsr.flags.signed_overflow = current_v; // Arm docs 4.5.1
+                }
             }
         }
     }

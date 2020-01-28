@@ -52,3 +52,19 @@ impl From<u32> for ProgramStatusRegister {
         }
     }
 }
+
+impl From<ProgramStatusRegister> for u32 {
+    fn from(reg: ProgramStatusRegister) -> u32 {
+        let mut value: u32 = 0;
+        value |= (reg.flags.negative as u32) << 31;
+        value |= (reg.flags.zero as u32) << 30;
+        value |= (reg.flags.carry as u32) << 29;
+        value |= (reg.flags.signed_overflow as u32) << 28;
+        value |= (reg.control_bits.irq_disable as u32) << 7;
+        value |= (reg.control_bits.fiq_disable as u32) << 6;
+        value |= (reg.control_bits.state_bit as u32) << 5;
+        value |= reg.control_bits.mode_bits as u32;
+
+        return value;
+    }
+}

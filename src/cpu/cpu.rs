@@ -357,7 +357,7 @@ impl CPU {
             Condition::GE => return self.cpsr.flags.negative == self.cpsr.flags.signed_overflow,
             Condition::LT => return self.cpsr.flags.negative != self.cpsr.flags.signed_overflow,
             Condition::GT => return !self.cpsr.flags.zero && (self.cpsr.flags.negative == self.cpsr.flags.signed_overflow),
-            Condition::LE => return self.cpsr.flags.zero && (self.cpsr.flags.negative != self.cpsr.flags.signed_overflow),
+            Condition::LE => return self.cpsr.flags.zero || (self.cpsr.flags.negative != self.cpsr.flags.signed_overflow),
             Condition::AL => return true,
             Condition::Error => panic!("Condition::Error hit"),
         }
