@@ -30,7 +30,7 @@ impl Instruction for SingleDataSwap {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 0;}
+    fn cycles(&self) -> u32 {return 2;}
 }
 
 #[cfg(test)]

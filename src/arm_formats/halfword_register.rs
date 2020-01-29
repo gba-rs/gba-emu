@@ -68,7 +68,7 @@ impl Instruction for HalfwordRegisterOffset {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 0;}
+    fn cycles(&self) -> u32 {return 3;}
 }
 
 impl From<u32> for HalfwordRegisterOffset {
