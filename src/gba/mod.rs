@@ -48,7 +48,7 @@ impl Default for GBA {
         temp.cpu.operating_mode = OperatingMode::Supervisor;
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
 
-        temp.cpu.operating_mode = OperatingMode::User;
+        temp.cpu.operating_mode = OperatingMode::System;
 
         // setup the memory
         temp.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);

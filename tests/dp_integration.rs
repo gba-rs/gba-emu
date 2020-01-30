@@ -8,7 +8,9 @@ mod tests {
     use gba_emulator::arm_formats::data_processing::DataProcessing;
     use gba_emulator::operations::instruction::Instruction;
     use gba_emulator::memory::{memory_map::MemoryMap};
-
+    use gba_emulator::gba::GBA;
+    use std::borrow::BorrowMut;
+    use std::borrow::Borrow;
 
 
     #[test]
@@ -83,7 +85,7 @@ mod tests {
 //        [0,2,2]
         let mut map = MemoryMap::new();
         a.execute(&mut cpu,&mut map);
-        assert_eq!(cpu.get_register(2), 2 + 2 + 1);
+        assert_eq!(cpu.get_register(2), 2 + 2);
     }
     #[test]
         fn correct_operation_called_sbc() {
@@ -144,55 +146,75 @@ mod tests {
 
         #[test]
         fn correct_operation_called_mrs_cpsr() {
-            let a: DataProcessing = DataProcessing::from(0xE10F_1000);
-            let mut cpu = CPU::new();
-            cpu.operating_mode = OperatingMode::Supervisor;
-            cpu.set_register(1,1);
-            let mut map = MemoryMap::new();
-            a.execute(&mut cpu,&mut map);
-            assert_eq!(cpu.cpsr.control_bits.fiq_disable, ProgramStatusRegister::from(1).control_bits.fiq_disable);
-            assert_eq!(cpu.cpsr.control_bits.irq_disable, ProgramStatusRegister::from(1).control_bits.irq_disable);
-            assert_eq!(cpu.cpsr.control_bits.mode_bits, ProgramStatusRegister::from(1).control_bits.mode_bits);
-            assert_eq!(cpu.cpsr.control_bits.state_bit, ProgramStatusRegister::from(1).control_bits.state_bit);
+            let mut gba: GBA = GBA::default();
+
+            gba.cpu.cpsr = ProgramStatusRegister::from(0x6000001F);
+
+            let decode_result = gba.cpu.decode(0xE10F0000);
+            match decode_result {
+                Ok(mut instr) => {
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                },
+                Err(e) => {
+                    panic!("{:?}", e);
+                }
+            }
+
+            assert_eq!(gba.cpu.get_register(0), 0x6000001F);
         }
+
         #[test]
         fn correct_operation_called_mrs_spsr() {
-            let a: DataProcessing = DataProcessing::from(0xE14F_1000);
-            let mut cpu = CPU::new();
-            cpu.operating_mode = OperatingMode::Supervisor;
-            cpu.set_register(1,1);
-            let mut map = MemoryMap::new();
-            a.execute(&mut cpu,&mut map);
-            assert_eq!(cpu.get_spsr().control_bits.fiq_disable, ProgramStatusRegister::from(1).control_bits.fiq_disable);
-            assert_eq!(cpu.get_spsr().control_bits.irq_disable, ProgramStatusRegister::from(1).control_bits.irq_disable);
-            assert_eq!(cpu.get_spsr().control_bits.mode_bits, ProgramStatusRegister::from(1).control_bits.mode_bits);
-            assert_eq!(cpu.get_spsr().control_bits.state_bit, ProgramStatusRegister::from(1).control_bits.state_bit);
+            let mut gba: GBA = GBA::default();
+
+            gba.cpu.set_spsr(ProgramStatusRegister::from(0x6000001F));
+
+            let decode_result = gba.cpu.decode(0xE14F1000);
+            match decode_result {
+                Ok(mut instr) => {
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                },
+                Err(e) => {
+                    panic!("{:?}", e);
+                }
+            }
+
+            assert_eq!(gba.cpu.get_register(1), 0x6000001F);
         }
         #[test]
         fn correct_operation_called_msr_cpsr() {
-            let a: DataProcessing = DataProcessing::from(0xE12F_F001);
-            let mut cpu = CPU::new();
-            cpu.operating_mode = OperatingMode::Supervisor;
-            cpu.set_register(1,1);
-            let mut map = MemoryMap::new();
-            a.execute(&mut cpu,&mut map);
-            assert_eq!(cpu.cpsr.control_bits.fiq_disable, ProgramStatusRegister::from(0).control_bits.fiq_disable);
-            assert_eq!(cpu.cpsr.control_bits.irq_disable, ProgramStatusRegister::from(0).control_bits.irq_disable);
-            assert_eq!(cpu.cpsr.control_bits.mode_bits, ProgramStatusRegister::from(0).control_bits.mode_bits);
-            assert_eq!(cpu.cpsr.control_bits.state_bit, ProgramStatusRegister::from(0).control_bits.state_bit);
+            let mut gba: GBA = GBA::default();
+
+            let decode_result = gba.cpu.decode(0xE329F011);
+            match decode_result {
+                Ok(mut instr) => {
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                },
+                Err(e) => {
+                    panic!("{:?}", e);
+                }
+            }
+
+            assert_eq!(gba.cpu.operating_mode, OperatingMode::FastInterrupt);
         }
         #[test]
         fn correct_operation_called_msr_spsr() {
-            let a: DataProcessing = DataProcessing::from(0xE16F_F001);
-            let mut cpu = CPU::new();
-            cpu.operating_mode = OperatingMode::Supervisor;
-            cpu.set_register(1,1);
-            cpu.set_register(2,2);
-            let mut map = MemoryMap::new();
-            a.execute(&mut cpu,&mut map);
-            assert_eq!(cpu.get_spsr().control_bits.fiq_disable, ProgramStatusRegister::from(0).control_bits.fiq_disable);
-            assert_eq!(cpu.get_spsr().control_bits.irq_disable, ProgramStatusRegister::from(0).control_bits.irq_disable);
-            assert_eq!(cpu.get_spsr().control_bits.mode_bits, ProgramStatusRegister::from(0).control_bits.mode_bits);
-            assert_eq!(cpu.get_spsr().control_bits.state_bit, ProgramStatusRegister::from(0).control_bits.state_bit);
+            let mut gba: GBA = GBA::default();
+
+            let decode_result = gba.cpu.decode(0xE329F011);
+            match decode_result {
+                Ok(mut instr) => {
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                },
+                Err(e) => {
+                    panic!("{:?}", e);
+                }
+            }
+
+            assert_eq!(gba.cpu.operating_mode, OperatingMode::FastInterrupt);
         }
 }

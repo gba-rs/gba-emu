@@ -300,17 +300,6 @@ impl CPU {
                 panic!("{:?}", e);
             }
         }
-
-        match self.cpsr.control_bits.mode_bits {
-            0b10000 => self.operating_mode = OperatingMode::User,
-            0b10001 => self.operating_mode = OperatingMode::FastInterrupt,
-            0b10010 => self.operating_mode = OperatingMode::Interrupt,
-            0b10011 => self.operating_mode = OperatingMode::Supervisor,
-            0b10111 => self.operating_mode = OperatingMode::Abort,
-            0b11011 => self.operating_mode = OperatingMode::Undefined,
-            0b11111 => self.operating_mode = OperatingMode::System,
-            _ => panic!("Mode bits set incorrectly {:b}", self.cpsr.control_bits.mode_bits)
-        }
     }
 
     fn check_reg_range(reg_num: &u8, instr_set: &InstructionSet) {
