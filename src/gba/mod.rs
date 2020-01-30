@@ -2,6 +2,7 @@ use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_registers::IORegisters};
 use crate::memory::lcd_io_registers::*;
 use crate::gpu::gpu::GPU;
+use crate::memory::interrupt_registers::*;
 
 
 pub struct GBA {
@@ -9,7 +10,10 @@ pub struct GBA {
     pub gpu: GPU,
     pub mem_map: MemoryMap,
     pub game_pack_memory: [GamePackRom; 3],
-    pub io_reg: IORegisters
+    pub io_reg: IORegisters,
+    pub ime_interrupt: InterruptMasterEnableRegister,
+    pub ie_interrupt: InterruptEnableRegister,
+    pub if_interrupt: InterruptRequestFlags   
 }
 
 impl Default for GBA {
@@ -25,7 +29,10 @@ impl Default for GBA {
             gpu: GPU::new(),
             mem_map: MemoryMap::new(),
             game_pack_memory: temp_gamepack,
-            io_reg: IORegisters::new(0)
+            io_reg: IORegisters::new(0),
+            ime_interrupt: InterruptMasterEnableRegister::new(),
+            ie_interrupt: InterruptEnableRegister::new(),
+            if_interrupt: InterruptRequestFlags::new()
         };
 
         // setup the PC
@@ -70,7 +77,10 @@ impl GBA {
             gpu: GPU::new(),
             mem_map: MemoryMap::new(),
             game_pack_memory: temp_gamepack,
-            io_reg: IORegisters::new(0)
+            io_reg: IORegisters::new(0),
+            ime_interrupt: InterruptMasterEnableRegister::new(),
+            ie_interrupt: InterruptEnableRegister::new(),
+            if_interrupt: InterruptRequestFlags::new()   
         };
 
         // setup the PC
@@ -106,6 +116,11 @@ impl GBA {
                 temp.mem_map.register_memory($startval, $startval + ($name::SEGMENT_SIZE as u32), &$variable.memory);
             };
         }
+        //Interrupt Memory
+        //4000208
+        register_memory_segment!(0x4000208, InterruptMasterEnableRegister, temp.ime_interrupt);
+        register_memory_segment!(0x4000200, InterruptMasterEnableRegister, temp.ie_interrupt);
+        register_memory_segment!(0x4000202, InterruptMasterEnableRegister, temp.if_interrupt);
 
         // GPU memory 
         register_memory_segment!(0x4000000, DisplayControl, temp.gpu.display_control);

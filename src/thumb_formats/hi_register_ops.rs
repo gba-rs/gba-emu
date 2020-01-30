@@ -67,6 +67,17 @@ impl Instruction for HiRegisterOp {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {
+        match self.op {
+            OpCodes::BX => {
+                return 3; //2s + 1n
+            }
+            _ => {
+                return 1; //1s
+            }
+        }
+    } // 1s or 2s + 1n
+
 }
 
 impl HiRegisterOp {

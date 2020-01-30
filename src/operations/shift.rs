@@ -1,6 +1,5 @@
 use crate::cpu::cpu::CPU;
 use std::{fmt, option::Option};
-use log::debug;
 
 pub struct Shift {
     pub shift_type: ShiftType,

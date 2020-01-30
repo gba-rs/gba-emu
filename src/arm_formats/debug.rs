@@ -32,6 +32,7 @@ impl Instruction for Debug {
             // TODO implement null terminated strings here
         }
     }
+    fn cycles(&self) -> u32 {return 0;}
 
     fn asm(&self) -> String {
         return format!("{:?}", self);

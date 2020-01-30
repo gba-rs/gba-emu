@@ -1,9 +1,8 @@
 use crate::operations::{arm_arithmetic, logical};
-use crate::operations::shift::{Shift, apply_shift, ShiftType};
+use crate::operations::shift::{Shift, apply_shift};
 use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, program_status_register::ProgramStatusRegister, condition::Condition, cpu::OperatingMode};
-use log::{debug};
 use std::fmt;
 
 #[derive(Debug, PartialEq)]
@@ -390,6 +389,7 @@ impl Instruction for DataProcessing {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 1;}
 }
 
 

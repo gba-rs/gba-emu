@@ -52,6 +52,9 @@ impl Instruction for MultipleLoadStore {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
+    fn cycles(&self) -> u32 {return 3;} // Normal LDM instructions take nS + 1N + 1I and LDM PC takes (n+1)S + 2N + 1I
+    //STM instructions take (n-1)S + 2N incremental cycles to execute, where n is the number of words transferred.
+
 }
 
 impl fmt::Debug for MultipleLoadStore {

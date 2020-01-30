@@ -48,6 +48,8 @@ impl Instruction for MoveShifted {
     fn asm(&self) -> String {
         return format!("MOVS r{}, r{}, {:?}", self.rd, self.rs, self.shift);
     }
+    fn cycles(&self) -> u32 {return 1;} // 1s
+
 }
 
 #[cfg(test)]
