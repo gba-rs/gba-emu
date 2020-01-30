@@ -3,6 +3,7 @@ use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_regist
 use crate::memory::lcd_io_registers::*;
 use crate::gpu::gpu::GPU;
 use crate::memory::interrupt_registers::*;
+use crate::memory::system_control::WaitStateControl;
 
 
 pub struct GBA {
@@ -13,7 +14,7 @@ pub struct GBA {
     pub io_reg: IORegisters,
     pub ime_interrupt: InterruptMasterEnableRegister,
     pub ie_interrupt: InterruptEnableRegister,
-    pub if_interrupt: InterruptRequestFlags   
+    pub if_interrupt: InterruptRequestFlags
 }
 
 impl Default for GBA {
@@ -117,7 +118,10 @@ impl GBA {
         register_memory_segment!(0x4000200, InterruptMasterEnableRegister, temp.ie_interrupt);
         register_memory_segment!(0x4000202, InterruptMasterEnableRegister, temp.if_interrupt);
 
-        // GPU memory 
+        // TODO figure out how to register this memory
+//         register_memory_segment!(0x4000204, WaitStateControl, temp.mem_map.cycle_clock.wait_state_control);
+
+        // GPU memory
         register_memory_segment!(0x4000000, DisplayControl, temp.gpu.display_control);
         register_memory_segment!(0x4000002, GreenSwap, temp.gpu.green_swap);
         register_memory_segment!(0x4000004, DisplayStatus, temp.gpu.display_status);

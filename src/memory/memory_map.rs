@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::operations::timing::CycleClock;
 use crate::operations::timing::*;
 use crate::operations::timing::MemAccessSize::{Mem32, Mem16, Mem8};
+use crate::memory::system_control::WaitStateControl;
 
 pub struct Range<T: Ord> {
     pub lower: T,
@@ -39,6 +40,7 @@ impl MemoryMap {
             cycle_clock: CycleClock {
                 prev_address: 0,
                 cycles: 0,
+                wait_state_control: WaitStateControl::new()
             },
         };
     }

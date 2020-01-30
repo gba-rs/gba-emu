@@ -1,8 +1,10 @@
 use crate::operations::arm_arithmetic::add;
+use crate::memory::system_control::WaitStateControl;
 
 pub struct CycleClock {
     pub prev_address: u32,
-    pub cycles: u32
+    pub cycles: u32,
+    pub wait_state_control: WaitStateControl
 }
 
 pub const BIOS_START: u32 = 0x0000_0000;
@@ -31,18 +33,37 @@ pub enum CycleType {
 impl CycleClock {
     pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize) {
         // TODO
+        let nonseq_cycles = [4, 3, 2, 8];
+        let seq_cycles = [2, 1];
+
         self.prev_address = address;
         match address & 0xFF00_0000 {
-            BIOS_START => {}
+            BIOS_START | IWRAM_START | IOMEM_START => self.cycles += 1,
             EWRAM_START => {
-                self.cycles += 2;
+                // TODO Default waitstate settings, see System Control chapter of GBATEK
+                match access_size {
+                    MemAccessSize::Mem8 | MemAccessSize::Mem16 => self.cycles += 3,
+                    MemAccessSize::Mem32 => self.cycles += 6
+                }
             }
-            IWRAM_START => {}
-            IOMEM_START => {}
-            PALRAM_START => {}
-            VRAM_START => {}
-            OAM_START => {}
-            PAKROM_START => {}
+            PALRAM_START | VRAM_START => {
+                // TODO Plus 1 cycle if GBA accesses video memory at the same time.
+                match access_size {
+                    MemAccessSize::Mem8 | MemAccessSize::Mem16 => self.cycles += 1,
+                    MemAccessSize::Mem32 => self.cycles += 2
+                }
+            }
+            OAM_START => {
+                // TODO Plus 1 cycle if GBA accesses video memory at the same time.
+                self.cycles += 1;
+            }
+            PAKROM_START => {
+                // TODO Default waitstate settings, see System Control chapter separate timings for sequential, and non-sequential accesses
+                match access_size {
+                    MemAccessSize::Mem8 | MemAccessSize::Mem16 => self.cycles += 5,
+                    MemAccessSize::Mem32 => self.cycles += 8
+                }
+            }
             CARTRAM_START => {}
             _ => { panic!("Trying to read unknown address") }
         }
@@ -70,7 +91,7 @@ mod tests {
         gba.mem_map.read_u16(0x0200_0000);
         gba.mem_map.read_u32(0x0200_0000);
 
-        assert_eq!(gba.mem_map.cycle_clock.get_cycles(), 6);
+        assert_eq!(gba.mem_map.cycle_clock.get_cycles(), 12);
         assert_eq!(gba.mem_map.cycle_clock.get_cycles(), 0);
     }
 }
