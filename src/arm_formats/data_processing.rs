@@ -57,7 +57,8 @@ pub struct DataProcessing {
     pub opcode: OpCodes,
     pub set_condition: bool,
     pub immediate_operand: bool,
-    pub condition: Condition
+    pub condition: Condition,
+    pub spsr_field_mask: u32
 }
 
 impl From<u32> for DataProcessing {
@@ -69,7 +70,8 @@ impl From<u32> for DataProcessing {
             opcode: OpCodes::from(((value & 0x1E0_0000) >> 21) as u8),
             set_condition: ((value & 0x10_0000) >> 20) != 0,
             immediate_operand: ((value & 0x200_0000) >> 25) != 0,
-            condition: Condition::from((value & 0xF000_0000) >> 28)
+            condition: Condition::from((value & 0xF000_0000) >> 28),
+            spsr_field_mask: (value >> 16) & 0x0F
         }
     }
 }
@@ -130,7 +132,15 @@ impl DataProcessing {
             }
             
         } else {
-            let register_val = if self.operand2.rm == 15 { cpu.get_register(self.operand2.rm) + 4 } else { cpu.get_register(self.operand2.rm) };
+            let mut register_val;
+            if self.operand2.rm == 15 { 
+                register_val = cpu.get_register(self.operand2.rm) + 4;
+                if !self.operand2.shift.immediate {
+                    register_val += 4;
+                }
+            } else { 
+                register_val = cpu.get_register(self.operand2.rm);
+            }
             let (shifted_value, c) = apply_shift(register_val, &self.operand2.shift, cpu);
             op2 = shifted_value;
             carry_out = c;
@@ -166,6 +176,9 @@ impl Instruction for DataProcessing {
         let mut op1 = cpu.get_register(self.op1_register);
         if self.op1_register == 15 {
             op1 += 4;
+            if !self.operand2.immediate && !self.operand2.shift.immediate {
+                op1 += 4;
+            }
         }
         
         let current_v = cpu.cpsr.flags.signed_overflow;
@@ -252,30 +265,28 @@ impl Instruction for DataProcessing {
             },
             OpCodes::TEQ => { //TEQ EOR
                 if !self.set_condition { //MSR CPSR
-                    // let negative = if cpu.cpsr.flags.negative {0b1000} else {0};
-                    // let zero = if cpu.cpsr.flags.zero {0b0100} else {0};
-                    // let carry = if cpu.cpsr.flags.carry {0b0010} else {0};
-                    // let overflow = if cpu.cpsr.flags.signed_overflow {0b0001} else {0};
-                    // let mut value = (negative + zero + carry + overflow) as u32;
-                    // value = value << 26;
-                    // let irq = if cpu.cpsr.control_bits.irq_disable {0b10000000} else {0};
-                    // let fiq = if cpu.cpsr.control_bits.fiq_disable {0b01000000} else {0};
-                    // let state = if cpu.cpsr.control_bits.state_bit {0b00100000} else {0};
-                    // value += irq + fiq + state;
-                    // value += cpu.cpsr.control_bits.mode_bits as u32;
-                    // cpu.set_register(self.op1_register, value);
                     let new_psr = ProgramStatusRegister::from(op2);
-                    if self.immediate_operand {
-                        // only set the flags
-                        cpu.cpsr.flags = new_psr.flags;
-                    } else {
-                        if cpu.operating_mode != OperatingMode::User {
-                            // set the entire thing
-                            cpu.cpsr = new_psr;
-                        } else {
-                            // only set the flags
-                            cpu.cpsr.flags = new_psr.flags;
+                    if cpu.operating_mode != OperatingMode::User {    
+                        if self.spsr_field_mask & 0b0001 != 0 {
+                            // control field mask
+                            cpu.cpsr.control_bits = new_psr.control_bits;
                         }
+
+                        if self.spsr_field_mask & 0b0010 != 0 {
+                            // Extension field mask bit   
+                        }
+
+                        if self.spsr_field_mask & 0b0100 != 0 {
+                            // status field
+                            cpu.cpsr.control_bits.fiq_disable = new_psr.control_bits.fiq_disable;
+                            cpu.cpsr.control_bits.irq_disable = new_psr.control_bits.irq_disable;
+                            cpu.cpsr.control_bits.state_bit = new_psr.control_bits.state_bit;
+                        }
+                    }
+
+                    if self.spsr_field_mask & 0b1000 != 0 {
+                        // flags
+                        cpu.cpsr.flags = new_psr.flags;
                     }
 
                 }
@@ -297,36 +308,32 @@ impl Instruction for DataProcessing {
             OpCodes::CMN => { //cmn
                 //check bit 20 is a 0, if so then it is MSR
                 if !self.set_condition { // MSR SPSR
-                    // let spsr = cpu.get_spsr();
-                    // let negative = if spsr.flags.negative {0b1000} else {0};
-                    // let zero = if spsr.flags.zero {0b0100} else {0};
-                    // let carry = if spsr.flags.carry {0b0010} else {0};
-                    // let overflow = if spsr.flags.signed_overflow {0b0001} else {0};
-                    // let mut value = (negative + zero + carry + overflow) as u32;
-                    // value = value << 26;
-                    // let irq = if spsr.control_bits.irq_disable {0b10000000} else {0};
-                    // let fiq = if spsr.control_bits.fiq_disable {0b01000000} else {0};
-                    // let state = if spsr.control_bits.state_bit {0b00100000} else {0};
-                    // value += irq + fiq + state;
-                    // value += spsr.control_bits.mode_bits as u32;
-                    // cpu.set_register(self.op1_register, value);
+                    let new_psr = ProgramStatusRegister::from(op2);
+                    let mut psr = cpu.get_spsr();
+                    if cpu.operating_mode != OperatingMode::User {    
+                        if self.spsr_field_mask & 0b0001 != 0 {
+                            // control field mask
+                            psr.control_bits = new_psr.control_bits;
+                        }
 
-                    let mut new_psr = ProgramStatusRegister::from(op2);
-                    let old_psr = cpu.get_spsr();
-                    if self.immediate_operand {
-                        // only set the flags
-                        new_psr.control_bits = old_psr.control_bits;
-                        cpu.set_spsr(new_psr);
-                    } else {
-                        if cpu.operating_mode != OperatingMode::User {
-                            // set the entire thing
-                            cpu.set_spsr(new_psr);
-                        } else {
-                            // only set the flags
-                            new_psr.control_bits = old_psr.control_bits;
-                            cpu.set_spsr(new_psr);
+                        if self.spsr_field_mask & 0b0010 != 0 {
+                            // Extension field mask bit   
+                        }
+
+                        if self.spsr_field_mask & 0b0100 != 0 {
+                            // status field
+                            psr.control_bits.fiq_disable = new_psr.control_bits.fiq_disable;
+                            psr.control_bits.irq_disable = new_psr.control_bits.irq_disable;
+                            psr.control_bits.state_bit = new_psr.control_bits.state_bit;
                         }
                     }
+
+                    if self.spsr_field_mask & 0b1000 != 0 {
+                        // flags
+                        psr.flags = new_psr.flags;
+                    }
+
+                    cpu.set_spsr(psr);
                 }
                 else{
                     cpu.cpsr.flags = arm_arithmetic::cmn(op1, op2);
