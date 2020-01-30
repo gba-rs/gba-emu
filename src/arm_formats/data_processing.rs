@@ -78,6 +78,7 @@ impl fmt::Debug for DataProcessing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.set_condition {
             write!(f, "{:?}S{:?}", self.opcode, self.condition)?;
+            write!(f, " r{},", self.destination_register)?;
         } else {
             match self.opcode {
                 OpCodes::TST => {
@@ -95,21 +96,21 @@ impl fmt::Debug for DataProcessing {
                 },
                 _ => {
                     write!(f, "{:?}{:?}", self.opcode, self.condition)?;
-                    write!(f, " r{}, ", self.destination_register)?;
+                    write!(f, " r{},", self.destination_register)?;
                 }
             }
         }
         
         if !(self.opcode == OpCodes::MOV || self.opcode == OpCodes::MVN || (self.opcode == OpCodes::TEQ && !self.set_condition) || (self.opcode == OpCodes::CMN && !self.set_condition)) {
-            write!(f, "r{}, ", self.op1_register)?;
+            write!(f, " r{},", self.op1_register)?;
         }
 
         if self.operand2.immediate {
             let op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
-            write!(f, "#{:X}", op2)
+            write!(f, " #{:X}", op2)
         } else {
-            write!(f, "r{}, ", self.operand2.rm)?;
-            write!(f, "{:?} ", self.operand2.shift)
+            write!(f, " r{}, ", self.operand2.rm)?;
+            write!(f, " {:?} ", self.operand2.shift)
         }
     }
 }
@@ -119,15 +120,6 @@ impl DataProcessing {
         let op2: u32;
         let carry_out;
         if self.operand2.immediate {
-            // let shift = Shift {
-            //     shift_type: ShiftType::RotateRight,
-            //     shift_amount: self.operand2.rotate * 2,
-            //     shift_register: 0,
-            //     immediate: true
-            // };
-            // let (shifted_value, c) = apply_shift(self.operand2.immediate_value as u32, &shift, cpu);
-            // op2 = shifted_value;
-            // carry_out = c;
             op2 = (self.operand2.immediate_value as u32).rotate_right((self.operand2.rotate as u32) * 2);
             
             // https://stackoverflow.com/questions/52243393/what-is-the-carry-out-from-the-shifter-of-arm-cpu
@@ -138,8 +130,8 @@ impl DataProcessing {
             }
             
         } else {
-            // let shift_register_amount = cpu.get_register(self.operand2.shift.shift_register);
-            let (shifted_value, c) = apply_shift(cpu.get_register(self.operand2.rm), &self.operand2.shift, cpu);
+            let register_val = if self.operand2.rm == 15 { cpu.get_register(self.operand2.rm) + 4 } else { cpu.get_register(self.operand2.rm) };
+            let (shifted_value, c) = apply_shift(register_val, &self.operand2.shift, cpu);
             op2 = shifted_value;
             carry_out = c;
         }

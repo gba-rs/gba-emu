@@ -96,7 +96,7 @@ impl GBA {
         temp.cpu.operating_mode = OperatingMode::Supervisor;
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
 
-        temp.cpu.operating_mode = OperatingMode::User;
+        temp.cpu.operating_mode = OperatingMode::System;
 
         // setup the memory
         temp.cpu.bios_ram.load(bios);
