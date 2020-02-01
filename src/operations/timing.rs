@@ -69,7 +69,11 @@ impl CycleClock {
                 // TODO Default waitstate settings, see System Control chapter separate timings for sequential, and non-sequential accesses
                 match access_size {
                     MemAccessSize::Mem8 | MemAccessSize::Mem16 => self.cycles += 5,
-                    MemAccessSize::Mem32 => self.cycles += 8
+                    MemAccessSize::Mem32 => {
+                        // below is an example of accessing the wait state control. not meant to actually do anything yet
+                        self.cycles += nonseq_cycles[self.wait_state_control.get_wait_state_zero_first_access()];
+                        self.cycles += 8
+                    }
                 }
             }
             GAMEPAK_SRAM_START => {
