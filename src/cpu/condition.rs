@@ -1,4 +1,7 @@
-#[derive(Debug, PartialEq)]
+#![allow(non_snake_case)]
+use std::fmt;
+
+#[derive(PartialEq)]
 pub enum Condition {
     EQ = 0b0000,
     NE = 0b0001,
@@ -16,6 +19,29 @@ pub enum Condition {
     LE = 0b1101,
     AL = 0b1110,
     Error
+}
+
+impl fmt::Debug for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Condition::EQ => { write!(f, "EQ") },
+            Condition::NE => { write!(f, "NE") },
+            Condition::CS => { write!(f, "CS") },
+            Condition::CC => { write!(f, "CC") },
+            Condition::MI => { write!(f, "MI") },
+            Condition::PL => { write!(f, "PL") },
+            Condition::VS => { write!(f, "VS") },
+            Condition::VC => { write!(f, "VC") },
+            Condition::HI => { write!(f, "HI") },
+            Condition::LS => { write!(f, "LS") },
+            Condition::GE => { write!(f, "GE") },
+            Condition::LT => { write!(f, "LT") },
+            Condition::GT => { write!(f, "GT") },
+            Condition::LE => { write!(f, "LE") },
+            Condition::AL => { write!(f, "") },
+            Condition::Error => { write!(f, "Error") }
+        }
+    }
 }
 
 impl From<u32> for Condition {

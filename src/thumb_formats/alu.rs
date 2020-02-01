@@ -158,12 +158,12 @@ impl Instruction for ALU {
                 cpu.set_register(self.rd, value as u32);
             },
             OpCodes::ADC => {
-                let (value, flags) = arm_arithmetic::adc(cpu.get_register(self.rd),cpu.get_register(self.rs));
+                let (value, flags) = arm_arithmetic::adc(cpu.get_register(self.rd),  cpu.get_register(self.rs), cpu.cpsr.flags.carry);
                 cpu.set_register(self.rd, value);
                 cpu.cpsr.flags = flags;
             },
             OpCodes::SBC => {
-                let (value, flags) = arm_arithmetic::sbc(cpu.get_register(self.rd),cpu.get_register(self.rs));
+                let (value, flags) = arm_arithmetic::sbc(cpu.get_register(self.rd),cpu.get_register(self.rs), cpu.cpsr.flags.carry);
                 cpu.set_register(self.rd, value);
                 cpu.cpsr.flags = flags;
             },

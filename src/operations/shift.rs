@@ -23,7 +23,7 @@ impl fmt::Debug for Shift {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?} ", self.shift_type)?;
         if self.immediate {
-            write!(f, "{:X}", self.shift_amount)
+            write!(f, "#0x{:X}", self.shift_amount)
         } else {
             write!(f, "r{}", self.shift_register)
         }
@@ -63,11 +63,6 @@ impl fmt::Debug for ShiftType {
     }
 }
 
-pub enum BarrelCarryOut {
-    NewValue(u32),
-    OldValue
-}
-
 /// Returns val, carryout
 pub fn apply_shift(base_value: u32, shift: &Shift, cpu: &mut CPU) -> (u32, Option<u32>) {
     let shift_amount;
@@ -89,7 +84,7 @@ fn apply_shift_imm(base_value: u32, shift_type: &ShiftType, shift_amount: u32, c
         ShiftType::LogicalLeft => {
             if shift_amount == 0 {
                 carry_out = None;
-                shifted_value = base_value << (shift_amount as u32);
+                shifted_value = base_value;
             } else {
                 shifted_value = base_value << ((shift_amount as i32) - 1);
                 carry_out = Some(shifted_value >> 31);

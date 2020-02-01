@@ -1,5 +1,5 @@
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::{cpu::CPU, condition::Condition};
+use crate::cpu::{cpu::CPU};
 use crate::operations::{arm_arithmetic};
 use crate::operations::instruction::Instruction;
 

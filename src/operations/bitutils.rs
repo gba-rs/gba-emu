@@ -21,7 +21,7 @@ pub fn sign_extend_u8(value: u8, sign_bit_index: u8) -> u8 {
 }
 
 pub fn get_bits_u32(value: u32, start_bit: u8, num_bits: u8) -> u32 {
-    return (((1 << num_bits) - 1) & (value >> (start_bit - 1))); 
+    return ((1 << num_bits) - 1) & (value >> (start_bit - 1)); 
 }
 
 pub fn get_bits_u16(value: u16, start_bit: u8, num_bits: u8) -> u16 {

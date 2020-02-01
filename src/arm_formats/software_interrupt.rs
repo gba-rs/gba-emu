@@ -32,15 +32,6 @@ impl Instruction for SoftwareInterrupt {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;}
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_execute() {
-
-    }
+    fn cycles(&self) -> u32 { return 3; }
 }
