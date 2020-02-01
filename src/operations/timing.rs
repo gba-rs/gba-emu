@@ -15,7 +15,7 @@ pub const PALRAM_START: u32 = 0x0500_0000;
 pub const VRAM_START: u32 = 0x0600_0000;
 pub const OAM_START: u32 = 0x0700_0000;
 pub const PAKROM_START: u32 = 0x0800_0000;
-pub const CARTRAM_START: u32 = 0x0E00_0000;
+pub const GAMEPAK_SRAM_START: u32 = 0x0E00_0000;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum MemAccessSize {
@@ -72,7 +72,9 @@ impl CycleClock {
                     MemAccessSize::Mem32 => self.cycles += 8
                 }
             }
-            CARTRAM_START => {}
+            GAMEPAK_SRAM_START => {
+                self.cycles += 5;
+            }
             _ => { panic!("Trying to read unknown address") }
         }
     }
