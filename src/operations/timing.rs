@@ -71,7 +71,7 @@ impl CycleClock {
                     MemAccessSize::Mem8 | MemAccessSize::Mem16 => self.cycles += 5,
                     MemAccessSize::Mem32 => {
                         // below is an example of accessing the wait state control. not meant to actually do anything yet
-                        self.cycles += nonseq_cycles[self.wait_state_control.get_wait_state_zero_first_access()];
+                        self.cycles += nonseq_cycles[self.wait_state_control.get_wait_state_zero_first_access() as usize];
                         self.cycles += 8
                     }
                 }
