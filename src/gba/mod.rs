@@ -77,7 +77,6 @@ impl GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-//            mem_map: MemoryMap::new(),
             memory_bus: MemoryBus::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
@@ -122,8 +121,8 @@ impl GBA {
         register_memory_segment!(0x4000200, InterruptMasterEnableRegister, temp.ie_interrupt);
         register_memory_segment!(0x4000202, InterruptMasterEnableRegister, temp.if_interrupt);
 
-        // TODO figure out how to register this memory
-         register_memory_segment!(0x4000204, WaitStateControl, temp.memory_bus.cycle_clock.wait_state_control);
+        // System Control memory
+        register_memory_segment!(0x4000204, WaitStateControl, temp.memory_bus.cycle_clock.wait_state_control);
 
         // GPU memory
         register_memory_segment!(0x4000000, DisplayControl, temp.gpu.display_control);
