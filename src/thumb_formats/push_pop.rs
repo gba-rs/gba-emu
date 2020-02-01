@@ -130,17 +130,17 @@ mod tests {
         let decode_result = gba.cpu.decode(0xB4AA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
             }
         }
 
-        assert_eq!(100, gba.mem_map.read_u32(base - 4));
-        assert_eq!(300, gba.mem_map.read_u32(base - 8));
-        assert_eq!(500, gba.mem_map.read_u32(base - 12));
-        assert_eq!(700, gba.mem_map.read_u32(base - 16));
+        assert_eq!(100, gba.memory_bus.mem_map.read_u32(base - 4));
+        assert_eq!(300, gba.memory_bus.mem_map.read_u32(base - 8));
+        assert_eq!(500, gba.memory_bus.mem_map.read_u32(base - 12));
+        assert_eq!(700, gba.memory_bus.mem_map.read_u32(base - 16));
     }
 
     #[test]
@@ -151,7 +151,7 @@ mod tests {
         let base = 0x02000000;
 
         for i in 0..8 {
-           gba.mem_map.write_u32(0x02000000 + (i * 4), (100 * i) as u32);
+           gba.memory_bus.mem_map.write_u32(0x02000000 + (i * 4), (100 * i) as u32);
         }
 
         gba.cpu.set_register(THUMB_SP, base);
@@ -161,7 +161,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xBCAA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);

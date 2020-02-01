@@ -62,13 +62,13 @@ mod tests {
         let mut gba: GBA = GBA::default(); 
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
-        gba.mem_map.write_u32(0x02000050, 1000);
+        gba.memory_bus.mem_map.write_u32(0x02000050, 1000);
         gba.cpu.set_register(THUMB_SP, 0x02000000);
 
         // LDR r4, [SP, 50]
         match gba.cpu.decode(0x9C14) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -89,14 +89,14 @@ mod tests {
         // str r4, [SP, 50]
         match gba.cpu.decode(0x9414) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
             }
         }
         
-        assert_eq!(1000, gba.mem_map.read_u32(0x02000050));
+        assert_eq!(1000, gba.memory_bus.mem_map.read_u32(0x02000050));
     }
 }
 

@@ -30,18 +30,18 @@ pub struct MemoryBlock {
 
 pub struct MemoryMap {
     pub memory_mapping: Vec<MemoryBlock>,
-    pub(crate) cycle_clock: CycleClock,
+//    pub(crate) cycle_clock: CycleClock,
 }
 
 impl MemoryMap {
     pub fn new() -> MemoryMap {
         return MemoryMap {
             memory_mapping: vec![],
-            cycle_clock: CycleClock {
-                prev_address: 0,
-                cycles: 0,
-                wait_state_control: WaitStateControl::new()
-            },
+//            cycle_clock: CycleClock {
+//                prev_address: 0,
+//                cycles: 0,
+//                wait_state_control: WaitStateControl::new()
+//            },
         };
     }
 
@@ -90,7 +90,7 @@ impl MemoryMap {
     }
 
     pub fn read_u32(&mut self, address: u32) -> u32 {
-        self.cycle_clock.update_cycles(address, Mem32);
+//        self.cycle_clock.update_cycles(address, Mem32);
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let mut result: u32 = 0;
@@ -102,7 +102,7 @@ impl MemoryMap {
     }
 
     pub fn read_u16(&mut self, address: u32) -> u16 {
-        self.cycle_clock.update_cycles(address, Mem16);
+//        self.cycle_clock.update_cycles(address, Mem16);
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let memory = mem.borrow_mut();
@@ -111,7 +111,7 @@ impl MemoryMap {
     }
 
     pub fn read_u8(&mut self, address: u32) -> u8 {
-        self.cycle_clock.update_cycles(address, Mem8);
+//        self.cycle_clock.update_cycles(address, Mem8);
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         return mem.borrow_mut()[index as usize];

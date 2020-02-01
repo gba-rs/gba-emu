@@ -31,6 +31,14 @@ pub enum CycleType {
 }
 
 impl CycleClock {
+    pub fn new() -> CycleClock {
+        return CycleClock{
+            prev_address: 0,
+            cycles: 0,
+            wait_state_control: WaitStateControl::new()
+        };
+    }
+
     pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize) {
         // TODO
         let nonseq_cycles = [4, 3, 2, 8];
@@ -87,12 +95,13 @@ mod tests {
     fn test_placeholder() {
         let mut gba: GBA = GBA::default();
 
-        gba.mem_map.read_u8(0x0200_0000);
-        gba.mem_map.read_u16(0x0200_0000);
-        gba.mem_map.read_u32(0x0200_0000);
+        gba.memory_bus.read_u8(0x0200_0000); // 3
 
-        assert_eq!(gba.mem_map.cycle_clock.get_cycles(), 12);
-        assert_eq!(gba.mem_map.cycle_clock.get_cycles(), 0);
+        gba.memory_bus.read_u16(0x0200_0000); // 3
+        gba.memory_bus.read_u32(0x0200_0000); // 6
+        gba.memory_bus.read_u32(0x0300_0000); // 1
+        assert_eq!(gba.memory_bus.cycle_clock.get_cycles(), 13);
+        assert_eq!(gba.memory_bus.cycle_clock.get_cycles(), 0);
     }
 }
 

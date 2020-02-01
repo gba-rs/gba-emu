@@ -66,13 +66,13 @@ mod tests {
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
         gba.cpu.set_register(THUMB_PC, 0x08000000);
-        gba.mem_map.write_u32(0x08000000 + 42, 2000);
+        gba.memory_bus.mem_map.write_u32(0x08000000 + 42, 2000);
 
         // RD = r1, offset = 20
         let decode_result = gba.cpu.decode(0x490A);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
