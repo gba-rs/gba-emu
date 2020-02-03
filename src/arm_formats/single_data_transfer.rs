@@ -121,8 +121,6 @@ impl Instruction for SingleDataTransfer {
         } else {
             let (value, _) = apply_shift(cpu.get_register(self.offset.rm), &self.offset.shift, cpu);
             address_with_offset = apply_offset(base, value, self.up_down, 0);
-            debug!("Shifted Register: {:X}", value);
-            debug!("Address with offset: {:X}", address_with_offset);
         }
 
         let transfer_info =  DataTransfer {

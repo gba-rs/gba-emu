@@ -51,7 +51,7 @@ mod tests {
         cpu.set_register(8, offset);
 
         let instr = cpu.decode(0xE7D08128).unwrap();
-        println!("{:?}", instr.asm());
+        // println!("{:?}", instr.asm());
         instr.execute(&mut cpu, &mut map);
 
         assert_eq!(cpu.get_register(8), 0xF0);

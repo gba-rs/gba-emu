@@ -3,6 +3,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use memory_macros::*;
+use crate::operations::bitutils::*;
 
 #[memory_segment(2)]
 #[bit_field(bg_mode, 0, 3)]
@@ -53,20 +54,9 @@ pub struct VerticalCount {
 #[bit_field(mosaic, 6, 1)]
 #[bit_field(colors, 7, 1)]
 #[bit_field(screen_base_block, 8, 4)]
-#[bit_field(screen_size, 14, 2)]
-pub struct BG_0_1_Control {
-    pub memory: Rc<RefCell<Vec<u8>>>
-}
-
-#[memory_segment(2)]
-#[bit_field(bg_priority, 0, 2)]
-#[bit_field(character_base_block, 2, 2)]
-#[bit_field(mosaic, 6, 1)]
-#[bit_field(colors, 7, 1)]
-#[bit_field(screen_base_block, 8, 4)]
 #[bit_field(display_area_overflow, 13, 1)]
 #[bit_field(screen_size, 14, 2)]
-pub struct BG_2_3_Control {
+pub struct BG_Control {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
 
@@ -84,12 +74,24 @@ pub struct BGRefrencePoint {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
 
+impl From<&BGRefrencePoint> for i32 {
+    fn from(value: &BGRefrencePoint) -> i32 {
+        return sign_extend_u32(value.get_register(), 27) as i32;
+    }
+}
+
 #[memory_segment(2)]
 #[bit_field(fractional_portion, 0, 8)]
 #[bit_field(integer_portion, 8, 7)]
 #[bit_field(sign, 15, 1)]
 pub struct BGRotScaleParam {
     pub memory: Rc<RefCell<Vec<u8>>>
+}
+
+impl From<&BGRotScaleParam> for i32 {
+    fn from(value: &BGRotScaleParam) -> i32 {
+        return sign_extend_u32(value.get_register() as u32, 16) as i32;
+    }
 }
 
 #[memory_segment(2)]

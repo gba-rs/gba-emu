@@ -58,24 +58,33 @@ impl BlockDataTransfer {
         let mut current_operating_mode = cpu.operating_mode;
         let mut write_back = self.write_back;
 
-        // Handle the psr
-        if self.psr_force_user {
-            if self.register_list.contains(&15) {
-                cpu.cpsr = cpu.get_spsr();
-            } else {
-                // bank transfer
-                current_operating_mode = OperatingMode::User;
-                write_back = false;
+        if self.register_list.len() == 0 {
+            // Because fuck the documentation I guess
+            cpu.set_register_override_opmode(15, current_operating_mode, mem_map.read_u32(current_address as u32));
+            if write_back {
+                let val = current_address + 0x40;
+                cpu.set_register_override_opmode(self.base_register, current_operating_mode, val as u32);
             }
-        }
+        } else {
+            // Handle the psr
+            if self.psr_force_user {
+                if self.register_list.contains(&15) {
+                    cpu.cpsr = cpu.get_spsr();
+                } else {
+                    // bank transfer
+                    current_operating_mode = OperatingMode::User;
+                    write_back = false;
+                }
+            }
 
-        for reg_num in self.register_list.iter() {
-            cpu.set_register_override_opmode(*reg_num, current_operating_mode, mem_map.read_u32(current_address as u32));
-            current_address += 4;
-        }
-
-        if write_back && !self.register_list.contains(&self.base_register) {
-            cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
+            for reg_num in self.register_list.iter() {
+                cpu.set_register_override_opmode(*reg_num, current_operating_mode, mem_map.read_u32(current_address as u32));
+                current_address += 4;
+            }
+    
+            if write_back && !self.register_list.contains(&self.base_register) {
+                cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
+            }
         }
     }
 
@@ -85,21 +94,59 @@ impl BlockDataTransfer {
         let mut current_operating_mode = cpu.operating_mode;
         let mut write_back = self.write_back;
 
-        // Handle the psr
-        if self.psr_force_user {
-            // bank transfer
-            current_operating_mode = OperatingMode::User;
-            write_back = false;
-        }
+        if self.register_list.len() == 0 {
 
-        for reg_num in self.register_list.iter() {
-            // todo figure out write back with base in reg list
-            mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
-            current_address += 4;
-        }
+            if self.up {
+                mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(15, current_operating_mode) + 8);
+            } else {
+                mem_map.write_u32((current_address - 0x40) as u32, cpu.get_register_override_opmode(15, current_operating_mode) + 8);
+            }
 
-        if write_back {
-            cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
+            if write_back {
+                let val;
+                if self.up {
+                    if self.pre_indexing {
+                        val = current_address + 0x40 - 4;
+                    } else {
+                        val = current_address + 0x40;
+                    }
+                } else {
+                    if self.pre_indexing {
+                        val = current_address - 0x40;
+                    } else {
+                        val = current_address - 0x44;
+                    }
+                }
+                cpu.set_register_override_opmode(self.base_register, current_operating_mode, val as u32);
+            }
+        } else {
+            // Handle the psr
+            if self.psr_force_user {
+                // bank transfer
+                current_operating_mode = OperatingMode::User;
+                write_back = false;
+            }
+
+
+            if self.register_list.contains(&self.base_register) && self.base_register != self.register_list[0] {
+                cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address + (4 * self.register_list.len()) as i64) as u32);
+            }
+
+            for reg_num in self.register_list.iter() {
+                // todo figure out write back with base in reg list
+
+                if *reg_num == 15 {
+                    mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode) + 8);
+                } else {
+                    mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
+                }
+
+                current_address += 4;
+            }
+
+            if write_back {
+                cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
+            }
         }
     }
 

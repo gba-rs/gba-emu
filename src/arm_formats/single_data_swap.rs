@@ -7,7 +7,7 @@ pub struct SingleDataSwap {
     pub source_register: u8,
     pub destination_register: u8,
     pub base_register: u8,
-    pub word: bool,
+    pub byte: bool,
     pub condition: Condition
 }
 
@@ -17,7 +17,7 @@ impl From<u32> for SingleDataSwap {
             source_register: (value & 0xF) as u8,
             destination_register: ((value & 0xF000) >> 12) as u8,
             base_register: ((value & 0xF_0000) >> 16) as u8,
-            word: (value & 0x40_0000 >> 22) != 0,
+            byte: ((value & 0x40_0000) >> 22) != 0,
             condition: Condition::from((value & 0xF000_0000) >> 28)
         };
     }
@@ -25,10 +25,10 @@ impl From<u32> for SingleDataSwap {
 
 impl fmt::Debug for SingleDataSwap {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-        if self.word {
-            write!(f, "SWP{:?} r{}, r{}, [r{}]", self.condition, self.destination_register, self.source_register, self.base_register)
-        } else {
+        if self.byte {
             write!(f, "SWPB{:?} r{}, r{}, [r{}]", self.condition, self.destination_register, self.source_register, self.base_register)
+        } else {
+            write!(f, "SWP{:?} r{}, r{}, [r{}]", self.condition, self.destination_register, self.source_register, self.base_register)
         }
     }
 }
@@ -38,14 +38,14 @@ impl Instruction for SingleDataSwap {
         // mem read then mem write
         let swap_address = cpu.get_register(self.base_register);
         let source_value = cpu.get_register(self.source_register);
-        if self.word {
-            let swap_address_contents = mem_map.read_u32(swap_address);
-            mem_map.write_u32(swap_address, source_value);
-            cpu.set_register(self.destination_register, swap_address_contents);
-        } else {
+        if self.byte {
             let swap_address_contents = mem_map.read_u8(swap_address);
             mem_map.write_u8(swap_address, source_value as u8);
             cpu.set_register(self.destination_register, swap_address_contents as u32);
+        } else {
+            let swap_address_contents = mem_map.read_u32(swap_address - (swap_address % 4)).rotate_right((swap_address % 4) * 8);
+            mem_map.write_u32(swap_address - (swap_address % 4), source_value);
+            cpu.set_register(self.destination_register, swap_address_contents);
         }
         
     }
@@ -53,6 +53,7 @@ impl Instruction for SingleDataSwap {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
+
     fn cycles(&self) -> u32 {return 2;}
 }
 

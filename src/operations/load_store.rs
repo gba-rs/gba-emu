@@ -26,38 +26,57 @@ impl From<u32> for DataType {
 /*
 * Extracts a byte or a halfword from a value stored in memory and put it into a CPU register
 */
-pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU,
-            value_from_memory: u32, address: u32) {
-    let value_to_load;
-    if !is_signed && data_type == DataType::Byte {
-        value_to_load = get_byte_to_load(value_from_memory, false);
-    } else if is_signed && data_type == DataType::Byte {
-        value_to_load = get_byte_to_load(value_from_memory, true);
-    } else if !is_signed && data_type == DataType::Halfword {
-        value_to_load = get_halfword_to_load(value_from_memory, address, false);
-    } else if is_signed && data_type == DataType::Halfword {
-        value_to_load = get_halfword_to_load(value_from_memory, address, true);
-    } else {
-        value_to_load = value_from_memory;
+pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU, address: u32, mem_map: &mut MemoryMap) {
+    // let value_to_load;
+    // if !is_signed && data_type == DataType::Byte {
+    //     value_to_load = get_byte_to_load(value_from_memory, false);
+    // } else if is_signed && data_type == DataType::Byte {
+    //     value_to_load = get_byte_to_load(value_from_memory, true);
+    // } else if !is_signed && data_type == DataType::Halfword {
+    //     value_to_load = get_halfword_to_load(value_from_memory, address, false);
+    // } else if is_signed && data_type == DataType::Halfword {
+    //     value_to_load = get_halfword_to_load(value_from_memory, address, true);
+    // } else {
+    //     value_to_load = value_from_memory;
+    // }
+    let value: u32;
+    match data_type {
+        DataType::Byte => {
+            if is_signed {
+                value = sign_extend_u32(mem_map.read_u8(address) as u32, 7);
+            } else {
+                value = mem_map.read_u8(address) as u32;
+            }
+        },
+        DataType::Halfword => {
+            if is_signed {
+                value = (((sign_extend_u32(mem_map.read_u16(address - (address % 2)) as u32, 15)) as i32) >> (address % 2) * 8) as u32;
+                debug!("Rotate amount: {}", (address % 2) * 8);
+            } else {
+                value = (mem_map.read_u16(address - (address % 2)) as u32).rotate_right((address % 2) * 8);
+            }
+        },
+        DataType::Word => {
+            value = mem_map.read_u32(address - (address % 4)).rotate_right((address % 4) * 8);
+        },
+        _ => panic!("Invalid data type")
     }
 
-    cpu.set_register(destination, value_to_load);
+    cpu.set_register(destination, value);
 }
 
 /*
 * Formats a value from a register and stores it in a given memory address
 */
 pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
-    if (data_type == DataType::Halfword) && !is_halfword_aligned(memory_address) && !is_word_aligned(memory_address) {
-        panic!("Attempting to store halfword in a memory location that is not word aligned or halfword aligned!");
-    }
-
     match data_type {
         DataType::Word => {
-            mem_map.write_u32(memory_address, value_to_store);
+            // Force word alignment 
+            mem_map.write_u32(memory_address - (memory_address % 4), value_to_store);
         }
         DataType::Halfword => {
-            mem_map.write_u16(memory_address, value_to_store as u16);
+            // Force halfword alignment 
+            mem_map.write_u16(memory_address - (memory_address % 2), value_to_store as u16);
         }
         DataType::Byte => {
             mem_map.write_u8(memory_address, value_to_store as u8);
@@ -92,8 +111,6 @@ pub fn is_word_plus_1_aligned(memory_address: u32) -> bool {
 pub fn is_halfword_aligned(memory_address: u32) -> bool {
     return (memory_address & 0x1) == 0; // 2 more than mult. of 4
 }
-
-pub fn load_to_register(memory_address: u32, register: u8) {}
 
 /*
 * Pulls a halfword value out of a 32-bit value pulled from memory based on memory alignment
@@ -169,6 +186,7 @@ pub fn format_byte_to_store(value_to_store: u8) -> u32 {
 /**
 * Common and generic structure that can be used to execute data transfer commands
 */
+#[derive(Debug)]
 pub struct DataTransfer {
     pub is_pre_indexed: bool,
     pub write_back: bool,
@@ -194,19 +212,29 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
 
     debug!("Address: {:X}", address);
 
-    if transfer_info.load {
-        let value_from_memory = mem_map.read_u32(address);
-        load(transfer_info.is_signed, transfer_info.data_type,
-             transfer_info.destination, cpu, value_from_memory, address);
-    } else {
-        let value_to_store = cpu.get_register(transfer_info.destination);
-        store(transfer_info.data_type, value_to_store, address, mem_map);
-    }
+    // debug!("Address: {:X}", address);
 
-    // if post-indexed or write back bit is true, update the base register
-    if !transfer_info.is_pre_indexed || transfer_info.write_back {
-        cpu.set_register(transfer_info.base_register, address_with_offset);
-    }
+    if transfer_info.load {
+        load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, mem_map);
+
+        if transfer_info.destination != transfer_info.base_register {
+            if !transfer_info.is_pre_indexed || transfer_info.write_back {
+                cpu.set_register(transfer_info.base_register, address_with_offset);
+            }
+        }
+    
+    } else {
+        let mut value_to_store = cpu.get_register(transfer_info.destination);
+        if transfer_info.destination == 15 {
+            value_to_store += 8;
+        }
+
+        store(transfer_info.data_type, value_to_store, address, mem_map);
+        
+        if !transfer_info.is_pre_indexed || transfer_info.write_back {
+            cpu.set_register(transfer_info.base_register, address_with_offset);
+        }
+    }    
 }
 
 #[cfg(test)]
