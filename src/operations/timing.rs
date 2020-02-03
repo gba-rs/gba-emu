@@ -49,7 +49,7 @@ impl CycleClock {
         let ws0_seq_cycles = [2, 1];
         let ws1_seq_cycles = [4, 1];
         let ws2_seq_cycles = [8, 1];
-        let access_type = self.is_sequential(address);
+        let access_type = self.is_sequential(address, access_size);
         self.prev_address = address;
         match address & 0xFF00_0000 {
             BIOS_START | IWRAM_START | IOMEM_START => self.cycles += 1,
@@ -129,8 +129,14 @@ impl CycleClock {
         return temp;
     }
 
-    pub fn is_sequential(&self, address: u32) -> CycleType {
-        if (self.prev_address - address) <= 4 {
+    pub fn is_sequential(&self, address: u32, access_size: MemAccessSize) -> CycleType {
+        let address_diff;
+        match access_size {
+            MemAccessSize::Mem8 => address_diff = 1,
+            MemAccessSize::Mem16 => address_diff = 2,
+            MemAccessSize::Mem32 => address_diff = 4
+        }
+        if (address as i64 - self.prev_address as i64) == address_diff {
             return CycleType::S;
         }
         return CycleType::N;
