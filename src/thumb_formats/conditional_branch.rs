@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU, condition::Condition, cpu::THUMB_PC};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct ConditionalBranch {
     pub condition: Condition, 
@@ -19,7 +20,7 @@ impl From<u16> for ConditionalBranch {
 }
 
 impl Instruction for ConditionalBranch {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         if cpu.check_condition(&self.condition) {
             // execute
             let (signed_offset, _) = arm_arithmetic::add(self.signed_offset, 2);    // Fetch adds the other +2
@@ -57,7 +58,7 @@ mod tests{
         let decode_result = gba.cpu.decode(0xD0F6);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

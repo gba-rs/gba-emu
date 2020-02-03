@@ -3,6 +3,7 @@ use crate::cpu::{cpu::CPU};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadAddress {
     pub sp_pc: bool, //bit 11, calculates an address by adding a 10 bit constant to pc or sp
@@ -31,7 +32,7 @@ impl fmt::Debug for LoadAddress {
 }
 
 impl Instruction for LoadAddress {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         if self.sp_pc {
             let sp = cpu.get_register(THUMB_SP);
             let (new, _) = arm_arithmetic::add(sp, self.word8 as u32);

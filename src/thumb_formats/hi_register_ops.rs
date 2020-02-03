@@ -4,6 +4,7 @@ use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC};
 use std::fmt;
 use log::{error};
+use crate::gba::memory_bus::MemoryBus;
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -47,7 +48,7 @@ impl From<u16> for HiRegisterOp {
 }
 
 impl Instruction for HiRegisterOp {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         match self.op {
             OpCodes::ADD => {
                 self.add(cpu);

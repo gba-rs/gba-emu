@@ -2,6 +2,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
 use crate::operations::{arm_arithmetic};
 use crate::operations::instruction::Instruction;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum OpCodes {
@@ -40,7 +41,7 @@ impl From<u16> for ImmediateOp {
 }
 
 impl Instruction for ImmediateOp {
-    fn execute(&self, cpu: &mut CPU, _: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         match self.op {
             OpCodes::ADD => {
                 let (value, flags) = arm_arithmetic::add(cpu.get_register(self.destination_register) as u32, self.immediate as u32);

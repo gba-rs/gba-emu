@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC, cpu::THUMB_LR};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct BL {
     pub offset_bit: bool,
@@ -19,7 +20,7 @@ impl From<u16> for BL {
 }
 
 impl Instruction for BL {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         if self.offset_bit {
             // H = 1
             // Bottom half of the 23 bit offset (bits 11-1)

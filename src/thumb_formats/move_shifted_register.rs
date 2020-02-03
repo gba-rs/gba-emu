@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::operations::logical;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct MoveShifted {
@@ -27,7 +28,7 @@ impl From<u16> for MoveShifted {
 }
 
 impl Instruction for MoveShifted {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         let base_value = cpu.get_register(self.rs);
         let (shifted_value, carry_out) = apply_shift(base_value, &self.shift, cpu);
         cpu.set_register(self.rd, shifted_value);

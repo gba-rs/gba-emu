@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct UnconditionalBranch {
     pub offset: u32
@@ -17,7 +18,7 @@ impl From<u16> for UnconditionalBranch {
 }
 
 impl Instruction for UnconditionalBranch {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         // execute
         let (signed_offset, _) = arm_arithmetic::add(self.offset, 2);
         let (new_pc, _) = arm_arithmetic::add(cpu.get_register(THUMB_PC), signed_offset);

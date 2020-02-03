@@ -3,6 +3,7 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::thumb_formats::load_store_halfword::LoadStoreHalfword;
 use core::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreSignExtended {
     h_flag: bool,
@@ -42,7 +43,7 @@ impl fmt::Debug for LoadStoreSignExtended {
 }
 
 impl Instruction for LoadStoreSignExtended {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let address = cpu.get_register(self.base_register) +
             cpu.get_register(self.offset_register);
         if !self.sign_extended && !self.h_flag {
@@ -53,15 +54,15 @@ impl Instruction for LoadStoreSignExtended {
                 rb: self.base_register,
                 rd: self.destination_register,
             };
-            store_halfword.execute(cpu, mem_map);
+            store_halfword.execute(cpu, mem_bus);
         } else if !self.sign_extended && self.h_flag {
             // load halfword
             cpu.set_register(self.base_register, address);
             cpu.set_register(self.destination_register,
-                             mem_map.read_u16(address) as u32 & 0x0000_FFFF);
+                             mem_bus.read_u16(address) as u32 & 0x0000_FFFF);
         } else if self.sign_extended && !self.h_flag {
             // load sign-extended byte
-            let byte_from_memory = mem_map.read_u8(address);
+            let byte_from_memory = mem_bus.read_u8(address);
             let mut value_to_load = byte_from_memory as u32;
             if (byte_from_memory & (1 << 7)) > 0 {
                 value_to_load = byte_from_memory as u32 | 0xFFFF_FF00;
@@ -70,7 +71,7 @@ impl Instruction for LoadStoreSignExtended {
             cpu.set_register(self.destination_register, value_to_load);
         } else {
             // load sign-extended halfword
-            let halfword_from_memory = mem_map.read_u16(address);
+            let halfword_from_memory = mem_bus.read_u16(address);
             let value_to_load: u32;
             if (halfword_from_memory & (1 << 15)) > 0 {
                 value_to_load = halfword_from_memory as u32 | 0xFFFF_0000;

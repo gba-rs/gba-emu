@@ -32,7 +32,7 @@ impl MemoryBus {
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem8, CycleType::N);
-        self.mem_map.write_u8(address, u8);
+        self.mem_map.write_u8(address, value);
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {

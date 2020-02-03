@@ -2,6 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct ThumbSoftwareInterrupt {
     pub comment_immediate: u8
@@ -16,7 +17,7 @@ impl From<u16> for ThumbSoftwareInterrupt {
 }
 
 impl Instruction for ThumbSoftwareInterrupt {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         cpu.set_spsr(cpu.cpsr);
         let current_pc = cpu.get_register(THUMB_PC);
         cpu.set_register(THUMB_LR, current_pc + 2); // set LR to the next instruction (fetch does the other +2)      

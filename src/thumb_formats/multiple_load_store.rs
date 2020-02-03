@@ -29,12 +29,12 @@ impl From<u16> for MultipleLoadStore {
 }
 
 impl Instruction for MultipleLoadStore {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryMap) {
         let base = cpu.get_register(self.rb);
         let mut offset = 0;
         if self.load {
             for reg_num in self.register_list.iter() {
-                let value = mem_map.read_u32(base + offset);
+                let value = mem_bus.read_u32(base + offset);
                 cpu.set_register(*reg_num, value);
                 offset += 4;
             }
@@ -42,7 +42,7 @@ impl Instruction for MultipleLoadStore {
         } else {
             for reg_num in self.register_list.iter() {
                 let value = cpu.get_register(*reg_num);
-                mem_map.write_u32(base + offset, value);
+                mem_bus.write_u32(base + offset, value);
                 offset += 4;
             }
             cpu.set_register(self.rb, base + offset);

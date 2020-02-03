@@ -2,6 +2,7 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::load_store::{apply_offset};
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreHalfword {
     pub load: bool,
@@ -22,16 +23,16 @@ impl From<u16> for LoadStoreHalfword {
 }
 
 impl Instruction for LoadStoreHalfword {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let base_register_value = cpu.get_register(self.rb);
         let base_address = apply_offset(base_register_value, self.immediate_offset as u32, true, 0);
         cpu.set_register(self.rb, base_address);
         if self.load {
-            let value = mem_map.read_u16(base_address);
+            let value = mem_bus.read_u16(base_address);
             cpu.set_register(self.rd, value as u32);
         } else {
             let value_to_store = cpu.get_register(self.rd);
-            mem_map.write_u16(base_address, value_to_store as u16);
+            mem_bus.write_u16(base_address, value_to_store as u16);
         }
 
     }

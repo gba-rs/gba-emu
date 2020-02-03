@@ -2,6 +2,7 @@ use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreRegisterOffset {
     load: bool,
@@ -31,19 +32,19 @@ impl From<u16> for LoadStoreRegisterOffset {
 }
 
 impl Instruction for LoadStoreRegisterOffset {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let target_address = cpu.get_register(self.rb) + cpu.get_register(self.offset_register);
         if self.load {
             if self.data_type == DataType::Word {
-                cpu.set_register(self.rd, mem_map.read_u32(target_address));
+                cpu.set_register(self.rd, mem_bus.read_u32(target_address));
             } else {
-                cpu.set_register(self.rd, mem_map.read_u8(target_address) as u32);
+                cpu.set_register(self.rd, mem_bus.read_u8(target_address) as u32);
             }
         } else {
             if self.data_type == DataType::Word {
-                mem_map.write_u32(target_address, cpu.get_register(self.rd));
+                mem_bus.write_u32(target_address, cpu.get_register(self.rd));
             } else {
-                mem_map.write_u8(target_address, cpu.get_register(self.rd) as u8);
+                mem_bus.write_u8(target_address, cpu.get_register(self.rd) as u8);
             }
         }
     }
