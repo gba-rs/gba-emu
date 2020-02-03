@@ -1,10 +1,11 @@
 use crate::operations::arm_arithmetic::add;
 use crate::memory::system_control::WaitStateControl;
+use crate::operations::timing::MemAccessSize::{Mem16, Mem32};
 
 pub struct CycleClock {
     pub prev_address: u32,
     pub cycles: u32,
-    pub wait_state_control: WaitStateControl
+    pub wait_state_control: WaitStateControl,
 }
 
 pub const BIOS_START: u32 = 0x0000_0000;
@@ -14,8 +15,12 @@ pub const IOMEM_START: u32 = 0x0400_0000;
 pub const PALRAM_START: u32 = 0x0500_0000;
 pub const VRAM_START: u32 = 0x0600_0000;
 pub const OAM_START: u32 = 0x0700_0000;
-pub const PAKROM_START: u32 = 0x0800_0000;
-pub const GAMEPAK_SRAM_START: u32 = 0x0E00_0000;
+pub const GAMEPAK_WS0_START: u32 = 0x0800_0000;
+pub const GAMEPAK_WS0_HI: u32 = 0x0900_0000;
+pub const GAMEPAK_WS1_START: u32 = 0x0A00_0000;
+pub const GAMEPAK_WS1_HI: u32 = 0x0B00_0000;
+pub const GAMEPAK_WS2_START: u32 = 0x0C00_0000;
+pub const GAMEPAK_WS2_HI: u32 = 0x0D00_0000;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum MemAccessSize {
@@ -32,23 +37,24 @@ pub enum CycleType {
 
 impl CycleClock {
     pub fn new() -> CycleClock {
-        return CycleClock{
+        return CycleClock {
             prev_address: 0,
             cycles: 0,
-            wait_state_control: WaitStateControl::new()
+            wait_state_control: WaitStateControl::new(),
         };
     }
 
-    pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize) {
-        // TODO
+    pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize, access_type: CycleType) {
         let nonseq_cycles = [4, 3, 2, 8];
-        let seq_cycles = [2, 1];
+        let ws0_seq_cycles = [2, 1];
+        let ws1_seq_cycles = [4, 1];
+        let ws2_seq_cycles = [8, 1];
 
         self.prev_address = address;
         match address & 0xFF00_0000 {
             BIOS_START | IWRAM_START | IOMEM_START => self.cycles += 1,
             EWRAM_START => {
-                // TODO Default waitstate settings, see System Control chapter of GBATEK
+                // Might need to revisit this in relation to wait states
                 match access_size {
                     MemAccessSize::Mem8 | MemAccessSize::Mem16 => self.cycles += 3,
                     MemAccessSize::Mem32 => self.cycles += 6
@@ -65,19 +71,53 @@ impl CycleClock {
                 // TODO Plus 1 cycle if GBA accesses video memory at the same time.
                 self.cycles += 1;
             }
-            PAKROM_START => {
-                // TODO Default waitstate settings, see System Control chapter separate timings for sequential, and non-sequential accesses
-                match access_size {
-                    MemAccessSize::Mem8 | MemAccessSize::Mem16 => self.cycles += 5,
-                    MemAccessSize::Mem32 => {
-                        // below is an example of accessing the wait state control. not meant to actually do anything yet
+            GAMEPAK_WS0_START | GAMEPAK_WS0_HI => {
+                match access_type {
+                    CycleType::N => {
                         self.cycles += nonseq_cycles[self.wait_state_control.get_wait_state_zero_first_access() as usize];
-                        self.cycles += 8
+                        if access_size == MemAccessSize::Mem32 {
+                            self.cycles += ws0_seq_cycles[self.wait_state_control.get_wait_state_zero_second_access() as usize];
+                        }
+                    }
+                    CycleType::S => {
+                        self.cycles += ws0_seq_cycles[self.wait_state_control.get_wait_state_zero_second_access() as usize];
+                        if access_size == MemAccessSize::Mem32 {
+                            self.cycles += ws0_seq_cycles[self.wait_state_control.get_wait_state_zero_second_access() as usize];
+                        }
                     }
                 }
             }
-            GAMEPAK_SRAM_START => {
-                self.cycles += 5;
+            GAMEPAK_WS1_START | GAMEPAK_WS1_HI => {
+                match access_type {
+                    CycleType::N => {
+                        self.cycles += nonseq_cycles[self.wait_state_control.get_wait_state_one_first_access() as usize];
+                        if access_size == MemAccessSize::Mem32 {
+                            self.cycles += ws1_seq_cycles[self.wait_state_control.get_wait_state_one_second_access() as usize];
+                        }
+                    }
+                    CycleType::S => {
+                        self.cycles += ws1_seq_cycles[self.wait_state_control.get_wait_state_one_second_access() as usize];
+                        if access_size == MemAccessSize::Mem32 {
+                            self.cycles += ws1_seq_cycles[self.wait_state_control.get_wait_state_one_second_access() as usize];
+                        }
+                    }
+                }
+            }
+            GAMEPAK_WS2_START | GAMEPAK_WS2_HI => {
+                match access_type {
+                    CycleType::N => {
+                        self.cycles += nonseq_cycles[self.wait_state_control.get_wait_state_two_first_access() as usize];
+                        if access_size == MemAccessSize::Mem32 {
+                            self.cycles += ws2_seq_cycles[self.wait_state_control.get_wait_state_two_second_access() as usize];
+                        }
+                    }
+                    CycleType::S => {
+                        self.cycles += ws2_seq_cycles[self.wait_state_control.get_wait_state_two_second_access() as usize];
+                        if access_size == MemAccessSize::Mem32 {
+                            self.cycles += ws2_seq_cycles[self.wait_state_control.get_wait_state_two_second_access() as usize];
+                        }
+                    }
+                }
             }
             _ => { panic!("Trying to read unknown address") }
         }
