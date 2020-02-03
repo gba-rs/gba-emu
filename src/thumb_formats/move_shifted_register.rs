@@ -1,8 +1,8 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
-use crate::operations::shift::{Shift, ShiftType, apply_shift, BarrelCarryOut};
-use crate::operations::shift::ShiftType::{LogicalLeft, LogicalRight, ArithmeticRight};
+use crate::operations::shift::{Shift, ShiftType, apply_shift};
+use crate::operations::logical;
 
 #[derive(Debug)]
 pub struct MoveShifted {
@@ -40,13 +40,13 @@ impl Instruction for MoveShifted {
             None => {}
         }
 
-        cpu.cpsr.flags.negative = if (shifted_value as i32) < 0 { true } else { false };
-        cpu.cpsr.flags.zero = if shifted_value == 0 { true } else { false };
-
+        let (n, z) = logical::check_flags(shifted_value);
+        cpu.cpsr.flags.negative = n;
+        cpu.cpsr.flags.zero = z;
     }
 
     fn asm(&self) -> String {
-        return format!("MOVS r{}, r{}, {:?}, #0x{:X} ", self.rd, self.rs, self.shift, self.shift.shift_amount);
+        return format!("MOVS r{}, r{}, {:?}", self.rd, self.rs, self.shift);
     }
     fn cycles(&self) -> u32 {return 1;} // 1s
 
@@ -55,11 +55,10 @@ impl Instruction for MoveShifted {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::work_ram::WorkRam;
 
     #[test]
     fn test_execute_op0() {
-        let mut instruction = MoveShifted::from(0x54);
+        let instruction = MoveShifted::from(0x54);
 
         let rs = 0x02;
         let rd = 0x04;
@@ -80,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_execute_op1() {
-        let mut instruction = MoveShifted::from(0x894);
+        let instruction = MoveShifted::from(0x894);
 
         let rs = 0x02;
         let rd = 0x04;
@@ -101,7 +100,7 @@ mod tests {
 
     #[test]
     fn test_execute_op2() {
-        let mut instruction = MoveShifted::from(0x1094);
+        let instruction = MoveShifted::from(0x1094);
 
         let rs = 0x02;
         let rd = 0x04;

@@ -1,6 +1,7 @@
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 use std::cell::RefCell;
 use std::rc::Rc;
-use crate::operations::{bitutils::get_bits_u8};
 use memory_macros::*;
 
 #[memory_segment(2)]

@@ -7,14 +7,14 @@ use crate::memory::system_control::WaitStateControl;
 
 pub struct Range<T: Ord> {
     pub lower: T,
-    pub higher: T,
+    pub higher: T
 }
 
 impl<T> Range<T> where T: std::cmp::Ord {
-    pub fn new(lower: T, upper: T) -> Range<T> {
+    pub fn new(lower: T, upper: T) -> Range<T>  {
         return Range {
             lower: lower,
-            higher: upper,
+            higher: upper
         };
     }
 
@@ -25,24 +25,18 @@ impl<T> Range<T> where T: std::cmp::Ord {
 
 pub struct MemoryBlock {
     pub range: Range<u32>,
-    pub memory: Rc<RefCell<Vec<u8>>>,
+    pub memory: Rc<RefCell<Vec<u8>>>
 }
 
 pub struct MemoryMap {
-    pub memory_mapping: Vec<MemoryBlock>,
-//    pub(crate) cycle_clock: CycleClock,
+    pub memory_mapping: Vec<MemoryBlock>
 }
 
 impl MemoryMap {
     pub fn new() -> MemoryMap {
         return MemoryMap {
-            memory_mapping: vec![],
-//            cycle_clock: CycleClock {
-//                prev_address: 0,
-//                cycles: 0,
-//                wait_state_control: WaitStateControl::new()
-//            },
-        };
+            memory_mapping: vec![]
+        }
     }
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
@@ -81,7 +75,7 @@ impl MemoryMap {
         }
     }
 
-    pub fn read_block(&mut self, address: u32, bytes: u32) -> Vec<u8> {
+    pub fn read_block(&self, address: u32, bytes: u32) -> Vec<u8> {
         let mut temp: Vec<u8> = vec![];
         for i in address..(address + bytes) {
             temp.push(self.read_u8(i));
@@ -89,20 +83,18 @@ impl MemoryMap {
         return temp;
     }
 
-    pub fn read_u32(&mut self, address: u32) -> u32 {
-//        self.cycle_clock.update_cycles(address, Mem32);
+    pub fn read_u32(&self, address: u32) -> u32 {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let mut result: u32 = 0;
         let memory = mem.borrow_mut();
         for i in 0..4 {
-            result |= (memory[(index + i) as usize] as u32) << (i * 8);
+            result |= (memory[(index + i) as usize] as u32) <<  (i * 8);
         }
         return result;
     }
 
-    pub fn read_u16(&mut self, address: u32) -> u16 {
-//        self.cycle_clock.update_cycles(address, Mem16);
+    pub fn read_u16(&self, address: u32) -> u16 {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         let memory = mem.borrow_mut();
@@ -110,8 +102,7 @@ impl MemoryMap {
         return result;
     }
 
-    pub fn read_u8(&mut self, address: u32) -> u8 {
-//        self.cycle_clock.update_cycles(address, Mem8);
+    pub fn read_u8(&self, address: u32) -> u8 {
         let (lower, _, mem) = self.get_memory(address);
         let index: u32 = address - lower;
         return mem.borrow_mut()[index as usize];
@@ -120,7 +111,7 @@ impl MemoryMap {
     pub fn register_memory(&mut self, lower: u32, upper: u32, mem: &Rc<RefCell<Vec<u8>>>) {
         self.memory_mapping.push(MemoryBlock {
             range: Range::new(lower, upper),
-            memory: mem.clone(),
+            memory: mem.clone()
         });
     }
 
@@ -185,7 +176,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_memory_map_out_of_range() {
-        let mut map = MemoryMap::new();
+        let map = MemoryMap::new();
         map.read_u8(0xFFFFFFFF);
     }
 }

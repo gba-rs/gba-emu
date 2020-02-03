@@ -139,11 +139,11 @@ impl CPU {
         return CPU {
             registers: [0; 31],
             spsr: [ProgramStatusRegister::from(0); 7],
-            cpsr: ProgramStatusRegister::from(0),
+            cpsr: ProgramStatusRegister::from(0b11111),
             wram: WorkRam::new(256000, 0),
             onchip_wram: WorkRam::new(0x7FFF, 0),
             bios_ram: BiosRam::new(0),
-            operating_mode: OperatingMode::User,
+            operating_mode: OperatingMode::System,
             current_instruction_set: InstructionSet::Arm,
             last_instruction: "".to_string()
         };
@@ -357,21 +357,21 @@ impl CPU {
             Condition::GE => return self.cpsr.flags.negative == self.cpsr.flags.signed_overflow,
             Condition::LT => return self.cpsr.flags.negative != self.cpsr.flags.signed_overflow,
             Condition::GT => return !self.cpsr.flags.zero && (self.cpsr.flags.negative == self.cpsr.flags.signed_overflow),
-            Condition::LE => return self.cpsr.flags.zero && (self.cpsr.flags.negative != self.cpsr.flags.signed_overflow),
+            Condition::LE => return self.cpsr.flags.zero || (self.cpsr.flags.negative != self.cpsr.flags.signed_overflow),
             Condition::AL => return true,
             Condition::Error => panic!("Condition::Error hit"),
         }
     }
 
     pub fn get_spsr(&mut self) -> ProgramStatusRegister {
-        if self.operating_mode == OperatingMode::System || self.operating_mode == OperatingMode::User {
+        if self.operating_mode == OperatingMode::User {
             panic!("Invalid operating mode {:?}", self.operating_mode);
         }
         return self.spsr[self.operating_mode as usize];
     }
 
     pub fn set_spsr(&mut self, psr: ProgramStatusRegister) {
-        if self.operating_mode == OperatingMode::System || self.operating_mode == OperatingMode::User {
+        if self.operating_mode == OperatingMode::User {
             panic!("Invalid operating mode {:?}", self.operating_mode);
         }
         self.spsr[self.operating_mode as usize] = psr;

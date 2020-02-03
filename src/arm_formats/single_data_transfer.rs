@@ -6,7 +6,6 @@ use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
 
-#[derive(Debug)]
 pub struct SingleDataTransfer {
     pub offset: SingleDataTransferOperand,
     pub destination_register: u8,
@@ -19,6 +18,48 @@ pub struct SingleDataTransfer {
     pub offset_is_register: bool,
     pub condition: Condition,
     pub data_type: DataType,
+}
+
+impl fmt::Debug for SingleDataTransfer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.load {
+            write!(f, "LDR{:?}", self.condition)?;
+        } else {
+            write!(f, "STR{:?}", self.condition)?;
+        }
+
+        if self.is_byte {
+            write!(f, "B ")?;
+        } else {
+            write!(f, " ")?;
+        }
+
+        write!(f, "r{}, [r{}", self.destination_register, self.op1_register)?;
+
+        if self.offset_is_register {
+            if self.up_down {
+                write!(f, ", +r{}, {:?}", self.offset.rm, self.offset.shift)?;
+            } else {
+                write!(f, ", -r{}, {:?}", self.offset.rm, self.offset.shift)?;
+            }
+        } else {
+            if self.up_down {
+                write!(f, ", +#0x{:X}", self.offset.immediate_value)?;
+            } else {
+                write!(f, ", -#0x{:X}", self.offset.immediate_value)?;
+            }
+        }
+
+        if self.write_back {
+            if self.is_pre_indexed {
+                write!(f, "]!")
+            } else {
+                write!(f, "] r{}", self.op1_register)
+            }
+        } else {
+            write!(f, "]")
+        }
+    }
 }
 
 impl From<u32> for SingleDataTransfer {
@@ -46,11 +87,6 @@ impl From<u32> for SingleDataTransfer {
         };
     }
 }
-
-// impl fmt::Debug for BranchExchange {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//     }
-// }
 
 #[derive(Debug)]
 pub struct SingleDataTransferOperand {

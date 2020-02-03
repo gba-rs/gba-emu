@@ -1,10 +1,8 @@
 use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
-use crate::cpu::{cpu::CPU, program_status_register::ConditionFlags,program_status_register::ProgramStatusRegister};
+use crate::cpu::{cpu::CPU};
 use crate::memory::memory_map::MemoryMap;
-use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
 use std::fmt;
-use crate::operations::load_store::DataType::Word;
 
 pub struct LoadStoreImmediateOffset {
     load: bool,
@@ -35,13 +33,13 @@ impl From<u16> for LoadStoreImmediateOffset {
 impl fmt::Debug for LoadStoreImmediateOffset {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if !self.load && self.data_type ==  DataType::Word {
-            write!(f, "STR {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if self.load && self.data_type ==  DataType::Word {
-            write!(f, "LDR {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if !self.load && self.data_type ==  DataType::Byte {
-            write!(f, "STRB {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         } else if self.load && self.data_type ==  DataType::Byte {
-            write!(f, "LDRB {}, [{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
         }
         else {
             write!(f, "error")
@@ -76,6 +74,7 @@ impl Instruction for LoadStoreImmediateOffset {
             cpu.set_register(self.rd, response as u32);
         }
     }
+
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
@@ -88,10 +87,8 @@ impl Instruction for LoadStoreImmediateOffset {
 mod tests {
     use super::*;
     use crate::gba::GBA;
-    use crate::cpu::{cpu::InstructionSet, cpu::THUMB_PC};
+    use crate::cpu::{cpu::InstructionSet};
     use std::borrow::{BorrowMut};
-
-
 
     #[test]
     fn test_creation_0s() {
@@ -184,7 +181,7 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
-        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset_register << 2) as u32) as u32;
+
         // target_address = 23.
         // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
         assert_eq!(2, gba.cpu.get_register(3));
@@ -211,7 +208,6 @@ mod tests {
                 panic!("{:?}", e);
             }
         }
-        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset_register << 2) as u32) as u32;
         // target_address = 23.
         // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
         assert_eq!(3, gba.cpu.get_register(3));

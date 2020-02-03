@@ -3,7 +3,6 @@
 //4000202h - IF - Interrupt Request Flags / IRQ Acknowledge (R/W, see below)
 use std::cell::RefCell;
 use std::rc::Rc;
-use crate::operations::{bitutils::get_bits_u8};
 use memory_macros::*;
 
 #[memory_segment(2)]

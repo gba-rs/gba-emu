@@ -76,7 +76,7 @@ impl fmt::Debug for MultipleLoadStore {
 mod tests {
     use super::*;
     use crate::gba::GBA;
-    use crate::cpu::{cpu::InstructionSet, cpu::THUMB_PC};
+    use crate::cpu::{cpu::InstructionSet};
     use std::borrow::{BorrowMut};
 
     #[test]

@@ -101,7 +101,7 @@ impl HiRegisterOp {
         if self.hi_flag_2 {
             // r8-r15
             source = cpu.get_register_unsafe(15 - self.source_register);
-            if self.source_register == 0 {  // R15 Special case
+            if self.source_register == 0 && self.destination_register != 0 {  // R15 Special case (and nop case)
                 source = source + 2;        // Fetch adds the other +2
             }
         } else {
@@ -150,12 +150,10 @@ impl HiRegisterOp {
         if mode_bit {
             // Thumb
             cpu.current_instruction_set = InstructionSet::Thumb;
-            error!("Setting to thumb");
             cpu.set_register(THUMB_PC, source - 1);
         } else {
             // Arm
             cpu.current_instruction_set = InstructionSet::Arm;
-            error!("Setting to arm");
             cpu.set_register(ARM_PC, source);
         }
     }

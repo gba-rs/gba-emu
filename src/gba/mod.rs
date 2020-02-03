@@ -30,7 +30,6 @@ impl Default for GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-//            mem_map: MemoryMap::new(),
             memory_bus: MemoryBus::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
@@ -51,6 +50,8 @@ impl Default for GBA {
 
         temp.cpu.operating_mode = OperatingMode::Supervisor;
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
+
+        temp.cpu.operating_mode = OperatingMode::System;
 
         // setup the memory
         temp.memory_bus.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
@@ -98,12 +99,15 @@ impl GBA {
         temp.cpu.operating_mode = OperatingMode::Supervisor;
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
 
+        temp.cpu.operating_mode = OperatingMode::System;
+
         // setup the memory
         temp.cpu.bios_ram.load(bios);
         temp.game_pack_memory[0].load(rom);
         temp.memory_bus.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
         temp.memory_bus.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
         temp.memory_bus.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
+        temp.memory_bus.mem_map.register_memory(0x05000000, 0x050003FF, &temp.gpu.bg_obj_palette_ram.memory);
         temp.memory_bus.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
         temp.memory_bus.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
         temp.memory_bus.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);

@@ -1,5 +1,3 @@
-// AND EOR TST TEQ ORR MOV BIC MVN
-use crate::cpu::program_status_register::ConditionFlags;
 
 /// Returns (n, z)
 pub fn check_flags(value: u32) -> (bool, bool){
