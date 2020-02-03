@@ -216,8 +216,12 @@ impl GBA {
     }
 
     pub fn run(&mut self) {
+        
         loop {
-            self.cpu.fetch(&mut self.memory_bus.mem_map);
+            if self.ime_interrupt.get_register() == 1 {
+                //send to interrupt handler
+            }
+            self.cpu.fetch(&mut self.mem_map);
         }
     }
 
