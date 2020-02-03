@@ -2,6 +2,7 @@ use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::load_store::*;
 use crate::operations::instruction::Instruction;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct HalfwordRegisterOffset {
@@ -57,12 +58,12 @@ impl From<u32> for HalfwordCommon {
 }
 
 impl Instruction for HalfwordRegisterOffset {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = cpu.get_register(self.offset_register);
         let address_with_offset = apply_offset(base, offset, self.halfword_common.up_down_bit, 0);
 
-        common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
+        common_execute(&self.halfword_common, cpu, mem_bus, base, address_with_offset);
     }
 
     fn asm(&self) -> String {
@@ -81,12 +82,12 @@ impl From<u32> for HalfwordRegisterOffset {
 }
 
 impl Instruction for HalfwordImmediateOffset {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let base = cpu.get_register(self.halfword_common.base_register);
         let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
         let address_with_offset = apply_offset(base, offset as u32, self.halfword_common.up_down_bit, 0);
 
-        common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
+        common_execute(&self.halfword_common, cpu, mem_bus, base, address_with_offset);
     }
 
     fn asm(&self) -> String {
@@ -109,7 +110,7 @@ impl From<u32> for HalfwordImmediateOffset {
 * Handles the actual execution of the loading or storing operation. Either loads a value from memory
 * into a register or loads a value from a register into a memory location.
 */
-fn common_execute(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_map: &mut MemoryMap,
+fn common_execute(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_bus: &mut MemoryBus,
                   base_address: u32, address_with_offset: u32) {
     let transfer_info = DataTransfer {
         is_pre_indexed: halfword_common.is_pre_indexed,
@@ -121,7 +122,7 @@ fn common_execute(halfword_common: &HalfwordCommon, cpu: &mut CPU, mem_map: &mut
         destination: halfword_common.destination,
     };
 
-    data_transfer_execute(transfer_info, base_address, address_with_offset, cpu, mem_map);
+    data_transfer_execute(transfer_info, base_address, address_with_offset, cpu, mem_bus);
 }
 
 

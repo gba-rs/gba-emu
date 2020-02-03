@@ -79,15 +79,15 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8C14);
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         let expected_offset = 16;
 
         cpu.set_register(2, 0x0008);
-        mem_map.write_u16(0x0008 + expected_offset, 22);
+        mem_bus.write_u16(0x0008 + expected_offset, 22);
 
-        load_store_halfword.execute(&mut cpu, &mut mem_map);
+        load_store_halfword.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(load_store_halfword.load , true);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
@@ -102,22 +102,22 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8414);
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         let expected_offset = 16;
 
         cpu.set_register(2, 0x0008);
         cpu.set_register(4, 22);
 
-        load_store_halfword.execute(&mut cpu, &mut mem_map);
+        load_store_halfword.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(load_store_halfword.load , false);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
-        assert_eq!(mem_map.read_u16(0x0008 + expected_offset), 22);
+        assert_eq!(mem_bus.read_u16(0x0008 + expected_offset), 22);
     }
 
     #[test]

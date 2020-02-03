@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use log::{debug};
 use crate::operations::bitutils::sign_extend_u32;
 use crate::operations::arm_arithmetic;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {
@@ -47,20 +48,20 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
 /*
 * Formats a value from a register and stores it in a given memory address
 */
-pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
+pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_bus: &mut MemoryBus) {
     if (data_type == DataType::Halfword) && !is_halfword_aligned(memory_address) && !is_word_aligned(memory_address) {
         panic!("Attempting to store halfword in a memory location that is not word aligned or halfword aligned!");
     }
 
     match data_type {
         DataType::Word => {
-            mem_map.write_u32(memory_address, value_to_store);
+            mem_bus.write_u32(memory_address, value_to_store);
         }
         DataType::Halfword => {
-            mem_map.write_u16(memory_address, value_to_store as u16);
+            mem_bus.write_u16(memory_address, value_to_store as u16);
         }
         DataType::Byte => {
-            mem_map.write_u8(memory_address, value_to_store as u8);
+            mem_bus.write_u8(memory_address, value_to_store as u8);
         }
         _ => panic!("Trying to store invalid data type.")
     }
@@ -183,7 +184,7 @@ pub struct DataTransfer {
 * Handles loading and storing of a defined DataTransfer structure
 */
 pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, address_with_offset: u32,
-                             cpu: &mut CPU, mem_map: &mut MemoryMap) {
+                             cpu: &mut CPU, mem_bus: &mut MemoryBus) {
     let address;
     // if pre-index, apply offset to the address that is used
     if transfer_info.is_pre_indexed {
@@ -195,12 +196,12 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
     debug!("Address: {:X}", address);
 
     if transfer_info.load {
-        let value_from_memory = mem_map.read_u32(address);
+        let value_from_memory = mem_bus.read_u32(address);
         load(transfer_info.is_signed, transfer_info.data_type,
              transfer_info.destination, cpu, value_from_memory, address);
     } else {
         let value_to_store = cpu.get_register(transfer_info.destination);
-        store(transfer_info.data_type, value_to_store, address, mem_map);
+        store(transfer_info.data_type, value_to_store, address, mem_bus);
     }
 
     // if post-indexed or write back bit is true, update the base register
@@ -391,10 +392,10 @@ mod tests {
         return cpu;
     }
 
-    fn store_set_up() -> MemoryMap {
-        let mut mem_map = MemoryMap::new();
+    fn store_set_up() -> MemoryBus {
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
-        return mem_map;
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        return mem_bus;
     }
 }

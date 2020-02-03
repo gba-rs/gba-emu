@@ -66,10 +66,10 @@ mod tests {
         let value = 0x10;
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         cpu.set_register(rs, value);
 
-        instruction.execute(&mut cpu, &mut mem_map);
+        instruction.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(instruction.shift.shift_type, ShiftType::LogicalLeft);
         assert_eq!(instruction.shift.shift_amount, 1);
@@ -87,10 +87,10 @@ mod tests {
         let value = 0x10;
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         cpu.set_register(rs, value);
 
-        instruction.execute(&mut cpu, &mut mem_map);
+        instruction.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(instruction.shift.shift_type, ShiftType::LogicalRight);
         assert_eq!(instruction.shift.shift_amount, 2);
@@ -108,10 +108,10 @@ mod tests {
         let value = 0x100;
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         cpu.set_register(rs, value);
 
-        instruction.execute(&mut cpu, &mut mem_map);
+        instruction.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(instruction.shift.shift_type, ShiftType::ArithmeticRight);
         assert_eq!(instruction.shift.shift_amount , 2);

@@ -2,6 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 
 pub struct MultipleLoadStore {
@@ -29,7 +30,7 @@ impl From<u16> for MultipleLoadStore {
 }
 
 impl Instruction for MultipleLoadStore {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let base = cpu.get_register(self.rb);
         let mut offset = 0;
         if self.load {
@@ -96,7 +97,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xC2AA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -127,7 +128,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xCAAA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

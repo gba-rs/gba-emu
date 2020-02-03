@@ -5,6 +5,7 @@ use crate::operations::shift::{Shift, apply_shift};
 use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct SingleDataTransfer {
     pub offset: SingleDataTransferOperand,
@@ -108,7 +109,7 @@ impl From<u32> for SingleDataTransferOperand {
 }
 
 impl Instruction for SingleDataTransfer {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let address_with_offset;
         let base;
         if self.op1_register == 15 {
@@ -134,7 +135,7 @@ impl Instruction for SingleDataTransfer {
             base_register: self.op1_register,
             destination: self.destination_register,
         };
-        data_transfer_execute(transfer_info, base, address_with_offset, cpu, mem_map);
+        data_transfer_execute(transfer_info, base, address_with_offset, cpu, mem_bus);
     }
 
     fn asm(&self) -> String {

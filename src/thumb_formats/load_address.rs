@@ -77,31 +77,31 @@ mod tests {
     #[test]
     fn pc_set() {
         let mut cpu = CPU::new();
-        let mut map = MemoryMap::new();
+        let mut bus = MemoryBus::new();
         let b: LoadAddress = LoadAddress::from(0xA000);
-        b.execute(&mut cpu, &mut map);
+        b.execute(&mut cpu, &mut bus);
         assert_eq!(cpu.get_register(0), 2);     // 2 here because we are skipping the fetch
     }
     #[test]
     fn sp_set() {
         let mut cpu = CPU::new();
-        let mut map = MemoryMap::new();
+        let mut bus = MemoryBus::new();
         cpu.set_register(0, 100);
         let b: LoadAddress = LoadAddress::from(0xA800);
-        b.execute(&mut cpu, &mut map);
+        b.execute(&mut cpu, &mut bus);
         assert_eq!(cpu.get_register(0), 0);
     }
 
     #[test]
     fn immidiete_test() {
         let mut cpu = CPU::new();
-        let mut map = MemoryMap::new();
+        let mut bus = MemoryBus::new();
         cpu.set_register(0, 100);       // Set register to something else
         cpu.set_register(THUMB_SP, 10);
 
         // immidiete is 10 << 2 which is 40
         let b: LoadAddress = LoadAddress::from(0xA80A);
-        b.execute(&mut cpu, &mut map);
+        b.execute(&mut cpu, &mut bus);
         assert_eq!(40 + 10, cpu.get_register(0));
     }
 

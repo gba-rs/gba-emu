@@ -3,6 +3,7 @@ use crate::operations::arm_arithmetic::add;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, cpu::ARM_LR, condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 
 pub struct Branch {
@@ -43,7 +44,7 @@ impl fmt::Debug for Branch {
 }
 
 impl Instruction for Branch {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let current_pc_value = cpu.get_register(current_pc) + 4; // because pipeline bullshit
         let mut offset = (self.offset << 2) as u32;

@@ -99,36 +99,36 @@ mod tests {
     fn test_store_halfword() {
         let format = LoadStoreSignExtended::from(0x52A6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x02);
         cpu.set_register(4, 0x06);
         cpu.set_register(6, 0xF2F1);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
         assert_eq!(format.h_flag, false);
         assert_eq!(format.sign_extended, false);
         assert_eq!(format.offset_register, 2);
         assert_eq!(format.base_register, 4);
         assert_eq!(format.destination_register, 6);
-        assert_eq!(mem_map.read_u16(0x02 + 0x06), 0xF2F1);
+        assert_eq!(mem_bus.read_u16(0x02 + 0x06), 0xF2F1);
     }
 
     #[test]
     fn test_load_halfword() {
         let format = LoadStoreSignExtended::from(0x5AA6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0xF1A1);
+        mem_bus.write_u32(0x8 + 0x4, 0xF1A1);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, true);
         assert_eq!(format.sign_extended, false);
@@ -142,15 +142,15 @@ mod tests {
     fn test_load_sign_extended_byte () {
         let format = LoadStoreSignExtended::from(0x56A6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0xA1);
+        mem_bus.write_u32(0x8 + 0x4, 0xA1);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, false);
         assert_eq!(format.sign_extended, true);
@@ -164,15 +164,15 @@ mod tests {
     fn test_load_sign_extended_halfword_negative () {
         let format = LoadStoreSignExtended::from(0x5EA6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0xFF01);
+        mem_bus.write_u32(0x8 + 0x4, 0xFF01);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, true);
         assert_eq!(format.sign_extended, true);
@@ -186,15 +186,15 @@ mod tests {
     fn test_load_sign_extended_halfword_positive () {
         let format = LoadStoreSignExtended::from(0x5EA6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0x1F01);
+        mem_bus.write_u32(0x8 + 0x4, 0x1F01);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, true);
         assert_eq!(format.sign_extended, true);

@@ -110,9 +110,9 @@ mod tests {
     fn test_execute_load_word() {
         let format = LoadStoreRegisterOffset::from(0x58B3);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         let offset_amount = 4;
         let memory_address = 0x04;
@@ -120,8 +120,8 @@ mod tests {
 
         cpu.set_register(2, offset_amount); // set up offset
         cpu.set_register(format.rb, memory_address);
-        mem_map.write_u32(memory_address + offset_amount, value_to_load);
-        format.execute(&mut cpu, &mut mem_map);
+        mem_bus.write_u32(memory_address + offset_amount, value_to_load);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(cpu.get_register(format.rd), value_to_load)
     }
@@ -130,9 +130,9 @@ mod tests {
     fn test_execute_load_byte() {
         let format = LoadStoreRegisterOffset::from(0x5CB3);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         let offset_amount = 6;
         let memory_address = 0x04;
@@ -140,8 +140,8 @@ mod tests {
 
         cpu.set_register(2, offset_amount); // set up offset
         cpu.set_register(format.rb, memory_address);
-        mem_map.write_u32(memory_address + offset_amount, value_to_load);
-        format.execute(&mut cpu, &mut mem_map);
+        mem_bus.write_u32(memory_address + offset_amount, value_to_load);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(cpu.get_register(format.rd) as u8, value_to_load as u8)
     }
@@ -150,9 +150,9 @@ mod tests {
     fn test_execute_store_byte() {
         let format = LoadStoreRegisterOffset::from(0x54B3);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         let offset_amount = 6;
         let memory_address = 0x04;
@@ -162,18 +162,18 @@ mod tests {
         cpu.set_register(format.rb, memory_address);
         cpu.set_register(format.rd, value_to_store);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
-        assert_eq!(mem_map.read_u8(memory_address + offset_amount), value_to_store as u8);
+        assert_eq!(mem_bus.read_u8(memory_address + offset_amount), value_to_store as u8);
     }
 
     #[test]
     fn test_execute_store_word() {
         let format = LoadStoreRegisterOffset::from(0x50B3);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         let offset_amount = 6;
         let memory_address = 0x04;
@@ -183,7 +183,7 @@ mod tests {
         cpu.set_register(format.rb, memory_address);
         cpu.set_register(format.rd, value_to_store);
 
-        format.execute(&mut cpu, &mut mem_map);
-        assert_eq!(mem_map.read_u32(memory_address + offset_amount), value_to_store);
+        format.execute(&mut cpu, &mut mem_bus);
+        assert_eq!(mem_bus.read_u32(memory_address + offset_amount), value_to_store);
     }
 }

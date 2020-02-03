@@ -2,6 +2,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct SingleDataSwap {
     pub source_register: u8,
@@ -34,17 +35,17 @@ impl fmt::Debug for SingleDataSwap {
 }
 
 impl Instruction for SingleDataSwap {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         // mem read then mem write
         let swap_address = cpu.get_register(self.base_register);
         let source_value = cpu.get_register(self.source_register);
         if self.word {
-            let swap_address_contents = mem_map.read_u32(swap_address);
-            mem_map.write_u32(swap_address, source_value);
+            let swap_address_contents = mem_bus.read_u32(swap_address);
+            mem_bus.write_u32(swap_address, source_value);
             cpu.set_register(self.destination_register, swap_address_contents);
         } else {
-            let swap_address_contents = mem_map.read_u8(swap_address);
-            mem_map.write_u8(swap_address, source_value as u8);
+            let swap_address_contents = mem_bus.read_u8(swap_address);
+            mem_bus.write_u8(swap_address, source_value as u8);
             cpu.set_register(self.destination_register, swap_address_contents as u32);
         }
         

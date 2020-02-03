@@ -182,11 +182,11 @@ impl GBA {
 
     pub fn run(&mut self) {
         loop {
-            self.cpu.fetch(&mut self.memory_bus.mem_map);
+            self.cpu.fetch(&mut self.memory_bus);
         }
     }
 
     pub fn step(&mut self) {
-        self.cpu.fetch(&mut self.memory_bus.mem_map);
+        self.cpu.fetch(&mut self.memory_bus);
     }
 }
