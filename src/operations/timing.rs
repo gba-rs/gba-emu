@@ -44,12 +44,12 @@ impl CycleClock {
         };
     }
 
-    pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize, access_type: CycleType) {
+    pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize) {
         let nonseq_cycles = [4, 3, 2, 8];
         let ws0_seq_cycles = [2, 1];
         let ws1_seq_cycles = [4, 1];
         let ws2_seq_cycles = [8, 1];
-
+        let access_type = self.is_sequential(address);
         self.prev_address = address;
         match address & 0xFF00_0000 {
             BIOS_START | IWRAM_START | IOMEM_START => self.cycles += 1,
@@ -128,11 +128,17 @@ impl CycleClock {
         self.cycles = 0;
         return temp;
     }
+
+    pub fn is_sequential(&self, address: u32) -> CycleType {
+        if (self.prev_address - address) <= 4 {
+            return CycleType::S;
+        }
+        return CycleType::N;
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::memory::work_ram::WorkRam;
     use crate::memory::memory_map::MemoryMap;
     use crate::gba::GBA;
