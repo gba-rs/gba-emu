@@ -4,8 +4,12 @@ use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_regist
 use crate::memory::lcd_io_registers::*;
 use crate::gpu::gpu::GPU;
 use crate::memory::{interrupt_registers::*, key_input_registers::*, system_control::WaitStateControl};
+use crate::memory::system_control::WaitStateControl;
 use crate::operations::timing::{MemAccessSize, CycleClock};
 use crate::gba::memory_bus::MemoryBus;
+use crate::gpu::gpu::GPU;
+use crate::interrupts::interrupts::Interrupts;
+
 
 pub struct GBA {
     pub cpu: CPU,
@@ -13,11 +17,9 @@ pub struct GBA {
     pub memory_bus: MemoryBus,
     pub game_pack_memory: [GamePackRom; 3],
     pub io_reg: IORegisters,
-    pub ime_interrupt: InterruptMasterEnableRegister,
-    pub ie_interrupt: InterruptEnableRegister,
-    pub if_interrupt: InterruptRequestFlags,
     pub key_status: KeyStatus,
     pub ket_interrupt_control: KeyInterruptControl
+    pub interrupt_handler: Interrupts
 }
 
 impl Default for GBA {
@@ -34,11 +36,9 @@ impl Default for GBA {
             memory_bus: MemoryBus::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
-            ime_interrupt: InterruptMasterEnableRegister::new(),
-            ie_interrupt: InterruptEnableRegister::new(),
-            if_interrupt: InterruptRequestFlags::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new()
+            interrupt_handler: Interrupts::new()
         };
 
         // setup the PC
@@ -84,11 +84,9 @@ impl GBA {
             memory_bus: MemoryBus::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
-            ime_interrupt: InterruptMasterEnableRegister::new(),
-            ie_interrupt: InterruptEnableRegister::new(),
-            if_interrupt: InterruptRequestFlags::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new()
+            interrupt_handler: Interrupts::new()  
         };
 
         // setup the PC
@@ -153,10 +151,9 @@ impl GBA {
         }
         //Interrupt Memory
         //4000208
-        register_memory_segment!(0x4000208, InterruptMasterEnableRegister, temp.ime_interrupt);
-
-        register_memory_segment!(0x4000200, InterruptMasterEnableRegister, temp.ie_interrupt);
-        register_memory_segment!(0x4000202, InterruptMasterEnableRegister, temp.if_interrupt);
+        register_memory_segment!(0x4000208, InterruptMasterEnableRegister, temp.interrupt_handler.ime_interrupt);
+        register_memory_segment!(0x4000200, InterruptEnableRegister, temp.interrupt_handler.ie_interrupt);
+        register_memory_segment!(0x4000202, InterruptRequestFlags, temp.interrupt_handler.if_interrupt);
 
         // System Control memory
         register_memory_segment!(0x4000204, WaitStateControl, temp.memory_bus.cycle_clock.wait_state_control);
@@ -216,10 +213,9 @@ impl GBA {
     }
 
     pub fn run(&mut self) {
-        
         loop {
-            if self.ime_interrupt.get_register() == 1 {
-                //send to interrupt handler
+            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
+                self.interrupt_handler.service(&mut self.cpu);
             }
             self.cpu.fetch(&mut self.mem_map);
         }
