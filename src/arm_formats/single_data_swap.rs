@@ -67,7 +67,7 @@ mod tests {
         assert_eq!(a.destination_register, 0);
         assert_eq!(a.source_register, 0);
         assert_eq!(a.base_register, 0);
-        assert_eq!(a.word, false);
+        assert_eq!(a.byte, false);
 
 
     }
@@ -77,6 +77,6 @@ mod tests {
         let a: SingleDataSwap = SingleDataSwap::from(0xFFFFFFFF);
         assert_eq!(a.destination_register, 0b1111);
         assert_eq!(a.condition, Condition::Error);
-        assert_eq!(a.word, true);
+        assert_eq!(a.byte, true);
     }
 }

@@ -168,11 +168,4 @@ mod tests {
         assert_eq!(map.read_u8(0x02000000), 0xFF);
 
     }
-
-    #[test]
-    #[should_panic]
-    fn test_memory_map_out_of_range() {
-        let map = MemoryMap::new();
-        map.read_u8(0xFFFFFFFF);
-    }
 }
