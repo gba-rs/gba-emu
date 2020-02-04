@@ -4,3 +4,4 @@ pub mod shift;
 pub mod instruction;
 pub mod bitutils;
 pub mod logical;
+pub mod timing;

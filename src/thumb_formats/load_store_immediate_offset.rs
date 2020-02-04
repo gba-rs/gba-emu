@@ -136,7 +136,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x613B);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -144,7 +144,7 @@ mod tests {
         }
 
         let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset_register << 2) as u32) as u32;
-        assert_eq!(2, gba.mem_map.read_u32(target_address));
+        assert_eq!(2, gba.memory_bus.mem_map.read_u32(target_address));
     }
 
         #[test]
@@ -164,7 +164,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x613B); //str
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -175,7 +175,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x693B); //ldr
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -202,7 +202,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -229,7 +229,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -241,7 +241,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x793B); //ldrb
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);

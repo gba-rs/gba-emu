@@ -1,5 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use crate::operations::timing::CycleClock;
+use crate::operations::timing::*;
+use crate::operations::timing::MemAccessSize::{Mem32, Mem16, Mem8};
+use crate::memory::system_control::WaitStateControl;
 
 pub struct Range<T: Ord> {
     pub lower: T,
@@ -29,7 +33,6 @@ pub struct MemoryMap {
 }
 
 impl MemoryMap {
-
     pub fn new() -> MemoryMap {
         return MemoryMap {
             memory_mapping: vec![]
@@ -48,7 +51,6 @@ impl MemoryMap {
         let mut memory = mem.borrow_mut();
         memory[(index as usize) + 1] = ((value & 0xFF00) >> 8) as u8;
         memory[index as usize] = (value & 0xFF) as u8;
-        
     }
 
     pub fn write_u32(&mut self, address: u32, value: u32) {
@@ -130,7 +132,8 @@ mod tests {
     use super::*;
     use crate::memory::work_ram::WorkRam;
     use crate::memory::mock_memory::MockMemory;
-    
+    use crate::gba::GBA;
+
     #[test]
     fn test_memory_map_read() {
         let mut map = MemoryMap::new();
@@ -168,7 +171,6 @@ mod tests {
 
         map.write_u8(0x02000000, 0xFF);
         assert_eq!(map.read_u8(0x02000000), 0xFF);
-
     }
 
     #[test]

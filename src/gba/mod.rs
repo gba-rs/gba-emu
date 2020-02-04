@@ -1,19 +1,22 @@
+pub mod memory_bus;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_registers::IORegisters};
 use crate::memory::lcd_io_registers::*;
 use crate::gpu::gpu::GPU;
 use crate::memory::interrupt_registers::*;
-
+use crate::memory::system_control::WaitStateControl;
+use crate::operations::timing::{MemAccessSize, CycleClock};
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
-    pub mem_map: MemoryMap,
+    pub memory_bus: MemoryBus,
     pub game_pack_memory: [GamePackRom; 3],
     pub io_reg: IORegisters,
     pub ime_interrupt: InterruptMasterEnableRegister,
     pub ie_interrupt: InterruptEnableRegister,
-    pub if_interrupt: InterruptRequestFlags   
+    pub if_interrupt: InterruptRequestFlags
 }
 
 impl Default for GBA {
@@ -27,7 +30,7 @@ impl Default for GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-            mem_map: MemoryMap::new(),
+            memory_bus: MemoryBus::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
             ime_interrupt: InterruptMasterEnableRegister::new(),
@@ -51,14 +54,14 @@ impl Default for GBA {
         temp.cpu.operating_mode = OperatingMode::System;
 
         // setup the memory
-        temp.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
-        temp.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
-        temp.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
-        temp.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
-        temp.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
-        temp.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
-        temp.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
-        temp.mem_map.register_memory(0x04000000, 0x040003FE, &temp.io_reg.memory);
+        temp.memory_bus.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
+        temp.memory_bus.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
+        temp.memory_bus.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
+        temp.memory_bus.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
+        temp.memory_bus.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
+        temp.memory_bus.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
+        temp.memory_bus.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
+        temp.memory_bus.mem_map.register_memory(0x04000000, 0x040003FE, &temp.io_reg.memory);
 
         return temp;
     }
@@ -75,7 +78,7 @@ impl GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-            mem_map: MemoryMap::new(),
+            memory_bus: MemoryBus::new(),
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
             ime_interrupt: InterruptMasterEnableRegister::new(),
@@ -101,19 +104,19 @@ impl GBA {
         // setup the memory
         temp.cpu.bios_ram.load(bios);
         temp.game_pack_memory[0].load(rom);
-        temp.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
-        temp.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
-        temp.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
-        temp.mem_map.register_memory(0x05000000, 0x050003FF, &temp.gpu.bg_obj_palette_ram.memory);
-        temp.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
-        temp.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
-        temp.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
-        temp.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
-        temp.mem_map.register_memory(0x04000000, 0x040003FE, &temp.io_reg.memory);
+        temp.memory_bus.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
+        temp.memory_bus.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
+        temp.memory_bus.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
+        temp.memory_bus.mem_map.register_memory(0x05000000, 0x050003FF, &temp.gpu.bg_obj_palette_ram.memory);
+        temp.memory_bus.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
+        temp.memory_bus.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
+        temp.memory_bus.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
+        temp.memory_bus.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
+        temp.memory_bus.mem_map.register_memory(0x04000000, 0x040003FE, &temp.io_reg.memory);
 
         macro_rules! register_memory_segment {
             ($startval:expr, $name:ident, $variable:expr) => {
-                temp.mem_map.register_memory($startval, $startval + ($name::SEGMENT_SIZE as u32), &$variable.memory);
+                temp.memory_bus.mem_map.register_memory($startval, $startval + ($name::SEGMENT_SIZE as u32), &$variable.memory);
             };
         }
         //Interrupt Memory
@@ -122,7 +125,10 @@ impl GBA {
         register_memory_segment!(0x4000200, InterruptMasterEnableRegister, temp.ie_interrupt);
         register_memory_segment!(0x4000202, InterruptMasterEnableRegister, temp.if_interrupt);
 
-        // GPU memory 
+        // System Control memory
+        register_memory_segment!(0x4000204, WaitStateControl, temp.memory_bus.cycle_clock.wait_state_control);
+
+        // GPU memory
         register_memory_segment!(0x4000000, DisplayControl, temp.gpu.display_control);
         register_memory_segment!(0x4000002, GreenSwap, temp.gpu.green_swap);
         register_memory_segment!(0x4000004, DisplayStatus, temp.gpu.display_status);
@@ -176,11 +182,11 @@ impl GBA {
 
     pub fn run(&mut self) {
         loop {
-            self.cpu.fetch(&mut self.mem_map);
+            self.cpu.fetch(&mut self.memory_bus.mem_map);
         }
     }
 
     pub fn step(&mut self) {
-        self.cpu.fetch(&mut self.mem_map);
+        self.cpu.fetch(&mut self.memory_bus.mem_map);
     }
 }
