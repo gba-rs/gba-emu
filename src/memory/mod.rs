@@ -6,3 +6,4 @@ pub mod game_pack_rom;
 pub mod io_registers;
 pub mod lcd_io_registers;
 pub mod interrupt_registers;
+pub mod key_input_registers;

@@ -2,7 +2,7 @@ use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_registers::IORegisters, work_ram::WorkRam};
 use crate::memory::lcd_io_registers::*;
 use crate::gpu::gpu::GPU;
-use crate::memory::interrupt_registers::*;
+use crate::memory::{interrupt_registers::*, key_input_registers::*};
 
 
 pub struct GBA {
@@ -14,6 +14,8 @@ pub struct GBA {
     pub ime_interrupt: InterruptMasterEnableRegister,
     pub ie_interrupt: InterruptEnableRegister,
     pub if_interrupt: InterruptRequestFlags,
+    pub key_status: KeyStatus,
+    pub ket_interrupt_control: KeyInterruptControl
 }
 
 impl Default for GBA {
@@ -33,6 +35,8 @@ impl Default for GBA {
             ime_interrupt: InterruptMasterEnableRegister::new(),
             ie_interrupt: InterruptEnableRegister::new(),
             if_interrupt: InterruptRequestFlags::new(),
+            key_status: KeyStatus::new(),
+            ket_interrupt_control: KeyInterruptControl::new()
         };
 
         // setup the PC
@@ -81,6 +85,8 @@ impl GBA {
             ime_interrupt: InterruptMasterEnableRegister::new(),
             ie_interrupt: InterruptEnableRegister::new(),
             if_interrupt: InterruptRequestFlags::new(),
+            key_status: KeyStatus::new(),
+            ket_interrupt_control: KeyInterruptControl::new()
         };
 
         // setup the PC
@@ -108,6 +114,15 @@ impl GBA {
 
         temp.cpu.operating_mode = OperatingMode::Supervisor;
 
+        temp.key_status.set_register(0xFFFF);
+
+        for i in 0..2 {
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_b.set_register(0);
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_c.set_register(0);
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_d.set_register(0x100);
+        }
+
         // setup the memory
         // General INternal Memory
         temp.cpu.bios_ram.load(bios);
@@ -129,11 +144,11 @@ impl GBA {
         temp.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
         temp.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
         // temp.mem_map.register_memory(0x04000000, 0x040003FE, &temp.io_reg.memory);
-
+        // temp.mem_map.register_memory(0x0400020A, 0x04000300, &temp.not_used_400020A.memory);
 
         macro_rules! register_memory_segment {
             ($startval:expr, $name:ident, $variable:expr) => {
-                temp.mem_map.register_memory($startval, $startval + ($name::SEGMENT_SIZE as u32), &$variable.memory);
+                temp.mem_map.register_memory($startval, $startval + ($name::SEGMENT_SIZE as u32) - 1, &$variable.memory);
             };
         }
         //Interrupt Memory
@@ -168,16 +183,16 @@ impl GBA {
         register_memory_segment!(0x4000024, BGRotScaleParam, temp.gpu.bg_affine_components[0].rotation_scaling_param_c);
         register_memory_segment!(0x4000026, BGRotScaleParam, temp.gpu.bg_affine_components[0].rotation_scaling_param_d);
 
-        register_memory_segment!(0x4000028, BGRefrencePoint, temp.gpu.bg_affine_components[0].refrence_point_x_external);
-        register_memory_segment!(0x400002C, BGRefrencePoint, temp.gpu.bg_affine_components[0].refrence_point_y_external);
+        register_memory_segment!(0x4000028, BGRefrencePoint, temp.gpu.bg_affine_components[0].refrence_point_x_internal);
+        register_memory_segment!(0x400002C, BGRefrencePoint, temp.gpu.bg_affine_components[0].refrence_point_y_internal);
 
         register_memory_segment!(0x4000030, BGRotScaleParam, temp.gpu.bg_affine_components[1].rotation_scaling_param_a);
         register_memory_segment!(0x4000032, BGRotScaleParam, temp.gpu.bg_affine_components[1].rotation_scaling_param_b);
         register_memory_segment!(0x4000034, BGRotScaleParam, temp.gpu.bg_affine_components[1].rotation_scaling_param_c);
         register_memory_segment!(0x4000036, BGRotScaleParam, temp.gpu.bg_affine_components[1].rotation_scaling_param_d);
 
-        register_memory_segment!(0x4000038, BGRefrencePoint, temp.gpu.bg_affine_components[1].refrence_point_x_external);
-        register_memory_segment!(0x400003C, BGRefrencePoint, temp.gpu.bg_affine_components[1].refrence_point_y_external);
+        register_memory_segment!(0x4000038, BGRefrencePoint, temp.gpu.bg_affine_components[1].refrence_point_x_internal);
+        register_memory_segment!(0x400003C, BGRefrencePoint, temp.gpu.bg_affine_components[1].refrence_point_y_internal);
 
         register_memory_segment!(0x4000040, WindowHorizontalDimension, temp.gpu.windows[0].horizontal_dimensions);
         register_memory_segment!(0x4000042, WindowHorizontalDimension, temp.gpu.windows[1].horizontal_dimensions);
@@ -191,6 +206,8 @@ impl GBA {
         register_memory_segment!(0x4000050, ColorSpecialEffectsSelection, temp.gpu.color_special_effects_selection);
         register_memory_segment!(0x4000052, AlphaBlendingCoefficients, temp.gpu.alpha_blending_coefficients);
         register_memory_segment!(0x4000054, BrightnessCoefficient, temp.gpu.brightness_coefficient);
+
+        register_memory_segment!(0x4000130, KeyStatus, temp.key_status);
 
         return temp;
     }

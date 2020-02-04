@@ -42,6 +42,7 @@ impl MemoryMap {
         match result {
             Some((lower, _, mem)) => {
                 let index: u32 = address - lower;
+                // println!("Address: {:X}, lower: {:X}, index {}, mem length: {}", address, lower, index, mem.borrow().len());
                 mem.borrow_mut()[index as usize] = value;
             },
             None => {}

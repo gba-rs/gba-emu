@@ -141,7 +141,7 @@ impl CPU {
             registers: [0; 31],
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b11111),
-            wram: WorkRam::new(256000 + 1, 0),
+            wram: WorkRam::new(0x40000 + 1, 0),
             onchip_wram: WorkRam::new(0x7FFF + 1, 0),
             bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::System,

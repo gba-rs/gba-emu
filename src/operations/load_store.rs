@@ -51,7 +51,6 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
         DataType::Halfword => {
             if is_signed {
                 value = (((sign_extend_u32(mem_map.read_u16(address - (address % 2)) as u32, 15)) as i32) >> (address % 2) * 8) as u32;
-                debug!("Rotate amount: {}", (address % 2) * 8);
             } else {
                 value = (mem_map.read_u16(address - (address % 2)) as u32).rotate_right((address % 2) * 8);
             }
@@ -209,10 +208,6 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
     } else {
         address = base_address;
     }
-
-    debug!("Address: {:X}", address);
-
-    // debug!("Address: {:X}", address);
 
     if transfer_info.load {
         load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, mem_map);
