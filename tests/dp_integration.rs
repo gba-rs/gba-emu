@@ -153,7 +153,7 @@ mod tests {
             let decode_result = gba.cpu.decode(0xE10F0000);
             match decode_result {
                 Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
                     println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
                 },
                 Err(e) => {
@@ -173,7 +173,7 @@ mod tests {
             let decode_result = gba.cpu.decode(0xE14F1000);
             match decode_result {
                 Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
                     println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
                 },
                 Err(e) => {
@@ -190,7 +190,7 @@ mod tests {
             let decode_result = gba.cpu.decode(0xE329F011);
             match decode_result {
                 Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
                     println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
                 },
                 Err(e) => {
@@ -207,7 +207,7 @@ mod tests {
             let decode_result = gba.cpu.decode(0xE329F011);
             match decode_result {
                 Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
                     println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
                 },
                 Err(e) => {

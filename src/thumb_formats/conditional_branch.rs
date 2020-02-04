@@ -57,7 +57,7 @@ mod tests{
         let decode_result = gba.cpu.decode(0xD0F6);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -76,7 +76,7 @@ mod tests{
         let decode_result = gba.cpu.decode(0xD00A);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -95,7 +95,7 @@ mod tests{
         let decode_result = gba.cpu.decode(0xD00A);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
             },
             Err(e) => {
                 panic!("{:?}", e);
