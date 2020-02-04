@@ -4,10 +4,8 @@ use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_regist
 use crate::memory::lcd_io_registers::*;
 use crate::gpu::gpu::GPU;
 use crate::memory::{interrupt_registers::*, key_input_registers::*, system_control::WaitStateControl};
-use crate::memory::system_control::WaitStateControl;
 use crate::operations::timing::{MemAccessSize, CycleClock};
 use crate::gba::memory_bus::MemoryBus;
-use crate::gpu::gpu::GPU;
 use crate::interrupts::interrupts::Interrupts;
 
 
@@ -18,7 +16,7 @@ pub struct GBA {
     pub game_pack_memory: [GamePackRom; 3],
     pub io_reg: IORegisters,
     pub key_status: KeyStatus,
-    pub ket_interrupt_control: KeyInterruptControl
+    pub ket_interrupt_control: KeyInterruptControl,
     pub interrupt_handler: Interrupts
 }
 
@@ -37,7 +35,7 @@ impl Default for GBA {
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
             key_status: KeyStatus::new(),
-            ket_interrupt_control: KeyInterruptControl::new()
+            ket_interrupt_control: KeyInterruptControl::new(),
             interrupt_handler: Interrupts::new()
         };
 
@@ -85,7 +83,7 @@ impl GBA {
             game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
             key_status: KeyStatus::new(),
-            ket_interrupt_control: KeyInterruptControl::new()
+            ket_interrupt_control: KeyInterruptControl::new(),
             interrupt_handler: Interrupts::new()  
         };
 
@@ -217,7 +215,7 @@ impl GBA {
             if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
                 self.interrupt_handler.service(&mut self.cpu);
             }
-            self.cpu.fetch(&mut self.mem_map);
+            self.cpu.fetch(&mut self.memory_bus.mem_map);
         }
     }
 
