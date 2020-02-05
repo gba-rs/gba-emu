@@ -6,10 +6,20 @@ use quote::format_ident;
 use syn::{parse_macro_input, ItemStruct};
 
 #[proc_macro_attribute]
-pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn multiple_memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemStruct);
     let attr_string = attr.to_string();
-    let segment_size = attr_string.trim().parse::<usize>().unwrap();
+    let mut attrs: Vec<&str> = attr_string.split(",").collect();
+    let mut segment_indicies: Vec<usize> = vec![];
+    let segment_size = attrs[0].trim().parse::<usize>().unwrap();
+    attrs.remove(0);
+
+    for attr in attrs {
+        segment_indicies.push(usize::from_str_radix(attr.trim().trim_start_matches("0x"), 16).unwrap());
+    }
+
+    let segment_indicies_len = segment_indicies.len();
+
     let name = &input.ident;
 
     if segment_size != 1 && segment_size != 2 && segment_size != 4 {
@@ -26,16 +36,70 @@ pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input
 
-        impl From<#segment_type> for #name {
-            fn from(value: #segment_type) -> #name {
-                let mut temp = #name::new();
-                temp.set_register(value as u32);
-                return temp;
+        impl #name {
+            pub const SEGMENT_SIZE: usize = #segment_size;
+            pub const SEGMENT_INDICIES: [usize; #segment_indicies_len] = [#(#segment_indicies),*];
+
+            pub fn new(index: usize) -> #name {
+                return #name {
+                    memory: Rc::new(RefCell::new(vec![0; #segment_size])),
+                    index: index
+                };
+            }
+
+            pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+                self.memory = mem.clone();
+            }
+
+            pub fn get_register(&self) -> #segment_type {
+                let mut value: #segment_type = 0;
+                let mem_ref = self.memory.borrow();
+                for i in 0..#name::SEGMENT_SIZE {
+                    value |= (mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] as #segment_type) <<  (i * 8);
+                }
+
+                return value;
+            }
+
+            pub fn set_register(&self, value: u32) {
+                let mut mem_ref = self.memory.borrow_mut();
+                for i in 0..#name::SEGMENT_SIZE {
+                    mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                }
             }
         }
+    };
+
+    TokenStream::from(expanded)
+}
+
+
+#[proc_macro_attribute]
+pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemStruct);
+    let attr_string = attr.to_string();
+    let attrs: Vec<&str> = attr_string.split(",").collect();
+    let segment_size = attrs[0].trim().parse::<usize>().unwrap();
+    let segment_index = usize::from_str_radix(attrs[1].trim().trim_start_matches("0x"), 16).unwrap();
+    let name = &input.ident;
+
+    if segment_size != 1 && segment_size != 2 && segment_size != 4 {
+        panic!("Unsupported segment size: {}", segment_size);
+    }
+
+    let segment_type = match segment_size {
+        1 => quote!{u8},
+        2 => quote!{u16},
+        4 => quote!{u32},
+        _ => panic!("Unsupported segment size: {}", segment_size)
+    };
+
+    let expanded = quote! {
+        #input
 
         impl #name {
             pub const SEGMENT_SIZE: usize = #segment_size;
+            pub const SEGMENT_INDEX: usize = #segment_index;
 
             pub fn new() -> #name {
                 return #name {
@@ -43,20 +107,24 @@ pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
                 };
             }
 
+            pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+                self.memory = mem.clone();
+            }
+
             pub fn get_register(&self) -> #segment_type {
                 let mut value: #segment_type = 0;
-                let memory = self.memory.borrow();
+                let mem_ref = self.memory.borrow();
                 for i in 0..#name::SEGMENT_SIZE {
-                    value |= (memory[i as usize] as #segment_type) <<  (i * 8);
+                    value |= (mem_ref[#name::SEGMENT_INDEX + (i as usize)] as #segment_type) <<  (i * 8);
                 }
 
                 return value;
             }
 
             pub fn set_register(&self, value: u32) {
-                let mut memory = self.memory.borrow_mut();
+                let mut mem_ref = self.memory.borrow_mut();
                 for i in 0..#name::SEGMENT_SIZE {
-                    memory[i] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                    mem_ref[#name::SEGMENT_INDEX + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
                 }
             }
         }

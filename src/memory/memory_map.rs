@@ -26,27 +26,22 @@ pub struct MemoryBlock {
 }
 
 pub struct MemoryMap {
-    pub memory_mapping: Vec<MemoryBlock>
+    pub memory_mapping: Vec<MemoryBlock>,
+    pub memory: Rc<RefCell<Vec<u8>>>
 }
 
 impl MemoryMap {
 
     pub fn new() -> MemoryMap {
         return MemoryMap {
-            memory_mapping: vec![]
+            memory_mapping: vec![],
+            memory: Rc::new(RefCell::new(vec![0; 0x1000_0000]))
         }
     }
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
-        let result = self.get_memory(address);
-        match result {
-            Some((lower, _, mem)) => {
-                let index: u32 = address - lower;
-                // println!("Address: {:X}, lower: {:X}, index {}, mem length: {}", address, lower, index, mem.borrow().len());
-                mem.borrow_mut()[index as usize] = value;
-            },
-            None => {}
-        }
+        if address > 0x0FFFFFFF { return }
+        self.memory.borrow_mut()[address as usize] = value;
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {
@@ -61,10 +56,10 @@ impl MemoryMap {
         self.write_u8(address, (value & 0xFF) as u8);
     }
 
-    pub fn write_block(&mut self, address: u32, block: Vec<u8>) {
+    pub fn write_block(&mut self, address: u32, block: &Vec<u8>) {
         let mut offset: u32 = 0;
         for byte in block {
-            self.write_u8(address + offset, byte);
+            self.write_u8(address + offset, *byte);
             offset += 1;
         }
     }
@@ -91,34 +86,8 @@ impl MemoryMap {
     }
 
     pub fn read_u8(&self, address: u32) -> u8 {
-        let result = self.get_memory(address);
-        match result {
-            Some((lower, _, mem)) => {
-                let index: u32 = address - lower;
-                return mem.borrow_mut()[index as usize];
-            },
-            None => {
-                return 0;
-            }
-        }
-    }
-
-    pub fn register_memory(&mut self, lower: u32, upper: u32, mem: &Rc<RefCell<Vec<u8>>>) {
-        self.memory_mapping.push(MemoryBlock {
-            range: Range::new(lower, upper),
-            memory: mem.clone()
-        });
-    }
-
-    fn get_memory(&self, address: u32) -> Option<(u32, u32, &RefCell<Vec<u8>>)> {
-        for mem_block in self.memory_mapping.iter() {
-            if mem_block.range.contains(address) {
-                return Some((mem_block.range.lower, mem_block.range.higher, &mem_block.memory));
-            }
-        }
-
-        error!("Not implemented: {:X}", address);
-        None
+        if address > 0x0FFFFFFF { return 0; }
+        return self.memory.borrow()[address as usize];
     }
 }
 

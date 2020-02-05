@@ -1,6 +1,8 @@
 use crate::operations::arm_arithmetic::add;
 use crate::memory::system_control::WaitStateControl;
 use crate::operations::timing::MemAccessSize::{Mem16, Mem32};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct CycleClock {
     pub prev_address: u32,
@@ -42,6 +44,10 @@ impl CycleClock {
             cycles: 0,
             wait_state_control: WaitStateControl::new(),
         };
+    }
+
+    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+        self.wait_state_control.register(mem);
     }
 
     pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize) {

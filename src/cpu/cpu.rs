@@ -126,9 +126,9 @@ pub struct CPU {
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
-    pub wram: WorkRam,
-    pub onchip_wram: WorkRam,
-    pub bios_ram: BiosRam,
+    // pub wram: WorkRam,
+    // pub onchip_wram: WorkRam,
+    // pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
     pub current_instruction_set: InstructionSet,
     pub last_instruction: String,
@@ -141,9 +141,9 @@ impl CPU {
             registers: [0; 31],
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b11111),
-            wram: WorkRam::new(0x40000 + 1, 0),
-            onchip_wram: WorkRam::new(0x7FFF + 1, 0),
-            bios_ram: BiosRam::new(0),
+            // wram: WorkRam::new(0x40000 + 1, 0),
+            // onchip_wram: WorkRam::new(0x7FFF + 1, 0),
+            // bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::System,
             current_instruction_set: InstructionSet::Arm,
             last_instruction: "".to_string(),
@@ -198,6 +198,7 @@ impl CPU {
                 return Ok(Box::new(SoftwareInterrupt::from(instruction)));
             },
             _ => Err(DecodeError{
+                instruction_set: self.current_instruction_set,
                 instruction: instruction,
                 opcode: opcode
             })
@@ -268,6 +269,7 @@ impl CPU {
                 return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction)));
             }
             _ => Err(DecodeError{
+                instruction_set: self.current_instruction_set,
                 instruction: instruction,
                 opcode: opcode
             })
