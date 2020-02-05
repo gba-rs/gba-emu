@@ -88,8 +88,8 @@ impl HiRegisterOp {
         let mut destination: u32;
         if self.hi_flag_1 {
             // r8-r15
-            destination = cpu.get_register_unsafe(15 - self.destination_register);
-            if self.destination_register == 0 { // R15 special case
+            destination = cpu.get_register_unsafe(self.destination_register + 8);
+            if self.destination_register == 7 { // R15 special case
                 destination = destination + 2;  // Fetch adds the other +2
             }
         } else {
@@ -100,8 +100,8 @@ impl HiRegisterOp {
         let mut source: u32;
         if self.hi_flag_2 {
             // r8-r15
-            source = cpu.get_register_unsafe(15 - self.source_register);
-            if self.source_register == 0 && self.destination_register != 0 {  // R15 Special case (and nop case)
+            source = cpu.get_register_unsafe(self.source_register + 8);
+            if self.source_register == 7 && (self.destination_register != 7 && !self.hi_flag_1) {  // R15 Special case (and nop case)
                 source = source + 2;        // Fetch adds the other +2
             }
         } else {
@@ -115,7 +115,7 @@ impl HiRegisterOp {
     // Sets the destination register value based on the hi flags
     fn set_destniation_register(&self, cpu: &mut CPU, value: u32) {
         if self.hi_flag_1 {
-            cpu.set_register_unsafe(15 - self.destination_register, value);
+            cpu.set_register_unsafe(self.destination_register + 8, value);
         } else {
             cpu.set_register(self.destination_register, value);
         }
@@ -161,12 +161,12 @@ impl HiRegisterOp {
 
 impl fmt::Debug for HiRegisterOp {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-        let dest_reg = if self.hi_flag_1 { 15 - self.destination_register } else { self.destination_register };
-        let source_reg = if self.hi_flag_2 { 15 - self.source_register } else { self.source_register };
+        let dest_reg = if self.hi_flag_1 { self.destination_register + 8 } else { self.destination_register };
+        let source_reg = if self.hi_flag_2 { self.source_register + 8 } else { self.source_register };
         if self.op == OpCodes::BX {
-            write!(f, "BX r{}", source_reg)
+            write!(f, "BX r{} (Hi-op)", source_reg)
         } else {
-            write!(f, "{:?} r{}, r{}", self.op, dest_reg, source_reg)
+            write!(f, "{:?} r{}, r{} (Hi-op)", self.op, dest_reg, source_reg)
         }
     }
 }

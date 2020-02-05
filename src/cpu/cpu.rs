@@ -339,12 +339,12 @@ impl CPU {
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
     }
     
-    pub fn get_register_unsafe(&self, reg_num: u8, ) -> u32{
-        return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]];
+    pub fn get_register_unsafe(&self, reg_num: u8) -> u32{
+        return self.registers[REG_MAP[InstructionSet::Arm as usize][self.operating_mode as usize][reg_num as usize]];
     }
 
     pub fn set_register_unsafe(&mut self, reg_num: u8, value: u32){
-        self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
+        self.registers[REG_MAP[InstructionSet::Arm as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
     pub fn check_condition(&self, cond: &Condition) -> bool {
