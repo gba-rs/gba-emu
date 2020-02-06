@@ -26,6 +26,14 @@ pub fn memory_segment(attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input
 
+        impl From<#segment_type> for #name {
+            fn from(value: #segment_type) -> #name {
+                let mut temp = #name::new();
+                temp.set_register(value as u32);
+                return temp;
+            }
+        }
+
         impl #name {
             pub const SEGMENT_SIZE: usize = #segment_size;
 

@@ -131,7 +131,8 @@ pub struct CPU {
     pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
     pub current_instruction_set: InstructionSet,
-    pub last_instruction: String
+    pub last_instruction: String,
+    pub cycle_count: usize,
 }
 
 impl CPU {
@@ -140,12 +141,13 @@ impl CPU {
             registers: [0; 31],
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b11111),
-            wram: WorkRam::new(256000, 0),
-            onchip_wram: WorkRam::new(0x7FFF, 0),
+            wram: WorkRam::new(0x40000 + 1, 0),
+            onchip_wram: WorkRam::new(0x7FFF + 1, 0),
             bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::System,
             current_instruction_set: InstructionSet::Arm,
-            last_instruction: "".to_string()
+            last_instruction: "".to_string(),
+            cycle_count: 0
         };
     }
 
@@ -206,7 +208,7 @@ impl CPU {
         let thumb_instruction: u16 = instruction as u16;
         let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 8) & 0x0F)) as u16;
         let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
-        println!("Format: {:?}, Opcode: {:X}, Instruction: {:X}", instruction_format, opcode, thumb_instruction);
+        // println!("Format: {:?}, Opcode: {:X}, Instruction: {:X}", instruction_format, opcode, thumb_instruction);
         match instruction_format {
             ThumbInstructionFormat::MoveShiftedRegister => {
                 return Ok(Box::new(MoveShifted::from(thumb_instruction)));
@@ -290,10 +292,11 @@ impl CPU {
         let decode_result = self.decode(instruction);
         match decode_result {
             Ok(mut instr) => {
-                info!("Condition: {}, Instruction: {:?}", check_condition, instr.asm());
+                // info!("Condition: {}, Instruction: {:?}", check_condition, instr.asm());
 
                 if check_condition {
                     (instr.borrow_mut() as &mut dyn Instruction).execute(self, map);
+                    self.cycle_count += (instr.borrow_mut() as &mut dyn Instruction).cycles() as usize;
                 }
             },
             Err(e) => {

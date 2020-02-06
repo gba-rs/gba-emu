@@ -8,7 +8,7 @@ fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, ConditionFlags) {
     let op1_sign: bool = (op1 >> 31) != 0;
     let op2_sign: bool = (op2 >> 31) != 0;
     let output_sign: bool = (real_output >> 31) != 0;
-    debug!("op1 sign {:X}: {}, op2 sign {:X}: {}, output {:X}: sign {}", op1, op1_sign, op2, op2_sign, real_output, output_sign);
+    // debug!("op1 sign {:X}: {}, op2 sign {:X}: {}, output {:X}: sign {}", op1, op1_sign, op2, op2_sign, real_output, output_sign);
 
     return (real_output, ConditionFlags{
         negative: (output & (0x1 << 31)) != 0,

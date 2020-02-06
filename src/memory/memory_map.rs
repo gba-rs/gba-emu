@@ -1,9 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use crate::operations::timing::CycleClock;
-use crate::operations::timing::*;
-use crate::operations::timing::MemAccessSize::{Mem32, Mem16, Mem8};
-use crate::memory::system_control::WaitStateControl;
+use log::error;
 
 pub struct Range<T: Ord> {
     pub lower: T,
@@ -33,6 +30,7 @@ pub struct MemoryMap {
 }
 
 impl MemoryMap {
+
     pub fn new() -> MemoryMap {
         return MemoryMap {
             memory_mapping: vec![]
@@ -40,37 +38,33 @@ impl MemoryMap {
     }
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
-        let (lower, _, mem) = self.get_memory(address);
-        let index: u32 = address - lower;
-        mem.borrow_mut()[index as usize] = value;
+        let result = self.get_memory(address);
+        match result {
+            Some((lower, _, mem)) => {
+                let index: u32 = address - lower;
+                // println!("Address: {:X}, lower: {:X}, index {}, mem length: {}", address, lower, index, mem.borrow().len());
+                mem.borrow_mut()[index as usize] = value;
+            },
+            None => {}
+        }
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {
-        let (lower, _, mem) = self.get_memory(address);
-        let index: u32 = address - lower;
-        let mut memory = mem.borrow_mut();
-        memory[(index as usize) + 1] = ((value & 0xFF00) >> 8) as u8;
-        memory[index as usize] = (value & 0xFF) as u8;
+        self.write_u8(address + 1, ((value & 0xFF00) >> 8) as u8);
+        self.write_u8(address, (value & 0xFF) as u8);
     }
 
     pub fn write_u32(&mut self, address: u32, value: u32) {
-        let (lower, _, mem) = self.get_memory(address);
-        let index: u32 = address - lower;
-        let mut memory = mem.borrow_mut();
-        memory[(index as usize) + 3] = ((value & 0xFF000000) >> 24) as u8;
-        memory[(index as usize) + 2] = ((value & 0xFF0000) >> 16) as u8;
-        memory[(index as usize) + 1] = ((value & 0xFF00) >> 8) as u8;
-        memory[index as usize] = (value & 0xFF) as u8;
+        self.write_u8(address + 3, ((value & 0xFF000000) >> 24) as u8);
+        self.write_u8(address + 2, ((value & 0xFF0000) >> 16) as u8);
+        self.write_u8(address + 1, ((value & 0xFF00) >> 8) as u8);
+        self.write_u8(address, (value & 0xFF) as u8);
     }
 
     pub fn write_block(&mut self, address: u32, block: Vec<u8>) {
-        let (lower, _, mem) = self.get_memory(address);
-        let index: u32 = address - lower;
-        let mut memory = mem.borrow_mut();
-
-        let mut offset: usize = 0;
+        let mut offset: u32 = 0;
         for byte in block {
-            memory[(index as usize) + offset] = byte;
+            self.write_u8(address + offset, byte);
             offset += 1;
         }
     }
@@ -84,28 +78,29 @@ impl MemoryMap {
     }
 
     pub fn read_u32(&self, address: u32) -> u32 {
-        let (lower, _, mem) = self.get_memory(address);
-        let index: u32 = address - lower;
         let mut result: u32 = 0;
-        let memory = mem.borrow_mut();
         for i in 0..4 {
-            result |= (memory[(index + i) as usize] as u32) <<  (i * 8);
+            result |= (self.read_u8(address + i) as u32) <<  (i * 8);
         }
         return result;
     }
 
     pub fn read_u16(&self, address: u32) -> u16 {
-        let (lower, _, mem) = self.get_memory(address);
-        let index: u32 = address - lower;
-        let memory = mem.borrow_mut();
-        let result: u16 = ((memory[(index + 1) as usize] as u16) << 8) | (memory[index as usize] as u16);
+        let result: u16 = ((self.read_u8(address + 1) as u16) << 8) | (self.read_u8(address) as u16);
         return result;
     }
 
     pub fn read_u8(&self, address: u32) -> u8 {
-        let (lower, _, mem) = self.get_memory(address);
-        let index: u32 = address - lower;
-        return mem.borrow_mut()[index as usize];
+        let result = self.get_memory(address);
+        match result {
+            Some((lower, _, mem)) => {
+                let index: u32 = address - lower;
+                return mem.borrow_mut()[index as usize];
+            },
+            None => {
+                return 0;
+            }
+        }
     }
 
     pub fn register_memory(&mut self, lower: u32, upper: u32, mem: &Rc<RefCell<Vec<u8>>>) {
@@ -115,14 +110,15 @@ impl MemoryMap {
         });
     }
 
-    fn get_memory(&self, address: u32) -> (u32, u32, &RefCell<Vec<u8>>) {
+    fn get_memory(&self, address: u32) -> Option<(u32, u32, &RefCell<Vec<u8>>)> {
         for mem_block in self.memory_mapping.iter() {
             if mem_block.range.contains(address) {
-                return (mem_block.range.lower, mem_block.range.higher, &mem_block.memory);
+                return Some((mem_block.range.lower, mem_block.range.higher, &mem_block.memory));
             }
         }
 
-        panic!("Not implemented: {:X}", address);
+        error!("Not implemented: {:X}", address);
+        None
     }
 }
 
@@ -132,8 +128,7 @@ mod tests {
     use super::*;
     use crate::memory::work_ram::WorkRam;
     use crate::memory::mock_memory::MockMemory;
-    use crate::gba::GBA;
-
+    
     #[test]
     fn test_memory_map_read() {
         let mut map = MemoryMap::new();
@@ -171,12 +166,6 @@ mod tests {
 
         map.write_u8(0x02000000, 0xFF);
         assert_eq!(map.read_u8(0x02000000), 0xFF);
-    }
 
-    #[test]
-    #[should_panic]
-    fn test_memory_map_out_of_range() {
-        let map = MemoryMap::new();
-        map.read_u8(0xFFFFFFFF);
     }
 }

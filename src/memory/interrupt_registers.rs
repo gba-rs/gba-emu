@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use memory_macros::*;
 
-#[memory_segment(2)]
+#[memory_segment(4)]
 #[bit_field(disable, 0, 1)]
 pub struct InterruptMasterEnableRegister {
     pub memory: Rc<RefCell<Vec<u8>>>
