@@ -33,7 +33,6 @@ impl MemoryMap {
 
     pub fn new() -> MemoryMap {
         return MemoryMap {
-            memory_mapping: vec![],
             memory: Rc::new(RefCell::new(vec![0; 0x1000_0000]))
         }
     }
