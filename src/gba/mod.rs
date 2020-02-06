@@ -56,32 +56,16 @@ impl Default for GBA {
 
         temp.cpu.operating_mode = OperatingMode::System;
 
-        // setup the memory
-        // temp.memory_bus.mem_map.register_memory(0x00000000, 0x00003FFF, &temp.cpu.bios_ram.memory);
-        // temp.memory_bus.mem_map.register_memory(0x02000000, 0x0203FFFF, &temp.cpu.wram.memory);
-        // temp.memory_bus.mem_map.register_memory(0x03000000, 0x03007FFF, &temp.cpu.onchip_wram.memory);
-        // temp.memory_bus.mem_map.register_memory(0x07000400, 0x07FFFFFF, &temp.gpu.not_used_mem_2.memory);
-        // temp.memory_bus.mem_map.register_memory(0x08000000, 0x09FFFFFF, &temp.game_pack_memory[0].memory);
-        // temp.memory_bus.mem_map.register_memory(0x0A000000, 0x0BFFFFFF, &temp.game_pack_memory[1].memory);
-        // temp.memory_bus.mem_map.register_memory(0x0C000000, 0x0DFFFFFF, &temp.game_pack_memory[2].memory);
-        // temp.memory_bus.mem_map.register_memory(0x04000000, 0x040003FE, &temp.io_reg.memory);
-
         return temp;
     }
 }
 
 impl GBA {
     pub fn new(pc_address: u32, bios: &Vec<u8>, rom: &Vec<u8>) -> GBA {
-        // let temp_gamepack = [
-        //     GamePackRom::new(0),
-        //     GamePackRom::new(0),
-        //     GamePackRom::new(0),
-        // ];
 
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-            // game_pack_memory: temp_gamepack,
             io_reg: IORegisters::new(0),
             memory_bus: MemoryBus::new(),
             ime_interrupt: InterruptMasterEnableRegister::new(),

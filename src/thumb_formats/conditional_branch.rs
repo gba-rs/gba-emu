@@ -64,6 +64,7 @@ mod tests{
             }
         }
 
+
         assert_eq!(0x08000000 + 2 - 20, gba.cpu.get_register(THUMB_PC));
     }
 
