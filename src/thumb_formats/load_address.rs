@@ -3,6 +3,7 @@ use crate::cpu::{cpu::CPU};
 use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
 use std::fmt;
+use log::debug;
 
 pub struct LoadAddress {
     pub sp_pc: bool, //bit 11, calculates an address by adding a 10 bit constant to pc or sp
@@ -23,9 +24,9 @@ impl From<u16> for LoadAddress {
 impl fmt::Debug for LoadAddress {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if self.sp_pc {
-            write!(f, "ADD, r{}, SP, #0x{:x}", self.destination, self.word8)
+            write!(f, "ADD, r{}, SP, #0x{:x} test", self.destination, self.word8)
         } else{
-            write!(f, "ADD, r{}, PC, #0x{:x}", self.destination, self.word8)
+            write!(f, "ADD, r{}, PC, #0x{:x} test", self.destination, self.word8)
         }
     }
 }
@@ -37,11 +38,7 @@ impl Instruction for LoadAddress {
             let (new, _) = arm_arithmetic::add(sp, self.word8 as u32);
             cpu.set_register(self.destination, new);
         } else {
-            let mut pc = cpu.get_register(THUMB_PC) + 2;    // Fetch handles other + 2
-            if pc % 2 != 0 {
-                //there is a 1 as the first bit so we need to swap that bit to 0
-                pc = pc - 1;
-            }
+            let pc = (cpu.get_register(THUMB_PC) + 2) & !2;    // Fetch handles other + 2
             let (new, _) = arm_arithmetic::add(pc, self.word8 as u32);
             cpu.set_register(self.destination, new);  
         }

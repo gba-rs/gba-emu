@@ -1,7 +1,7 @@
-use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
-use crate::cpu::cpu::CPU;
+use crate::cpu::cpu::{CPU, THUMB_PC};
 use crate::memory::memory_map::MemoryMap;
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 
 pub struct LoadStoreRegisterOffset {
     load: bool,
@@ -32,20 +32,26 @@ impl From<u16> for LoadStoreRegisterOffset {
 
 impl Instruction for LoadStoreRegisterOffset {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: self.load,
+            is_signed: false,
+            data_type: self.data_type,
+            base_register: self.rb,
+            destination: self.rd,
+        };
+
         let target_address = cpu.get_register(self.rb) + cpu.get_register(self.offset_register);
-        if self.load {
-            if self.data_type == DataType::Word {
-                cpu.set_register(self.rd, mem_map.read_u32(target_address));
-            } else {
-                cpu.set_register(self.rd, mem_map.read_u8(target_address) as u32);
-            }
+        let base;
+        if self.rb == THUMB_PC {
+            base = cpu.get_register(self.rb) + 2;
         } else {
-            if self.data_type == DataType::Word {
-                mem_map.write_u32(target_address, cpu.get_register(self.rd));
-            } else {
-                mem_map.write_u8(target_address, cpu.get_register(self.rd) as u8);
-            }
+            base = cpu.get_register(self.rb);
         }
+
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_map);
     }
 
     fn asm(&self) -> String {

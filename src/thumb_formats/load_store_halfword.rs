@@ -1,7 +1,7 @@
-use crate::cpu::cpu::CPU;
+use crate::cpu::cpu::{CPU, THUMB_PC};
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
-use crate::operations::load_store::{apply_offset};
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 
 pub struct LoadStoreHalfword {
     pub load: bool,
@@ -14,7 +14,7 @@ impl From<u16> for LoadStoreHalfword {
     fn from(value: u16) -> LoadStoreHalfword {
         return LoadStoreHalfword {
             load: ((value & 0x800) >> 11) != 0,
-            immediate_offset: ((value & 0x7C0) >> 6) as u8,
+            immediate_offset: (((value & 0x7C0) >> 6) << 1) as u8,
             rb: ((value & 0x38) >> 3) as u8,
             rd: (value & 0x7) as u8,
         };
@@ -23,17 +23,25 @@ impl From<u16> for LoadStoreHalfword {
 
 impl Instruction for LoadStoreHalfword {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        let base_register_value = cpu.get_register(self.rb);
-        let base_address = apply_offset(base_register_value, self.immediate_offset as u32, true, 0);
-        cpu.set_register(self.rb, base_address);
-        if self.load {
-            let value = mem_map.read_u16(base_address);
-            cpu.set_register(self.rd, value as u32);
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: self.load,
+            is_signed: false,
+            data_type: DataType::Halfword,
+            base_register: self.rb,
+            destination: self.rd,
+        };
+
+        let target_address = cpu.get_register(self.rb) + self.immediate_offset as u32;
+        let base;
+        if self.rb == THUMB_PC {
+            base = cpu.get_register(self.rb) + 2;
         } else {
-            let value_to_store = cpu.get_register(self.rd);
-            mem_map.write_u16(base_address, value_to_store as u16);
+            base = cpu.get_register(self.rb);
         }
 
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_map);
     }
 
     fn asm(&self) -> String {

@@ -168,8 +168,26 @@ impl Instruction for ALU {
                 cpu.cpsr.flags = flags;
             },
             OpCodes::ROR =>{
-                cpu.set_register(self.rd, cpu.get_register(self.rd).rotate_right(cpu.get_register(self.rs)));
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let shift = Shift {
+                    shift_type: ShiftType::RotateRight,
+                    shift_amount: 0,
+                    shift_register: self.rs,
+                    immediate: false
+                };
+
+                let (value, carry_out) = apply_shift(op1, &shift, cpu);
+                let (n, z) = logical::check_flags(value);
+
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
+                match carry_out {
+                    Some(new_c_val) => {
+                        cpu.cpsr.flags.carry = new_c_val != 0;
+                    },
+                    None => {}
+                }
+
+                cpu.set_register(self.rd, value as u32);
             },
             OpCodes::TST => {
                 let (_, (n, z)) = logical::and(op1, op2);

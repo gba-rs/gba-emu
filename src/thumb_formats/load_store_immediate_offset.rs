@@ -1,13 +1,14 @@
-use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
-use crate::cpu::{cpu::CPU};
+use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
 use crate::memory::memory_map::MemoryMap;
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
+
 use std::fmt;
 
 pub struct LoadStoreImmediateOffset {
     load: bool,
     data_type: DataType,
-    offset_register: u8,
+    offset: u8,
     rb: u8,
     rd: u8,
 }
@@ -21,10 +22,17 @@ impl From<u16> for LoadStoreImmediateOffset {
         } else {
             data_type = DataType::Byte
         }
+
+        let offset = if data_type == DataType::Word { 
+            (((value & 0x7C0) >> 6) << 2) as u8 
+        } else { 
+            ((value & 0x7C0) >> 6) as u8 
+        };
+
         return LoadStoreImmediateOffset {
             load: ((value & 0x800) >> 11) != 0,
-            data_type,
-            offset_register: ((value & 0x7C0) >> 6) as u8,
+            data_type: data_type,
+            offset: offset,
             rb: ((value & 0x38) >> 3) as u8,
             rd: (value & 0x7) as u8,
         };
@@ -33,13 +41,13 @@ impl From<u16> for LoadStoreImmediateOffset {
 impl fmt::Debug for LoadStoreImmediateOffset {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if !self.load && self.data_type ==  DataType::Word {
-            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
         } else if self.load && self.data_type ==  DataType::Word {
-            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
         } else if !self.load && self.data_type ==  DataType::Byte {
-            write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if self.load && self.data_type ==  DataType::Byte {
-            write!(f, "LDRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         }
         else {
             write!(f, "error")
@@ -49,30 +57,51 @@ impl fmt::Debug for LoadStoreImmediateOffset {
 
 impl Instruction for LoadStoreImmediateOffset {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
-        if !self.load && self.data_type ==  DataType::Word { //str
-            //calculating target address by adding together Rb and offset. Store Rd at target
-            //assuming word is u32 as shown in load_store
-            let target_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
-            mem_map.write_u32(target_address as u32,cpu.get_register(self.rd));
+        // if !self.load && self.data_type ==  DataType::Word { //str
+        //     //calculating target address by adding together Rb and offset. Store Rd at target
+        //     //assuming word is u32 as shown in load_store
+        //     let target_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
+        //     mem_map.write_u32(target_address as u32,cpu.get_register(self.rd));
 
-        } else if self.load && self.data_type ==  DataType::Word { //ldr
-            //calculate source address by adding Rb and offset. Load rd form source
-            let source_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
-            let response = mem_map.read_u32(source_address as u32);
-            cpu.set_register(self.rd, response);
+        // } else if self.load && self.data_type ==  DataType::Word { //ldr
+        //     //calculate source address by adding Rb and offset. Load rd form source
+        //     let source_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
+        //     let response = mem_map.read_u32(source_address as u32);
+        //     cpu.set_register(self.rd, response);
 
-        } else if !self.load && self.data_type ==  DataType::Byte { //strb
-            //calculating target address by adding together Rb and offset. Store Rd at target
-            //assuming word is u32 as shown in load_store
-            let target_address: u32 = (cpu.get_register(self.rb) + self.offset_register as u32) as u32;
-            mem_map.write_u8(target_address as u32, cpu.get_register(self.rd) as u8);
+        // } else if !self.load && self.data_type ==  DataType::Byte { //strb
+        //     //calculating target address by adding together Rb and offset. Store Rd at target
+        //     //assuming word is u32 as shown in load_store
+        //     let target_address: u32 = (cpu.get_register(self.rb) + self.offset_register as u32) as u32;
+        //     mem_map.write_u8(target_address as u32, cpu.get_register(self.rd) as u8);
 
-        } else if self.load && self.data_type ==  DataType::Byte { //ldrb
-            //calculate source address by adding Rb and offset. Load rd form source
-            let source_address: u8 = (cpu.get_register(self.rb) + self.offset_register as u32) as u8;
-            let response = mem_map.read_u8(source_address as u32);
-            cpu.set_register(self.rd, response as u32);
+        // } else if self.load && self.data_type ==  DataType::Byte { //ldrb
+        //     //calculate source address by adding Rb and offset. Load rd form source
+        //     let source_address: u8 = (cpu.get_register(self.rb) + self.offset_register as u32) as u8;
+        //     let response = mem_map.read_u8(source_address as u32);
+        //     cpu.set_register(self.rd, response as u32);
+        // }
+
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: self.load,
+            is_signed: false,
+            data_type: self.data_type,
+            base_register: self.rb,
+            destination: self.rd,
+        };
+
+        let target_address = cpu.get_register(self.rb) + self.offset as u32;
+        let base;
+        if self.rb == THUMB_PC {
+            base = cpu.get_register(self.rb) + 2;
+        } else {
+            base = cpu.get_register(self.rb);
         }
+
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_map);
+
     }
 
     fn asm(&self) -> String {

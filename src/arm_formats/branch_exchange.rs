@@ -28,7 +28,6 @@ impl Instruction for BranchExchange {
     fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
         let new_pc = cpu.get_register(self.rn);
         let mode_bit = new_pc & 0x01;
-        debug!("Mode bit: {:X}", mode_bit);
 
         if mode_bit == 0 {
             cpu.current_instruction_set = InstructionSet::Arm;

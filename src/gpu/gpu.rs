@@ -256,10 +256,13 @@ impl GPU {
 
                             for x in 0..DISPLAY_WIDTH {
                                 let t = ((ref_point_x + (x as i32) * pa) >> 8, (ref_point_y + (x as i32) * pc) >> 8);
+                                // debug!("T: {}, {}", t.0, t.1);
                                 // TODO check outside of viewport
                                 let bitmap_index = ((DISPLAY_WIDTH as u32) * (t.1 as u32) + (t.0 as u32)) as u32;
                                 let bitmap_offset = page_ofs + bitmap_index;
+                                // debug!("Bitmap index: {:X}", bitmap_offset);
                                 let index = mem_map.read_u8(bitmap_offset) as u32;
+                                // debug!("Index: {:X}", index);
                                 let color = Rgb15::new(mem_map.read_u16((2 * index) + 0x05000000));
                                 let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
                                 self.frame_buffer[frame_buffer_index] = color.to_0rgb();

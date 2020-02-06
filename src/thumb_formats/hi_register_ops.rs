@@ -115,7 +115,11 @@ impl HiRegisterOp {
     // Sets the destination register value based on the hi flags
     fn set_destniation_register(&self, cpu: &mut CPU, value: u32) {
         if self.hi_flag_1 {
-            cpu.set_register_unsafe(self.destination_register + 8, value);
+            if self.destination_register == 7 { // fix missaligned pc
+                cpu.set_register_unsafe(self.destination_register + 8, value - (value % 2));
+            } else {
+                cpu.set_register_unsafe(self.destination_register + 8, value);
+            }
         } else {
             cpu.set_register(self.destination_register, value);
         }
@@ -154,7 +158,7 @@ impl HiRegisterOp {
         } else {
             // Arm
             cpu.current_instruction_set = InstructionSet::Arm;
-            cpu.set_register(ARM_PC, source);
+            cpu.set_register(ARM_PC, source - (source % 4));
         }
     }
 }
