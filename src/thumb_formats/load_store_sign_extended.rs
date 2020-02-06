@@ -3,6 +3,7 @@ use crate::cpu::cpu::CPU;
 use crate::memory::memory_map::MemoryMap;
 use crate::thumb_formats::load_store_halfword::LoadStoreHalfword;
 use core::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreSignExtended {
     h_flag: bool,
@@ -42,7 +43,7 @@ impl fmt::Debug for LoadStoreSignExtended {
 }
 
 impl Instruction for LoadStoreSignExtended {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let address = cpu.get_register(self.base_register) +
             cpu.get_register(self.offset_register);
         if !self.sign_extended && !self.h_flag {
@@ -53,15 +54,15 @@ impl Instruction for LoadStoreSignExtended {
                 rb: self.base_register,
                 rd: self.destination_register,
             };
-            store_halfword.execute(cpu, mem_map);
+            store_halfword.execute(cpu, mem_bus);
         } else if !self.sign_extended && self.h_flag {
             // load halfword
             cpu.set_register(self.base_register, address);
             cpu.set_register(self.destination_register,
-                             mem_map.read_u16(address) as u32 & 0x0000_FFFF);
+                             mem_bus.read_u16(address) as u32 & 0x0000_FFFF);
         } else if self.sign_extended && !self.h_flag {
             // load sign-extended byte
-            let byte_from_memory = mem_map.read_u8(address);
+            let byte_from_memory = mem_bus.read_u8(address);
             let mut value_to_load = byte_from_memory as u32;
             if (byte_from_memory & (1 << 7)) > 0 {
                 value_to_load = byte_from_memory as u32 | 0xFFFF_FF00;
@@ -70,7 +71,7 @@ impl Instruction for LoadStoreSignExtended {
             cpu.set_register(self.destination_register, value_to_load);
         } else {
             // load sign-extended halfword
-            let halfword_from_memory = mem_map.read_u16(address);
+            let halfword_from_memory = mem_bus.read_u16(address);
             let value_to_load: u32;
             if (halfword_from_memory & (1 << 15)) > 0 {
                 value_to_load = halfword_from_memory as u32 | 0xFFFF_0000;
@@ -98,36 +99,36 @@ mod tests {
     fn test_store_halfword() {
         let format = LoadStoreSignExtended::from(0x52A6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x02);
         cpu.set_register(4, 0x06);
         cpu.set_register(6, 0xF2F1);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
         assert_eq!(format.h_flag, false);
         assert_eq!(format.sign_extended, false);
         assert_eq!(format.offset_register, 2);
         assert_eq!(format.base_register, 4);
         assert_eq!(format.destination_register, 6);
-        assert_eq!(mem_map.read_u16(0x02 + 0x06), 0xF2F1);
+        assert_eq!(mem_bus.read_u16(0x02 + 0x06), 0xF2F1);
     }
 
     #[test]
     fn test_load_halfword() {
         let format = LoadStoreSignExtended::from(0x5AA6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0xF1A1);
+        mem_bus.write_u32(0x8 + 0x4, 0xF1A1);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, true);
         assert_eq!(format.sign_extended, false);
@@ -141,15 +142,15 @@ mod tests {
     fn test_load_sign_extended_byte () {
         let format = LoadStoreSignExtended::from(0x56A6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0xA1);
+        mem_bus.write_u32(0x8 + 0x4, 0xA1);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, false);
         assert_eq!(format.sign_extended, true);
@@ -163,15 +164,15 @@ mod tests {
     fn test_load_sign_extended_halfword_negative () {
         let format = LoadStoreSignExtended::from(0x5EA6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0xFF01);
+        mem_bus.write_u32(0x8 + 0x4, 0xFF01);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, true);
         assert_eq!(format.sign_extended, true);
@@ -185,15 +186,15 @@ mod tests {
     fn test_load_sign_extended_halfword_positive () {
         let format = LoadStoreSignExtended::from(0x5EA6);
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
 
         cpu.set_register(2, 0x4);
         cpu.set_register(4, 0x8);
-        mem_map.write_u32(0x8 + 0x4, 0x1F01);
+        mem_bus.write_u32(0x8 + 0x4, 0x1F01);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(format.h_flag, true);
         assert_eq!(format.sign_extended, true);

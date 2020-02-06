@@ -133,7 +133,7 @@ impl GBA {
 
     pub fn run(&mut self) {
         loop {
-            self.cpu.fetch(&mut self.memory_bus.mem_map);
+            self.cpu.fetch(&mut self.memory_bus);
         }
     }
 
@@ -157,7 +157,7 @@ impl GBA {
 
     pub fn step(&mut self) {
         while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
-            self.cpu.fetch(&mut self.memory_bus.mem_map);
+            self.cpu.fetch(&mut self.memory_bus);
         }
 
         self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map);

@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct PushPop {
     pub load: bool,
@@ -28,14 +29,14 @@ impl From<u16> for PushPop {
 }
 
 impl Instruction for PushPop {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let stack_pointer: u32 = cpu.get_register(THUMB_SP);
         let mut offset: i32 = 0;
         if self.load {          // LDMIA (Load Multiple Increment After) = POP
 
             for reg_num in self.register_list.iter() {
                 let (address, _) = arm_arithmetic::add(stack_pointer, offset as u32);
-                let value = mem_map.read_u32(address);
+                let value = mem_bus.read_u32(address);
                 cpu.set_register(*reg_num, value);
                 offset += 4;
             }
@@ -43,7 +44,7 @@ impl Instruction for PushPop {
             if self.store_lr {
                 // thumb PC
                 let (address, _) = arm_arithmetic::add(stack_pointer, offset as u32);
-                let value = mem_map.read_u32(address);
+                let value = mem_bus.read_u32(address);
                 cpu.set_register(THUMB_PC, value);
                 offset += 4;
             }
@@ -58,14 +59,14 @@ impl Instruction for PushPop {
                 offset -= 4;
                 let value = cpu.get_register(THUMB_LR);
                 let (offset_val, _) = arm_arithmetic::add(stack_pointer, offset as u32);
-                mem_map.write_u32(offset_val, value);
+                mem_bus.write_u32(offset_val, value);
             }
 
             for reg_num in self.register_list.iter().rev() {
                 offset -= 4;
                 let value = cpu.get_register(*reg_num);
                 let (offset_val, _) = arm_arithmetic::add(stack_pointer, offset as u32);
-                mem_map.write_u32(offset_val, value);
+                mem_bus.write_u32(offset_val, value);
             }
 
             // writeback
@@ -128,7 +129,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xB4AA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -159,7 +160,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xBCAA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

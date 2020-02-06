@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC, cpu::THUMB_LR};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct BL {
     pub offset_bit: bool,
@@ -19,7 +20,7 @@ impl From<u16> for BL {
 }
 
 impl Instruction for BL {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         if self.offset_bit {
             // H = 1
             // Bottom half of the 23 bit offset (bits 11-1)
@@ -68,7 +69,7 @@ mod tests {
         // Upper half instruction   0xF7FF
         match gba.cpu.decode(0xF7FF) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -78,7 +79,7 @@ mod tests {
         // Lower half instruction   0xFFF6
         match gba.cpu.decode(0xFFF6) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -102,7 +103,7 @@ mod tests {
         // Upper half instruction   0xF0000
         match gba.cpu.decode(0xF000) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("Error: {:?}", e);
@@ -112,7 +113,7 @@ mod tests {
         // Lower half instruction   0xF80A
         match gba.cpu.decode(0xF80A) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("Error: {:?}", e);
