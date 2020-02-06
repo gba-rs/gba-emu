@@ -212,9 +212,6 @@ impl GBA {
 
     pub fn run(&mut self) {
         loop {
-            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
-                self.interrupt_handler.service(&mut self.cpu);
-            }
             self.cpu.fetch(&mut self.memory_bus.mem_map);
         }
     }
@@ -239,6 +236,9 @@ impl GBA {
 
     pub fn step(&mut self) {
         while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
+            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
+                self.interrupt_handler.service(&mut self.cpu);
+            }
             self.cpu.fetch(&mut self.memory_bus.mem_map);
         }
 
