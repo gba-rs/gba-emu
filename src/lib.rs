@@ -6,6 +6,7 @@ pub mod memory;
 pub mod gba;
 pub mod thumb_formats;
 pub mod gpu;
+pub mod interrupts;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
