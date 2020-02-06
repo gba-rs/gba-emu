@@ -1,5 +1,7 @@
 use crate::memory::interrupt_registers::*;
-use crate::cpu::{program_status_register::ProgramStatusRegister, cpu};
+use crate::cpu::cpu;
+use crate::cpu::cpu::{OperatingMode, InstructionSet, ARM_LR, THUMB_LR, ARM_PC, THUMB_PC};
+//use crate::cpu::InstructionSet;
 
 pub struct Interrupts {
     pub ime_interrupt: InterruptMasterEnableRegister,
@@ -21,6 +23,12 @@ impl Interrupts {
     pub fn service(&mut self, cpu: &mut cpu::CPU){
         let should_service = self.ie_interrupt.get_register() & self.if_interrupt.get_register();
         if should_service != 0x0 {
+            cpu.operating_mode = OperatingMode::Interrupt;
+            cpu.set_spsr(cpu.cpsr);
+            cpu.cpsr.control_bits.irq_disable = true;
+            if cpu.current_instruction_set == InstructionSet::Arm {cpu.set_register(ARM_LR, cpu.get_register(ARM_PC) + 4)} else {cpu.set_register(THUMB_LR, cpu.get_register(THUMB_PC) + 2)};
+            cpu.cpsr.control_bits.mode_bits = 0b10010;
+            cpu.current_instruction_set = InstructionSet::Arm;
             cpu.set_register(15, 0x18);
         }
     }
