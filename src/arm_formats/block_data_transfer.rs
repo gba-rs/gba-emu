@@ -58,6 +58,17 @@ impl BlockDataTransfer {
         let mut current_operating_mode = cpu.operating_mode;
         let mut write_back = self.write_back;
 
+        // Handle the psr
+        if self.psr_force_user {
+            if self.register_list.contains(&15) {
+                cpu.cpsr = cpu.get_spsr();
+            } else {
+                // bank transfer
+                current_operating_mode = OperatingMode::User;
+                // write_back = false;
+            }
+        }
+
         if self.register_list.len() == 0 {
             // Because fuck the documentation I guess
             cpu.set_register_override_opmode(15, current_operating_mode, mem_map.read_u32(current_address as u32));
@@ -66,17 +77,6 @@ impl BlockDataTransfer {
                 cpu.set_register_override_opmode(self.base_register, current_operating_mode, val as u32);
             }
         } else {
-            // Handle the psr
-            if self.psr_force_user {
-                if self.register_list.contains(&15) {
-                    cpu.cpsr = cpu.get_spsr();
-                } else {
-                    // bank transfer
-                    current_operating_mode = OperatingMode::User;
-                    write_back = false;
-                }
-            }
-
             for reg_num in self.register_list.iter() {
                 cpu.set_register_override_opmode(*reg_num, current_operating_mode, mem_map.read_u32(current_address as u32));
                 current_address += 4;

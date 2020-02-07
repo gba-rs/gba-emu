@@ -51,7 +51,7 @@ impl From<u32> for HalfwordCommon {
             destination: ((value & 0xF000) >> 12) as u8,
             is_signed: ((value & 0x40) >> 6) != 0,
             condition: Condition::from((value & 0xF000_0000) >> 28),
-            data_type,
+            data_type: data_type,
         };
     }
 }
@@ -83,9 +83,9 @@ impl From<u32> for HalfwordRegisterOffset {
 impl Instruction for HalfwordImmediateOffset {
     fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
         let base = cpu.get_register(self.halfword_common.base_register);
-        let offset = (self.offset_high_nibble << 5) | self.offset_low_nibble;
+        let offset = (self.offset_high_nibble << 4) | self.offset_low_nibble;
         let address_with_offset = apply_offset(base, offset as u32, self.halfword_common.up_down_bit, 0);
-
+        
         common_execute(&self.halfword_common, cpu, mem_map, base, address_with_offset);
     }
 
