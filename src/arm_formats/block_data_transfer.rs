@@ -1,6 +1,6 @@
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, condition::Condition};
 use crate::operations::instruction::Instruction;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct BlockDataTransfer {
@@ -37,11 +37,11 @@ impl From<u32> for BlockDataTransfer {
 }
 
 impl Instruction for BlockDataTransfer {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         if self.load {
-            self.load_data(cpu, mem_map);
+            self.load_data(cpu, mem_bus);
         } else {
-            self.save_data(cpu, mem_map);
+            self.save_data(cpu, mem_bus);
         }
     }
 
@@ -52,11 +52,11 @@ impl Instruction for BlockDataTransfer {
 }
 
 impl BlockDataTransfer {
-    fn load_data(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn load_data(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let mut current_address: i64 = cpu.get_register(self.base_register) as i64;
         current_address = self.get_start_address(current_address);
         let mut current_operating_mode = cpu.operating_mode;
-        let mut write_back = self.write_back;
+        let write_back = self.write_back;
 
         // Handle the psr
         if self.psr_force_user {
@@ -65,30 +65,29 @@ impl BlockDataTransfer {
             } else {
                 // bank transfer
                 current_operating_mode = OperatingMode::User;
-                // write_back = false;
             }
         }
 
         if self.register_list.len() == 0 {
             // Because fuck the documentation I guess
-            cpu.set_register_override_opmode(15, current_operating_mode, mem_map.read_u32(current_address as u32));
+            cpu.set_register_override_opmode(15, current_operating_mode, mem_bus.read_u32(current_address as u32));
             if write_back {
                 let val = current_address + 0x40;
                 cpu.set_register_override_opmode(self.base_register, current_operating_mode, val as u32);
             }
         } else {
             for reg_num in self.register_list.iter() {
-                cpu.set_register_override_opmode(*reg_num, current_operating_mode, mem_map.read_u32(current_address as u32));
+                cpu.set_register_override_opmode(*reg_num, current_operating_mode, mem_bus.read_u32(current_address as u32));
                 current_address += 4;
             }
-    
+
             if write_back && !self.register_list.contains(&self.base_register) {
                 cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
             }
         }
     }
 
-    fn save_data(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn save_data(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let mut current_address: i64 = cpu.get_register(self.base_register) as i64;
         current_address = self.get_start_address(current_address);
         let mut current_operating_mode = cpu.operating_mode;
@@ -97,9 +96,9 @@ impl BlockDataTransfer {
         if self.register_list.len() == 0 {
 
             if self.up {
-                mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(15, current_operating_mode) + 8);
+                mem_bus.write_u32(current_address as u32, cpu.get_register_override_opmode(15, current_operating_mode) + 8);
             } else {
-                mem_map.write_u32((current_address - 0x40) as u32, cpu.get_register_override_opmode(15, current_operating_mode) + 8);
+                mem_bus.write_u32((current_address - 0x40) as u32, cpu.get_register_override_opmode(15, current_operating_mode) + 8);
             }
 
             if write_back {
@@ -136,9 +135,9 @@ impl BlockDataTransfer {
                 // todo figure out write back with base in reg list
 
                 if *reg_num == 15 {
-                    mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode) + 8);
+                    mem_bus.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode) + 8);
                 } else {
-                    mem_map.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
+                    mem_bus.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
                 }
 
                 current_address += 4;

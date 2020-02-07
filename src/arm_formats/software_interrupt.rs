@@ -1,6 +1,6 @@
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::OperatingMode, cpu::ARM_PC, cpu::ARM_LR, condition::Condition};
 use crate::operations::instruction::Instruction;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct SoftwareInterrupt {
@@ -20,7 +20,7 @@ impl From<u32> for SoftwareInterrupt {
 }
 
 impl Instruction for SoftwareInterrupt {
-    fn execute(&self, cpu: &mut CPU, _: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         cpu.current_instruction_set = InstructionSet::Arm;
         cpu.operating_mode = OperatingMode::Supervisor;
         cpu.set_spsr(cpu.cpsr);

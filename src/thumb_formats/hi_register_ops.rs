@@ -1,9 +1,9 @@
 use crate::operations::instruction::Instruction;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC};
 use std::fmt;
 use log::{error};
+use crate::gba::memory_bus::MemoryBus;
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -47,7 +47,7 @@ impl From<u16> for HiRegisterOp {
 }
 
 impl Instruction for HiRegisterOp {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         match self.op {
             OpCodes::ADD => {
                 self.add(cpu);
@@ -219,7 +219,7 @@ mod tests {
     fn add_test() {
         let mut gba: GBA = GBA::default(); 
         // hs = r12 = 200
-        gba.cpu.set_register(12, 200);
+        gba.cpu.set_register(11, 200);
         
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
@@ -230,7 +230,7 @@ mod tests {
         // 0x445B
         match gba.cpu.decode(0x445B) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -245,7 +245,7 @@ mod tests {
         let mut gba: GBA = GBA::default(); 
 
         // hd = r12 = 10
-        gba.cpu.set_register(12, 10);
+        gba.cpu.set_register(11, 10);
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
         // rs = r3 = 10
@@ -257,7 +257,7 @@ mod tests {
         // 0x459B
         match gba.cpu.decode(0x459B) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -287,14 +287,14 @@ mod tests {
         // 0x46DC
         match gba.cpu.decode(0x46DC) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
             }
         }
 
-        assert_eq!(200, gba.cpu.get_register_unsafe(11));
+        assert_eq!(10, gba.cpu.get_register_unsafe(12));
     }
 
     #[test]
@@ -306,7 +306,7 @@ mod tests {
 
         match gba.cpu.decode(0x4718) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -326,7 +326,7 @@ mod tests {
 
         match gba.cpu.decode(0x4718) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

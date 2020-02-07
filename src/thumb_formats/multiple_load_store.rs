@@ -1,6 +1,6 @@
 use crate::operations::instruction::Instruction;
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
+use crate::gba::memory_bus::MemoryBus;
 use std::fmt;
 
 
@@ -29,16 +29,16 @@ impl From<u16> for MultipleLoadStore {
 }
 
 impl Instruction for MultipleLoadStore {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let base = cpu.get_register(self.rb);
         let mut offset = 0;
         if self.load {
             if self.register_list.len() == 0 {
-                cpu.set_register(THUMB_PC, mem_map.read_u32(base));
+                cpu.set_register(THUMB_PC, mem_bus.read_u32(base));
                 cpu.set_register(self.rb, base + 0x40);
             } else {
                 for reg_num in self.register_list.iter() {
-                    let value = mem_map.read_u32(base + offset);
+                    let value = mem_bus.read_u32(base + offset);
                     cpu.set_register(*reg_num, value);
                     offset += 4;
                 }
@@ -46,7 +46,7 @@ impl Instruction for MultipleLoadStore {
             }
         } else {
             if self.register_list.len() == 0 {
-                mem_map.write_u32(base, cpu.get_register(THUMB_PC) + 4);
+                mem_bus.write_u32(base, cpu.get_register(THUMB_PC) + 4);
                 cpu.set_register(self.rb, base + 0x40);
             } else {
 
@@ -56,7 +56,7 @@ impl Instruction for MultipleLoadStore {
 
                 for reg_num in self.register_list.iter() {
                     let value = cpu.get_register(*reg_num);
-                    mem_map.write_u32(base + offset, value);
+                    mem_bus.write_u32(base + offset, value);
                     offset += 4;
                 }
                 cpu.set_register(self.rb, base + offset);
@@ -111,7 +111,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xC2AA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -142,7 +142,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xCAAA);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

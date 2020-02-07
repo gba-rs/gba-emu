@@ -1,10 +1,10 @@
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic, logical};
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::cpu::program_status_register::ConditionFlags;
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {
@@ -74,7 +74,7 @@ impl fmt::Debug for ALU {
 }
 
 impl Instruction for ALU {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         let op1 = cpu.get_register(self.rd);
         let op2 = cpu.get_register(self.rs);
 
@@ -239,22 +239,6 @@ impl Instruction for ALU {
     }
     fn cycles(&self) -> u32 {return 1;} // 1s
 
-}
-
-fn set_flags(rd: u8, rs: u8, cpu: &mut CPU) -> ConditionFlags{
-    let op1 = cpu.get_register(rd);
-    let op2 = cpu.get_register(rs);
-    let value = (op1 & op2) as u64;
-    let carryout: bool = (value >> 32) != 0;
-    let op1_sign: bool = (op1 >> 31) != 0;
-    let op2_sign: bool = (op2 >> 31) != 0;
-    let value_sign: bool = ((value >> 31) & 0x01) != 0;
-    return ConditionFlags {
-        negative: (value & (0x1 << 31)) != 0,
-        zero: value == 0,
-        carry: carryout,
-        signed_overflow: (op1_sign == op2_sign) && (op1_sign != value_sign)
-    };
 }
 //Unit Tests
 
