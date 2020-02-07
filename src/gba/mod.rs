@@ -147,7 +147,7 @@ impl GBA {
 
     pub fn single_step(&mut self) {
         if self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
-            self.cpu.fetch(&mut self.memory_bus.mem_map);
+            self.cpu.fetch(&mut self.memory_bus);
 
         } else {
             self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map);

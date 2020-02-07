@@ -402,8 +402,7 @@ mod tests {
     fn test_decode_unimplemented(){
         let cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        bus.mem_map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        
+
         let result = cpu.decode(0x00F0F0F0);
         match result {
             Ok(instr) => {
@@ -420,7 +419,6 @@ mod tests {
     fn test_decode(){
         let mut bus = MemoryBus::new();
         let cpu = CPU::new();
-        bus.mem_map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         // cpu.decode(&mut map, 0xE0812001);
     }
 
@@ -429,7 +427,6 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(15, 0x02000000);
         let mut bus = MemoryBus::new();
-        bus.mem_map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
         bus.write_u32(0x02000000, 0x012081E0);
         bus.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut bus);

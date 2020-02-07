@@ -19,8 +19,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00 + 4), 0x1);
@@ -40,8 +38,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00), 0x1);
@@ -61,8 +57,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00 - 4), 0x7);
@@ -82,8 +76,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00), 0x7);
@@ -100,8 +92,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         bus.write_u32(0xFF04, 1);
         bus.write_u32(0xFF08, 2);
@@ -124,8 +114,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         bus.write_u32(0xFF00, 1);
         bus.write_u32(0xFF04, 2);
@@ -148,8 +136,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         bus.write_u32(0xFEF0, 1);
         bus.write_u32(0xFEF4, 2);
@@ -172,8 +158,6 @@ mod tests {
         cpu.set_register(13, 0xFF00);
 
         let mut bus = MemoryBus::new();
-        let work_ram: WorkRam = WorkRam::new(0xFFFF, 0);
-        bus.mem_map.register_memory(0, 0xFFFF, &work_ram.memory);
 
         bus.write_u32(0xFEF0, 1);
         bus.write_u32(0xFEF4, 2);

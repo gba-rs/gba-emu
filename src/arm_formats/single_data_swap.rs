@@ -40,11 +40,11 @@ impl Instruction for SingleDataSwap {
         let swap_address = cpu.get_register(self.base_register);
         let source_value = cpu.get_register(self.source_register);
         if self.byte {
-            let swap_address_contents = mem_map.read_u8(swap_address);
+            let swap_address_contents = mem_bus.read_u8(swap_address);
             mem_bus.write_u8(swap_address, source_value as u8);
             cpu.set_register(self.destination_register, swap_address_contents as u32);
         } else {
-            let swap_address_contents = mem_map.read_u32(swap_address - (swap_address % 4)).rotate_right((swap_address % 4) * 8);
+            let swap_address_contents = mem_bus.read_u32(swap_address - (swap_address % 4)).rotate_right((swap_address % 4) * 8);
             mem_bus.write_u32(swap_address - (swap_address % 4), source_value);
             cpu.set_register(self.destination_register, swap_address_contents);
         }

@@ -53,6 +53,7 @@ impl Instruction for LoadStoreHalfword {
 mod tests {
     use super::*;
     use crate::memory::{work_ram::WorkRam};
+    use crate::gba::GBA;
 
     #[test]
     fn test_creation_0s() {
@@ -77,47 +78,41 @@ mod tests {
     #[test]
     fn test_load() {
         let load_store_halfword = LoadStoreHalfword::from(0x8C14);
+        let mut gba = GBA::default();
 
-        let mut cpu = CPU::new();
-        let mut mem_bus = MemoryBus::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         let expected_offset = 16;
 
-        cpu.set_register(2, 0x0008);
-        mem_bus.write_u16(0x0008 + expected_offset, 22);
+        gba.cpu.set_register(2, 0x0008);
+        gba.memory_bus.write_u16(0x0008 + expected_offset, 22);
 
-        load_store_halfword.execute(&mut cpu, &mut mem_bus);
+        load_store_halfword.execute(&mut gba.cpu, &mut gba.memory_bus);
 
         assert_eq!(load_store_halfword.load , true);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
-        assert_eq!(cpu.get_register(4), 22);
+        assert_eq!(gba.cpu.get_register(4), 22);
     }
 
     #[test]
     fn test_store() {
         let load_store_halfword = LoadStoreHalfword::from(0x8414);
+        let mut gba = GBA::default();
 
-        let mut cpu = CPU::new();
-        let mut mem_bus = MemoryBus::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         let expected_offset = 16;
 
-        cpu.set_register(2, 0x0008);
-        cpu.set_register(4, 22);
+        gba.cpu.set_register(2, 0x0008);
+        gba.cpu.set_register(4, 22);
 
-        load_store_halfword.execute(&mut cpu, &mut mem_bus);
+        load_store_halfword.execute(&mut gba.cpu, &mut gba.memory_bus);
 
         assert_eq!(load_store_halfword.load , false);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
-        assert_eq!(mem_bus.read_u16(0x0008 + expected_offset), 22);
+        assert_eq!(gba.memory_bus.read_u16(0x0008 + expected_offset), 22);
     }
 
     #[test]

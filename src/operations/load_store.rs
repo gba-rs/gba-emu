@@ -57,10 +57,6 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
 * Formats a value from a register and stores it in a given memory address
 */
 pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_bus: &mut MemoryBus) {
-    if (data_type == DataType::Halfword) && !is_halfword_aligned(memory_address) && !is_word_aligned(memory_address) {
-        panic!("Attempting to store halfword in a memory location that is not word aligned or halfword aligned!");
-    }
-
     match data_type {
         DataType::Word => {
             // Force word alignment
@@ -121,7 +117,7 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
     }
 
     if transfer_info.load {
-        load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, mem_bus);
+        load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, &mut mem_bus.mem_map);
 
         if transfer_info.destination != transfer_info.base_register {
             if !transfer_info.is_pre_indexed || transfer_info.write_back {
@@ -135,7 +131,7 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
             value_to_store += 8;
         }
 
-        store(transfer_info.data_type, value_to_store, address, mem_map);
+        store(transfer_info.data_type, value_to_store, address, mem_bus);
 
         if !transfer_info.is_pre_indexed || transfer_info.write_back {
             cpu.set_register(transfer_info.base_register, address_with_offset);
@@ -218,7 +214,6 @@ mod tests {
         let mut cpu = CPU::new();
         let mut mem_map = MemoryMap::new();
         let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         mem_map.write_u32(memory_address, value_from_memory);
 
         cpu.set_register(0x002, memory_address);
@@ -228,8 +223,6 @@ mod tests {
 
     fn store_set_up() -> MemoryBus {
         let mut mem_bus = MemoryBus::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_bus.mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         return mem_bus;
     }
 }
