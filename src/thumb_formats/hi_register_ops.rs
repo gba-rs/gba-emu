@@ -216,7 +216,7 @@ mod tests {
     fn add_test() {
         let mut gba: GBA = GBA::default(); 
         // hs = r12 = 200
-        gba.cpu.set_register(12, 200);
+        gba.cpu.set_register(11, 200);
         
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
@@ -242,7 +242,7 @@ mod tests {
         let mut gba: GBA = GBA::default(); 
 
         // hd = r12 = 10
-        gba.cpu.set_register(12, 10);
+        gba.cpu.set_register(11, 10);
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
         // rs = r3 = 10
@@ -291,7 +291,7 @@ mod tests {
             }
         }
 
-        assert_eq!(200, gba.cpu.get_register_unsafe(11));
+        assert_eq!(10, gba.cpu.get_register_unsafe(12));
     }
 
     #[test]
