@@ -1,17 +1,14 @@
 pub mod memory_bus;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
-use crate::memory::{memory_map::MemoryMap, game_pack_rom::GamePackRom, io_registers::IORegisters, work_ram::WorkRam};
-use crate::memory::lcd_io_registers::*;
+use crate::memory::{io_registers::IORegisters};
 use crate::gpu::gpu::GPU;
-use crate::memory::{interrupt_registers::*, key_input_registers::*, system_control::WaitStateControl};
-use crate::operations::timing::{MemAccessSize, CycleClock};
+use crate::memory::{interrupt_registers::*, key_input_registers::*};
 use crate::gba::memory_bus::MemoryBus;
 
 pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
     pub memory_bus: MemoryBus,
-    // pub game_pack_memory: [GamePackRom; 3],
     pub io_reg: IORegisters,
     pub ime_interrupt: InterruptMasterEnableRegister,
     pub ie_interrupt: InterruptEnableRegister,
@@ -22,41 +19,7 @@ pub struct GBA {
 
 impl Default for GBA {
     fn default() -> Self {
-        // let temp_gamepack = [
-        //     GamePackRom::new(0),
-        //     GamePackRom::new(0),
-        //     GamePackRom::new(0),
-        // ];
-
-        let mut temp: GBA = GBA {
-            cpu: CPU::new(),
-            gpu: GPU::new(),
-            memory_bus: MemoryBus::new(),
-            // game_pack_memory: temp_gamepack,
-            io_reg: IORegisters::new(0),
-            ime_interrupt: InterruptMasterEnableRegister::new(),
-            ie_interrupt: InterruptEnableRegister::new(),
-            if_interrupt: InterruptRequestFlags::new(),
-            key_status: KeyStatus::new(),
-            ket_interrupt_control: KeyInterruptControl::new()
-        };
-
-        // setup the PC
-        temp.cpu.set_register(ARM_PC, 0x08000000);
-
-        // setup the SPs'
-        temp.cpu.operating_mode = OperatingMode::Interrupt;
-        temp.cpu.set_register(ARM_SP, 0x03007FE0);
-
-        temp.cpu.operating_mode = OperatingMode::User;
-        temp.cpu.set_register(ARM_SP, 0x03007FE0);
-
-        temp.cpu.operating_mode = OperatingMode::Supervisor;
-        temp.cpu.set_register(ARM_SP, 0x03007FE0);
-
-        temp.cpu.operating_mode = OperatingMode::System;
-
-        return temp;
+        return GBA::new(0x08000000, &Vec::new(), &Vec::new());
     }
 }
 
@@ -81,6 +44,7 @@ impl GBA {
         temp.ime_interrupt.register(&temp.memory_bus.mem_map.memory);
         temp.ie_interrupt.register(&temp.memory_bus.mem_map.memory);
         temp.if_interrupt.register(&temp.memory_bus.mem_map.memory);
+        temp.memory_bus.cycle_clock.register(&temp.memory_bus.mem_map.memory);
 
         // setup the PC
         temp.cpu.set_register(ARM_PC, pc_address);

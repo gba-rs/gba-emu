@@ -1,5 +1,4 @@
 use crate::operations::instruction::Instruction;
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR};
 use std::fmt;
 use crate::gba::memory_bus::MemoryBus;

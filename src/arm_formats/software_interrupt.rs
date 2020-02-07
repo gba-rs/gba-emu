@@ -1,4 +1,3 @@
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::OperatingMode, cpu::ARM_PC, cpu::ARM_LR, condition::Condition};
 use crate::operations::instruction::Instruction;
 use crate::gba::memory_bus::MemoryBus;

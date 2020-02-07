@@ -1,4 +1,3 @@
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::load_store::{apply_offset, DataType, DataTransfer, data_transfer_execute};
 use crate::operations::shift::{Shift, apply_shift};

@@ -1,5 +1,4 @@
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::load_store::{apply_offset};
 use crate::gba::memory_bus::MemoryBus;
@@ -52,7 +51,6 @@ impl Instruction for LoadStoreHalfword {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::{work_ram::WorkRam};
     use crate::gba::GBA;
 
     #[test]

@@ -1,6 +1,5 @@
 use crate::operations::instruction::Instruction;
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::thumb_formats::load_store_halfword::LoadStoreHalfword;
 use core::fmt;
 use crate::gba::memory_bus::MemoryBus;
@@ -93,7 +92,6 @@ impl Instruction for LoadStoreSignExtended {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::work_ram::WorkRam;
     use crate::gba::GBA;
 
     #[test]

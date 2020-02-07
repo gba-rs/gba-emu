@@ -10,7 +10,6 @@ use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::Immedia
 use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_immediate_offset::LoadStoreImmediateOffset, load_store_sign_extended::LoadStoreSignExtended};
 use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
 use crate::thumb_formats::{sp_load_store::SpLoadStore,unconditional_branch::UnconditionalBranch, add_offset_sp::AddOffsetSP};
-use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
 use super::{thumb_instr::THUMB_INSTRUCTIONS};
@@ -401,7 +400,7 @@ mod tests {
     #[test]
     fn test_decode_unimplemented(){
         let cpu = CPU::new();
-        let mut bus = MemoryBus::new();
+//        let bus = MemoryBus::new();
 
         let result = cpu.decode(0x00F0F0F0);
         match result {
@@ -417,8 +416,8 @@ mod tests {
 
     #[test]
     fn test_decode(){
-        let mut bus = MemoryBus::new();
-        let cpu = CPU::new();
+//        let mut bus = MemoryBus::new();
+//        let cpu = CPU::new();
         // cpu.decode(&mut map, 0xE0812001);
     }
 

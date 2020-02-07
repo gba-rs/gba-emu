@@ -1,5 +1,4 @@
 use crate::{operations::arm_arithmetic};
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::instruction::Instruction;
 use crate::gba::memory_bus::MemoryBus;

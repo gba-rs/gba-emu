@@ -1,7 +1,6 @@
 use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU};
-use crate::memory::memory_map::MemoryMap;
 use std::fmt;
 use crate::gba::memory_bus::MemoryBus;
 

@@ -6,7 +6,6 @@ mod test {
     use gba_emulator::thumb_formats::add_subtract::AddSubtract;
     use gba_emulator::arm_formats::branch_exchange::BranchExchange;
     use gba_emulator::operations::instruction::Instruction;
-    use gba_emulator::memory::{memory_map::MemoryMap};
     use gba_emulator::gba::memory_bus::MemoryBus;
 
 

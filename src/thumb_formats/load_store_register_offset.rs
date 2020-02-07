@@ -1,7 +1,6 @@
 use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreRegisterOffset {
@@ -71,7 +70,6 @@ impl Instruction for LoadStoreRegisterOffset {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::work_ram::WorkRam;
     use crate::gba::GBA;
 
     #[test]

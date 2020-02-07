@@ -1,6 +1,4 @@
-use crate::operations::arm_arithmetic::add;
 use crate::memory::system_control::WaitStateControl;
-use crate::operations::timing::MemAccessSize::{Mem16, Mem32};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -151,8 +149,6 @@ impl CycleClock {
 
 #[cfg(test)]
 mod tests {
-    use crate::memory::work_ram::WorkRam;
-    use crate::memory::memory_map::MemoryMap;
     use crate::gba::GBA;
 
     #[test]

@@ -2,9 +2,6 @@ extern crate gba_emulator;
 
 #[cfg(test)]
 mod tests {
-    use gba_emulator::cpu::cpu::{CPU};
-    use gba_emulator::memory::{memory_map::MemoryMap};
-    use gba_emulator::gba::memory_bus::MemoryBus;
     use gba_emulator::gba::GBA;
 
     #[test]

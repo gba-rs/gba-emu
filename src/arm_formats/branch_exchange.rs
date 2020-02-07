@@ -1,4 +1,3 @@
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, condition::Condition};
 use log::{debug};
 use crate::operations::instruction::Instruction;
@@ -58,7 +57,6 @@ impl Instruction for BranchExchange {
 mod tests { 
     use super::*;
     use crate::cpu::cpu::CPU;
-    use crate::memory::memory_map::MemoryMap;
     use crate::cpu::cpu::InstructionSet;
 
     #[test]

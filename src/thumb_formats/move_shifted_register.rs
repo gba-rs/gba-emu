@@ -1,5 +1,4 @@
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::operations::logical;

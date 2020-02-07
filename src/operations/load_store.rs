@@ -142,7 +142,6 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::{work_ram::WorkRam};
 
     #[test]
     fn test_apply_offset() {
@@ -213,7 +212,6 @@ mod tests {
     fn load_set_up(_: u8, value_from_memory: u32, memory_address: u32) -> CPU {
         let mut cpu = CPU::new();
         let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
         mem_map.write_u32(memory_address, value_from_memory);
 
         cpu.set_register(0x002, memory_address);

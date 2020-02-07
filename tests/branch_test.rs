@@ -6,7 +6,6 @@ mod tests {
 //    use gba_emulator::formats::data_processing::DataProcessing;
     use crate::{cpu::cpu::CPU, cpu::cpu::InstructionSet,cpu::cpu::ARM_PC,cpu::cpu::ARM_LR,cpu::cpu::THUMB_PC};
     use gba_emulator::arm_formats::branch::Branch;
-    use gba_emulator::memory::{memory_map::MemoryMap};
     use gba_emulator::operations::instruction::Instruction;
     use gba_emulator::gba::memory_bus::MemoryBus;
 
