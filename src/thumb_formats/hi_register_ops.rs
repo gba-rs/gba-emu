@@ -1,9 +1,9 @@
 use crate::operations::instruction::Instruction;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC};
 use std::fmt;
 use log::{error};
+use crate::gba::memory_bus::MemoryBus;
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -47,7 +47,7 @@ impl From<u16> for HiRegisterOp {
 }
 
 impl Instruction for HiRegisterOp {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         match self.op {
             OpCodes::ADD => {
                 self.add(cpu);
@@ -88,8 +88,8 @@ impl HiRegisterOp {
         let mut destination: u32;
         if self.hi_flag_1 {
             // r8-r15
-            destination = cpu.get_register_unsafe(15 - self.destination_register);
-            if self.destination_register == 0 { // R15 special case
+            destination = cpu.get_register_unsafe(self.destination_register + 8);
+            if self.destination_register == 7 { // R15 special case
                 destination = destination + 2;  // Fetch adds the other +2
             }
         } else {
@@ -100,8 +100,8 @@ impl HiRegisterOp {
         let mut source: u32;
         if self.hi_flag_2 {
             // r8-r15
-            source = cpu.get_register_unsafe(15 - self.source_register);
-            if self.source_register == 0 && self.destination_register != 0 {  // R15 Special case (and nop case)
+            source = cpu.get_register_unsafe(self.source_register + 8);
+            if self.source_register == 7 && (self.destination_register != 7 && !self.hi_flag_1) {  // R15 Special case (and nop case)
                 source = source + 2;        // Fetch adds the other +2
             }
         } else {
@@ -115,7 +115,7 @@ impl HiRegisterOp {
     // Sets the destination register value based on the hi flags
     fn set_destniation_register(&self, cpu: &mut CPU, value: u32) {
         if self.hi_flag_1 {
-            cpu.set_register_unsafe(15 - self.destination_register, value);
+            cpu.set_register_unsafe(self.destination_register + 8, value);
         } else {
             cpu.set_register(self.destination_register, value);
         }
@@ -161,12 +161,12 @@ impl HiRegisterOp {
 
 impl fmt::Debug for HiRegisterOp {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-        let dest_reg = if self.hi_flag_1 { 15 - self.destination_register } else { self.destination_register };
-        let source_reg = if self.hi_flag_2 { 15 - self.source_register } else { self.source_register };
+        let dest_reg = if self.hi_flag_1 { self.destination_register + 8 } else { self.destination_register };
+        let source_reg = if self.hi_flag_2 { self.source_register + 8 } else { self.source_register };
         if self.op == OpCodes::BX {
-            write!(f, "BX r{}", source_reg)
+            write!(f, "BX r{} (Hi-op)", source_reg)
         } else {
-            write!(f, "{:?} r{}, r{}", self.op, dest_reg, source_reg)
+            write!(f, "{:?} r{}, r{} (Hi-op)", self.op, dest_reg, source_reg)
         }
     }
 }
@@ -215,7 +215,7 @@ mod tests {
     fn add_test() {
         let mut gba: GBA = GBA::default(); 
         // hs = r12 = 200
-        gba.cpu.set_register(12, 200);
+        gba.cpu.set_register(11, 200);
         
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
@@ -226,7 +226,7 @@ mod tests {
         // 0x445B
         match gba.cpu.decode(0x445B) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -241,7 +241,7 @@ mod tests {
         let mut gba: GBA = GBA::default(); 
 
         // hd = r12 = 10
-        gba.cpu.set_register(12, 10);
+        gba.cpu.set_register(11, 10);
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
 
         // rs = r3 = 10
@@ -253,7 +253,7 @@ mod tests {
         // 0x459B
         match gba.cpu.decode(0x459B) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -283,14 +283,14 @@ mod tests {
         // 0x46DC
         match gba.cpu.decode(0x46DC) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
             }
         }
 
-        assert_eq!(200, gba.cpu.get_register_unsafe(11));
+        assert_eq!(10, gba.cpu.get_register_unsafe(12));
     }
 
     #[test]
@@ -302,7 +302,7 @@ mod tests {
 
         match gba.cpu.decode(0x4718) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -322,7 +322,7 @@ mod tests {
 
         match gba.cpu.decode(0x4718) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

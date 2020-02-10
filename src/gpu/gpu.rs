@@ -1,8 +1,9 @@
-use crate::memory::work_ram::WorkRam;
 use crate::memory::lcd_io_registers::*;
 use crate::memory::memory_map::MemoryMap;
 use super::rgb15::Rgb15;
-use crate::operations::bitutils::*;
+use crate::operations::bitutils;
+use std::cell::RefCell;
+use std::rc::Rc;
 use log::debug;
 
 pub const DISPLAY_WIDTH: u32 = 240;
@@ -28,19 +29,17 @@ pub struct Background {
 }
 
 impl Background {
-    pub fn new() -> Background {
-        return Background {
-            control: BG_Control::new(),
-            horizontal_offset: BGOffset::new(),
-            vertical_offset: BGOffset::new()
-        };
+    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+        self.control.register(mem);
+        self.horizontal_offset.register(mem);
+        self.vertical_offset.register(mem);
     }
 }
 
 pub struct BgAffineComponent {
-    pub refrence_point_x_internal: BGRefrencePoint,
+    pub refrence_point_x_internal: u32,
     pub refrence_point_x_external: BGRefrencePoint,
-    pub refrence_point_y_internal: BGRefrencePoint,
+    pub refrence_point_y_internal: u32,
     pub refrence_point_y_external: BGRefrencePoint,
     pub rotation_scaling_param_a: BGRotScaleParam,
     pub rotation_scaling_param_b: BGRotScaleParam,
@@ -49,17 +48,13 @@ pub struct BgAffineComponent {
 }
 
 impl BgAffineComponent {
-    pub fn new() -> BgAffineComponent {
-        return BgAffineComponent {
-            refrence_point_x_internal: BGRefrencePoint::new(),
-            refrence_point_x_external: BGRefrencePoint::new(),
-            refrence_point_y_internal: BGRefrencePoint::new(),
-            refrence_point_y_external: BGRefrencePoint::new(),
-            rotation_scaling_param_a: BGRotScaleParam::new(),
-            rotation_scaling_param_b: BGRotScaleParam::new(),
-            rotation_scaling_param_c: BGRotScaleParam::new(),
-            rotation_scaling_param_d: BGRotScaleParam::new()
-        }
+    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+        self.refrence_point_x_external.register(mem);
+        self.refrence_point_y_external.register(mem);
+        self.rotation_scaling_param_a.register(mem);
+        self.rotation_scaling_param_b.register(mem);
+        self.rotation_scaling_param_c.register(mem);
+        self.rotation_scaling_param_d.register(mem);
     }
 }
 
@@ -69,22 +64,20 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new() -> Window {
-        return Window {    
-            horizontal_dimensions: WindowHorizontalDimension::new(),
-            vertical_dimensions: WindowVerticalDimension::new()
-        }    
+    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+        self.horizontal_dimensions.register(mem);
+        self.vertical_dimensions.register(mem);
     }
 }
 
 pub struct GPU {
     // Memory
-    pub bg_obj_palette_ram: WorkRam,
-    pub not_used_mem: WorkRam,
-    pub vram: WorkRam,
-    pub not_used_mem_2: WorkRam,
-    pub oam_obj_attributes: WorkRam,
-    pub not_used_mem_3: WorkRam,
+    // pub bg_obj_palette_ram: WorkRam,
+    // pub not_used_mem: WorkRam,
+    // pub vram: WorkRam,
+    // pub not_used_mem_2: WorkRam,
+    // pub oam_obj_attributes: WorkRam,
+    // pub not_used_mem_3: WorkRam,
 
     pub display_control: DisplayControl,
     pub green_swap: GreenSwap,
@@ -113,17 +106,68 @@ impl GPU {
     pub fn new() -> GPU {
         return GPU {
             // Memory
-            bg_obj_palette_ram: WorkRam::new(0x3FF + 1, 0),
-            not_used_mem: WorkRam::new(0xFF_FBFF + 1, 0),
-            vram: WorkRam::new(0x1_7FFF + 1, 0),
-            not_used_mem_2: WorkRam::new(0xFE_7FFF + 1, 0),
-            oam_obj_attributes: WorkRam::new(0x3FF + 1, 0),
-            not_used_mem_3: WorkRam::new(0xFF_FBFF + 1, 0),
+            // bg_obj_palette_ram: WorkRam::new(0x3FF + 1, 0),
+            // not_used_mem: WorkRam::new(0xFF_FBFF + 1, 0),
+            // vram: WorkRam::new(0x1_7FFF + 1, 0),
+            // not_used_mem_2: WorkRam::new(0xFE_7FFF + 1, 0),
+            // oam_obj_attributes: WorkRam::new(0x3FF + 1, 0),
+            // not_used_mem_3: WorkRam::new(0xFF_FBFF + 1, 0),
 
             // Backgrounds
-            backgrounds: [Background::new(), Background::new(), Background::new(), Background::new()],
-            bg_affine_components: [BgAffineComponent::new(), BgAffineComponent::new()],
-            windows: [Window::new(), Window::new()],
+            backgrounds: [
+                Background {
+                    control: BG_Control::new(0),
+                    horizontal_offset: BGOffset::new(0),
+                    vertical_offset: BGOffset::new(1), 
+                },
+                Background {
+                    control: BG_Control::new(1),
+                    horizontal_offset: BGOffset::new(2),
+                    vertical_offset: BGOffset::new(3), 
+                },
+                Background {
+                    control: BG_Control::new(2),
+                    horizontal_offset: BGOffset::new(4),
+                    vertical_offset: BGOffset::new(5), 
+                },
+                Background {
+                    control: BG_Control::new(3),
+                    horizontal_offset: BGOffset::new(6),
+                    vertical_offset: BGOffset::new(7), 
+                }
+            ],
+            bg_affine_components: [
+                BgAffineComponent {
+                    refrence_point_x_internal: 0,
+                    refrence_point_x_external: BGRefrencePoint::new(0),
+                    refrence_point_y_internal: 0,
+                    refrence_point_y_external: BGRefrencePoint::new(1),
+                    rotation_scaling_param_a: BGRotScaleParam::new(0),
+                    rotation_scaling_param_b: BGRotScaleParam::new(1),
+                    rotation_scaling_param_c: BGRotScaleParam::new(2),
+                    rotation_scaling_param_d: BGRotScaleParam::new(3)
+                },
+                BgAffineComponent {
+                    refrence_point_x_internal: 0,
+                    refrence_point_x_external: BGRefrencePoint::new(2),
+                    refrence_point_y_internal: 0,
+                    refrence_point_y_external: BGRefrencePoint::new(3),
+                    rotation_scaling_param_a: BGRotScaleParam::new(4),
+                    rotation_scaling_param_b: BGRotScaleParam::new(5),
+                    rotation_scaling_param_c: BGRotScaleParam::new(6),
+                    rotation_scaling_param_d: BGRotScaleParam::new(7)
+                }
+            ],
+            windows: [
+                Window {
+                    horizontal_dimensions: WindowHorizontalDimension::new(0),
+                    vertical_dimensions: WindowVerticalDimension::new(0)
+                }, 
+                Window {
+                    horizontal_dimensions: WindowHorizontalDimension::new(1),
+                    vertical_dimensions: WindowVerticalDimension::new(1)
+                }
+            ],
 
             // Registers
             display_control: DisplayControl::new(),
@@ -144,6 +188,31 @@ impl GPU {
             frame_ready: false,
             frame_buffer: vec![0; (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
         };
+    }
+
+    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+        for i in 0..4 {
+            self.backgrounds[i].register(mem);
+        }
+
+        for i in 0..2 {
+            self.bg_affine_components[i].register(mem);
+            self.windows[i].register(mem);
+        }
+
+        // Registers
+        self.display_control.register(mem);
+        self.green_swap.register(mem);
+        self.display_status.register(mem);
+        self.vertical_count.register(mem);
+
+        self.control_window_inside.register(mem);
+        self.control_window_outside.register(mem);
+        self.mosaic_size.register(mem);
+        self.color_special_effects_selection.register(mem);
+
+        self.alpha_blending_coefficients.register(mem);
+        self.brightness_coefficient.register(mem);
     }
 
     pub fn step(&mut self, cycles: u32, mem_map: &mut MemoryMap) {
@@ -182,8 +251,8 @@ impl GPU {
 
                             let pa = i32::from(&self.bg_affine_components[0].rotation_scaling_param_a);
                             let pc = i32::from(&self.bg_affine_components[0].rotation_scaling_param_c);
-                            let ref_point_x = i32::from(&self.bg_affine_components[0].refrence_point_x_internal);
-                            let ref_point_y = i32::from(&self.bg_affine_components[0].refrence_point_y_internal);
+                            let ref_point_x = bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_x_internal, 27) as i32;
+                            let ref_point_y =  bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_y_internal, 27) as i32;
 
                             for x in 0..DISPLAY_WIDTH {
                                 let t = ((ref_point_x + (x as i32) * pa) >> 8, (ref_point_y + (x as i32) * pc) >> 8);
@@ -202,21 +271,21 @@ impl GPU {
 
                     // update refrence points at end of scanline
                     for i in 0..2 {
-                        let internal_x = i32::from(&self.bg_affine_components[i].refrence_point_x_internal);
-                        let internal_y = i32::from(&self.bg_affine_components[i].refrence_point_y_internal);
+                        let internal_x = bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_x_internal, 27) as i32;
+                        let internal_y =  bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_y_internal, 27) as i32;
                         let pb = i32::from(&self.bg_affine_components[i].rotation_scaling_param_b);
                         let pd = i32::from(&self.bg_affine_components[i].rotation_scaling_param_d);
 
-                        self.bg_affine_components[i].refrence_point_x_internal.set_register((internal_x + pb) as u32);
-                        self.bg_affine_components[i].refrence_point_y_internal.set_register((internal_y + pd) as u32);
+                        self.bg_affine_components[i].refrence_point_x_internal = (pb + internal_x) as u32; //t_register((internal_x + pb) as u32);
+                        self.bg_affine_components[i].refrence_point_y_internal = (pd + internal_y) as u32;
                     }
 
                     self.current_state = GpuState::HDraw;
                     self.cycles_to_next_state = HDRAW_CYCLES;
                 } else {                    
                     for i in 0..2 {
-                        self.bg_affine_components[i].refrence_point_x_internal.set_register(self.bg_affine_components[i].refrence_point_x_external.get_register());
-                        self.bg_affine_components[i].refrence_point_y_internal.set_register(self.bg_affine_components[i].refrence_point_y_external.get_register());
+                        self.bg_affine_components[i].refrence_point_x_internal = self.bg_affine_components[i].refrence_point_x_external.get_register();
+                        self.bg_affine_components[i].refrence_point_y_internal = self.bg_affine_components[i].refrence_point_y_external.get_register();
                     }
 
                     // do irq stuff

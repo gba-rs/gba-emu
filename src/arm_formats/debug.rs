@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU};
 use log::{debug};
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct Debug {
@@ -21,7 +21,7 @@ impl From<u32> for Debug {
 }
 
 impl Instruction for Debug {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         if self.immidiete {
             if self.hex {
                 debug!("{:X}", cpu.get_register(self.source_register));

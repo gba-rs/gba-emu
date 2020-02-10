@@ -1,15 +1,23 @@
 use std::error;
 use std::fmt;
+use super::cpu::InstructionSet;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct DecodeError {
     pub instruction: u32,
-    pub opcode: u16
+    pub opcode: u16,
+    pub instruction_set: InstructionSet
+}
+
+impl fmt::Debug for DecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Error decoding: {:?}, {:X}, {:X}", self.instruction_set, self.opcode, self.instruction)
+    }
 }
 
 impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error decoding: {:X}, {:X}", self.opcode, self.instruction)
+        write!(f, "Error decoding: {:?}, {:X}, {:X}", self.instruction_set, self.opcode, self.instruction)
     }
 }
 

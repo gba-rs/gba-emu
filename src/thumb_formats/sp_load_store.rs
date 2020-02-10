@@ -1,8 +1,8 @@
 use crate::operations::instruction::Instruction;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_SP};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct SpLoadStore {
     pub load: bool,
@@ -21,15 +21,15 @@ impl From<u16> for SpLoadStore {
 }
 
 impl Instruction for SpLoadStore {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let stack_pointer = cpu.get_register(THUMB_SP);
         let (address, _) = arm_arithmetic::add(stack_pointer, self.word8 as u32);
         if self.load {
-            let value = mem_map.read_u32(address);
+            let value = mem_bus.read_u32(address);
             cpu.set_register(self.destination, value);
         } else {
             let value = cpu.get_register(self.destination);
-            mem_map.write_u32(address, value);
+            mem_bus.write_u32(address, value);
         }
     }
 
@@ -68,7 +68,7 @@ mod tests {
         // LDR r4, [SP, 50]
         match gba.cpu.decode(0x9C14) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -89,7 +89,7 @@ mod tests {
         // str r4, [SP, 50]
         match gba.cpu.decode(0x9414) {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

@@ -1,8 +1,8 @@
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::operations::logical;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct MoveShifted {
@@ -27,7 +27,7 @@ impl From<u16> for MoveShifted {
 }
 
 impl Instruction for MoveShifted {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         let base_value = cpu.get_register(self.rs);
         let (shifted_value, carry_out) = apply_shift(base_value, &self.shift, cpu);
         cpu.set_register(self.rd, shifted_value);
@@ -65,10 +65,10 @@ mod tests {
         let value = 0x10;
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         cpu.set_register(rs, value);
 
-        instruction.execute(&mut cpu, &mut mem_map);
+        instruction.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(instruction.shift.shift_type, ShiftType::LogicalLeft);
         assert_eq!(instruction.shift.shift_amount, 1);
@@ -86,10 +86,10 @@ mod tests {
         let value = 0x10;
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         cpu.set_register(rs, value);
 
-        instruction.execute(&mut cpu, &mut mem_map);
+        instruction.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(instruction.shift.shift_type, ShiftType::LogicalRight);
         assert_eq!(instruction.shift.shift_amount, 2);
@@ -107,10 +107,10 @@ mod tests {
         let value = 0x100;
 
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_bus = MemoryBus::new();
         cpu.set_register(rs, value);
 
-        instruction.execute(&mut cpu, &mut mem_map);
+        instruction.execute(&mut cpu, &mut mem_bus);
 
         assert_eq!(instruction.shift.shift_type, ShiftType::ArithmeticRight);
         assert_eq!(instruction.shift.shift_amount , 2);

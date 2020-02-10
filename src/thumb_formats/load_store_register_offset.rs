@@ -1,7 +1,7 @@
 use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreRegisterOffset {
     load: bool,
@@ -31,19 +31,19 @@ impl From<u16> for LoadStoreRegisterOffset {
 }
 
 impl Instruction for LoadStoreRegisterOffset {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let target_address = cpu.get_register(self.rb) + cpu.get_register(self.offset_register);
         if self.load {
             if self.data_type == DataType::Word {
-                cpu.set_register(self.rd, mem_map.read_u32(target_address));
+                cpu.set_register(self.rd, mem_bus.read_u32(target_address));
             } else {
-                cpu.set_register(self.rd, mem_map.read_u8(target_address) as u32);
+                cpu.set_register(self.rd, mem_bus.read_u8(target_address) as u32);
             }
         } else {
             if self.data_type == DataType::Word {
-                mem_map.write_u32(target_address, cpu.get_register(self.rd));
+                mem_bus.write_u32(target_address, cpu.get_register(self.rd));
             } else {
-                mem_map.write_u8(target_address, cpu.get_register(self.rd) as u8);
+                mem_bus.write_u8(target_address, cpu.get_register(self.rd) as u8);
             }
         }
     }
@@ -70,7 +70,7 @@ impl Instruction for LoadStoreRegisterOffset {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::work_ram::WorkRam;
+    use crate::gba::GBA;
 
     #[test]
     fn test_creation_0s() {
@@ -108,81 +108,67 @@ mod tests {
     #[test]
     fn test_execute_load_word() {
         let format = LoadStoreRegisterOffset::from(0x58B3);
-        let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
-
+        let mut gba = GBA::default();
         let offset_amount = 4;
         let memory_address = 0x04;
         let value_to_load = 0xF0F;
 
-        cpu.set_register(2, offset_amount); // set up offset
-        cpu.set_register(format.rb, memory_address);
-        mem_map.write_u32(memory_address + offset_amount, value_to_load);
-        format.execute(&mut cpu, &mut mem_map);
+        gba.cpu.set_register(2, offset_amount); // set up offset
+        gba.cpu.set_register(format.rb, memory_address);
+        gba.memory_bus.write_u32(memory_address + offset_amount, value_to_load);
+        format.execute(&mut gba.cpu, &mut gba.memory_bus);
 
-        assert_eq!(cpu.get_register(format.rd), value_to_load)
+        assert_eq!(gba.cpu.get_register(format.rd), value_to_load)
     }
 
     #[test]
     fn test_execute_load_byte() {
         let format = LoadStoreRegisterOffset::from(0x5CB3);
-        let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
-
+        let mut gba = GBA::default();
         let offset_amount = 6;
         let memory_address = 0x04;
         let value_to_load = 0xF0F;
 
-        cpu.set_register(2, offset_amount); // set up offset
-        cpu.set_register(format.rb, memory_address);
-        mem_map.write_u32(memory_address + offset_amount, value_to_load);
-        format.execute(&mut cpu, &mut mem_map);
+        gba.cpu.set_register(2, offset_amount); // set up offset
+        gba.cpu.set_register(format.rb, memory_address);
+        gba.memory_bus.write_u32(memory_address + offset_amount, value_to_load);
+        format.execute(&mut gba.cpu, &mut gba.memory_bus);
 
-        assert_eq!(cpu.get_register(format.rd) as u8, value_to_load as u8)
+        assert_eq!(gba.cpu.get_register(format.rd) as u8, value_to_load as u8)
     }
 
     #[test]
     fn test_execute_store_byte() {
         let format = LoadStoreRegisterOffset::from(0x54B3);
-        let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        let mut gba = GBA::default();
 
         let offset_amount = 6;
         let memory_address = 0x04;
         let value_to_store = 0xFF1;
 
-        cpu.set_register(2, offset_amount); // set up offset
-        cpu.set_register(format.rb, memory_address);
-        cpu.set_register(format.rd, value_to_store);
+        gba.cpu.set_register(2, offset_amount); // set up offset
+        gba.cpu.set_register(format.rb, memory_address);
+        gba.cpu.set_register(format.rd, value_to_store);
 
-        format.execute(&mut cpu, &mut mem_map);
+        format.execute(&mut gba.cpu, &mut gba.memory_bus);
 
-        assert_eq!(mem_map.read_u8(memory_address + offset_amount), value_to_store as u8);
+        assert_eq!(gba.memory_bus.read_u8(memory_address + offset_amount), value_to_store as u8);
     }
 
     #[test]
     fn test_execute_store_word() {
         let format = LoadStoreRegisterOffset::from(0x50B3);
-        let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
+        let mut gba = GBA::default();
 
         let offset_amount = 6;
         let memory_address = 0x04;
         let value_to_store = 0xFF1;
 
-        cpu.set_register(2, offset_amount); // set up offset
-        cpu.set_register(format.rb, memory_address);
-        cpu.set_register(format.rd, value_to_store);
+        gba.cpu.set_register(2, offset_amount); // set up offset
+        gba.cpu.set_register(format.rb, memory_address);
+        gba.cpu.set_register(format.rd, value_to_store);
 
-        format.execute(&mut cpu, &mut mem_map);
-        assert_eq!(mem_map.read_u32(memory_address + offset_amount), value_to_store);
+        format.execute(&mut gba.cpu, &mut gba.memory_bus);
+        assert_eq!(gba.memory_bus.read_u32(memory_address + offset_amount), value_to_store);
     }
 }

@@ -1,7 +1,7 @@
 use crate::{operations::arm_arithmetic};
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::instruction::Instruction;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct MultiplyLong {
@@ -32,7 +32,7 @@ impl From<u32> for MultiplyLong {
 }
 
 impl Instruction for MultiplyLong {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         let (rdhi, rdlo, flags) = arm_arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);

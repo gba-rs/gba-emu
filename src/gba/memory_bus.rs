@@ -1,5 +1,5 @@
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::timing::{CycleClock, MemAccessSize, CycleType};
+use crate::operations::timing::{CycleClock, MemAccessSize};
 
 pub struct MemoryBus {
     pub mem_map: MemoryMap,

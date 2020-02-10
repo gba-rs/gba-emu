@@ -1,10 +1,10 @@
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic, logical};
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::cpu::program_status_register::ConditionFlags;
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {
@@ -74,7 +74,7 @@ impl fmt::Debug for ALU {
 }
 
 impl Instruction for ALU {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         let op1 = cpu.get_register(self.rd);
         let op2 = cpu.get_register(self.rs);
 

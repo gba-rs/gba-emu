@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use log::{debug};
 use crate::operations::bitutils::sign_extend_u32;
 use crate::operations::arm_arithmetic;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {
@@ -55,18 +56,18 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
 /*
 * Formats a value from a register and stores it in a given memory address
 */
-pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_map: &mut MemoryMap) {
+pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_bus: &mut MemoryBus) {
     match data_type {
         DataType::Word => {
-            // Force word alignment 
-            mem_map.write_u32(memory_address - (memory_address % 4), value_to_store);
+            // Force word alignment
+            mem_bus.write_u32(memory_address - (memory_address % 4), value_to_store);
         }
         DataType::Halfword => {
-            // Force halfword alignment 
-            mem_map.write_u16(memory_address - (memory_address % 2), value_to_store as u16);
+            // Force halfword alignment
+            mem_bus.write_u16(memory_address - (memory_address % 2), value_to_store as u16);
         }
         DataType::Byte => {
-            mem_map.write_u8(memory_address, value_to_store as u8);
+            mem_bus.write_u8(memory_address, value_to_store as u8);
         }
         _ => panic!("Trying to store invalid data type.")
     }
@@ -106,7 +107,7 @@ pub struct DataTransfer {
 * Handles loading and storing of a defined DataTransfer structure
 */
 pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, address_with_offset: u32,
-                             cpu: &mut CPU, mem_map: &mut MemoryMap) {
+                             cpu: &mut CPU, mem_bus: &mut MemoryBus) {
     let address;
     // if pre-index, apply offset to the address that is used
     if transfer_info.is_pre_indexed {
@@ -116,32 +117,31 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
     }
 
     if transfer_info.load {
-        load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, mem_map);
+        load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, &mut mem_bus.mem_map);
 
         if transfer_info.destination != transfer_info.base_register {
             if !transfer_info.is_pre_indexed || transfer_info.write_back {
                 cpu.set_register(transfer_info.base_register, address_with_offset);
             }
         }
-    
+
     } else {
         let mut value_to_store = cpu.get_register(transfer_info.destination);
         if transfer_info.destination == 15 {
             value_to_store += 8;
         }
 
-        store(transfer_info.data_type, value_to_store, address, mem_map);
-        
+        store(transfer_info.data_type, value_to_store, address, mem_bus);
+
         if !transfer_info.is_pre_indexed || transfer_info.write_back {
             cpu.set_register(transfer_info.base_register, address_with_offset);
         }
-    }    
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::{work_ram::WorkRam};
 
     #[test]
     fn test_apply_offset() {
@@ -212,8 +212,6 @@ mod tests {
     fn load_set_up(_: u8, value_from_memory: u32, memory_address: u32) -> CPU {
         let mut cpu = CPU::new();
         let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         mem_map.write_u32(memory_address, value_from_memory);
 
         cpu.set_register(0x002, memory_address);
@@ -221,10 +219,8 @@ mod tests {
         return cpu;
     }
 
-    fn store_set_up() -> MemoryMap {
-        let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
-        return mem_map;
+    fn store_set_up() -> MemoryBus {
+        let mut mem_bus = MemoryBus::new();
+        return mem_bus;
     }
 }

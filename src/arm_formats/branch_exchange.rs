@@ -1,8 +1,8 @@
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, condition::Condition};
 use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct BranchExchange {
     pub condition: Condition,
@@ -25,7 +25,7 @@ impl fmt::Debug for BranchExchange {
 }
 
 impl Instruction for BranchExchange {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let new_pc = cpu.get_register(self.rn);
         let mode_bit = new_pc & 0x01;
         debug!("Mode bit: {:X}", mode_bit);
@@ -57,20 +57,19 @@ impl Instruction for BranchExchange {
 mod tests { 
     use super::*;
     use crate::cpu::cpu::CPU;
-    use crate::memory::memory_map::MemoryMap;
     use crate::cpu::cpu::InstructionSet;
 
     #[test]
     fn test_mode(){
         let a: BranchExchange = BranchExchange::from(0xD12F_FF1F); //Final bit is 1
         let mut cpu = CPU::new();
-        let mut map = MemoryMap::new();
+        let mut bus = MemoryBus::new();
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 0);
-        a.execute(&mut cpu,&mut map);
+        a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.current_instruction_set, InstructionSet::Arm);
         cpu.set_register(current_pc, 1);
-        a.execute(&mut cpu,&mut map);
+        a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
     }
 }

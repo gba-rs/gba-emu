@@ -1,8 +1,8 @@
 use crate::operations::instruction::Instruction;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::THUMB_SP};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct AddOffsetSP{
     pub sign: bool,
@@ -19,7 +19,7 @@ impl From<u16> for AddOffsetSP {
 }
 
 impl Instruction for AddOffsetSP {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
         let stack_pointer = cpu.get_register(THUMB_SP);
         if self.sign {
             let value = ((self.immediate as i64) * -1) as u32;
@@ -66,7 +66,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xB003);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -88,7 +88,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0xB083);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

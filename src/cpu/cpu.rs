@@ -10,7 +10,6 @@ use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::Immedia
 use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_immediate_offset::LoadStoreImmediateOffset, load_store_sign_extended::LoadStoreSignExtended};
 use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
 use crate::thumb_formats::{sp_load_store::SpLoadStore,unconditional_branch::UnconditionalBranch, add_offset_sp::AddOffsetSP};
-use crate::memory::{work_ram::WorkRam, bios_ram::BiosRam, memory_map::MemoryMap};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
 use super::{thumb_instr::THUMB_INSTRUCTIONS};
@@ -19,7 +18,7 @@ use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::borrow::{BorrowMut};
 use log::{info};
-
+use crate::gba::memory_bus::MemoryBus;
 
 
 pub const ARM_PC: u8 = 15;
@@ -126,9 +125,9 @@ pub struct CPU {
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
-    pub wram: WorkRam,
-    pub onchip_wram: WorkRam,
-    pub bios_ram: BiosRam,
+    // pub wram: WorkRam,
+    // pub onchip_wram: WorkRam,
+    // pub bios_ram: BiosRam,
     pub operating_mode: OperatingMode,
     pub current_instruction_set: InstructionSet,
     pub last_instruction: String,
@@ -141,9 +140,9 @@ impl CPU {
             registers: [0; 31],
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b11111),
-            wram: WorkRam::new(0x40000 + 1, 0),
-            onchip_wram: WorkRam::new(0x7FFF + 1, 0),
-            bios_ram: BiosRam::new(0),
+            // wram: WorkRam::new(0x40000 + 1, 0),
+            // onchip_wram: WorkRam::new(0x7FFF + 1, 0),
+            // bios_ram: BiosRam::new(0),
             operating_mode: OperatingMode::System,
             current_instruction_set: InstructionSet::Arm,
             last_instruction: "".to_string(),
@@ -198,6 +197,7 @@ impl CPU {
                 return Ok(Box::new(SoftwareInterrupt::from(instruction)));
             },
             _ => Err(DecodeError{
+                instruction_set: self.current_instruction_set,
                 instruction: instruction,
                 opcode: opcode
             })
@@ -268,17 +268,18 @@ impl CPU {
                 return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction)));
             }
             _ => Err(DecodeError{
+                instruction_set: self.current_instruction_set,
                 instruction: instruction,
                 opcode: opcode
             })
         }
     }
 
-    pub fn fetch(&mut self, map: &mut MemoryMap) {
+    pub fn fetch(&mut self, bus: &mut MemoryBus) {
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
 
-        let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { map.read_u32(pc_contents) } else { map.read_u16(pc_contents) as u32 };
+        let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { bus.read_u32(pc_contents) } else { bus.read_u16(pc_contents) as u32 };
 
         if self.current_instruction_set == InstructionSet::Arm { 
             self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) 
@@ -295,7 +296,7 @@ impl CPU {
                 // info!("Condition: {}, Instruction: {:?}", check_condition, instr.asm());
 
                 if check_condition {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(self, map);
+                    (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
                     self.cycle_count += (instr.borrow_mut() as &mut dyn Instruction).cycles() as usize;
                 }
             },
@@ -337,12 +338,12 @@ impl CPU {
         self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
     }
     
-    pub fn get_register_unsafe(&self, reg_num: u8, ) -> u32{
-        return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]];
+    pub fn get_register_unsafe(&self, reg_num: u8) -> u32{
+        return self.registers[REG_MAP[InstructionSet::Arm as usize][self.operating_mode as usize][reg_num as usize]];
     }
 
     pub fn set_register_unsafe(&mut self, reg_num: u8, value: u32){
-        self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
+        self.registers[REG_MAP[InstructionSet::Arm as usize][self.operating_mode as usize][reg_num as usize]] = value;
     }
 
     pub fn check_condition(&self, cond: &Condition) -> bool {
@@ -399,9 +400,8 @@ mod tests {
     #[test]
     fn test_decode_unimplemented(){
         let cpu = CPU::new();
-        let mut map = MemoryMap::new();
-        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        
+//        let bus = MemoryBus::new();
+
         let result = cpu.decode(0x00F0F0F0);
         match result {
             Ok(instr) => {
@@ -416,9 +416,8 @@ mod tests {
 
     #[test]
     fn test_decode(){
-        let mut map = MemoryMap::new();
-        let cpu = CPU::new();
-        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
+//        let mut bus = MemoryBus::new();
+//        let cpu = CPU::new();
         // cpu.decode(&mut map, 0xE0812001);
     }
 
@@ -426,12 +425,11 @@ mod tests {
     fn test_fetch(){
         let mut cpu = CPU::new();
         cpu.set_register(15, 0x02000000);
-        let mut map = MemoryMap::new();
-        map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
-        map.write_u32(0x02000000, 0x012081E0);
-        map.write_u32(0x02000004, 0x012081E0);
-        cpu.fetch(&mut map);
-        cpu.fetch(&mut map);
+        let mut bus = MemoryBus::new();
+        bus.write_u32(0x02000000, 0x012081E0);
+        bus.write_u32(0x02000004, 0x012081E0);
+        cpu.fetch(&mut bus);
+        cpu.fetch(&mut bus);
     }
 
     #[test]
@@ -460,7 +458,7 @@ mod tests {
     // fn test_branch_exchange(){
     //     let mut cpu = CPU::new();
     //     cpu.set_register(15, 0x02000000);
-    //     let mut map = MemoryMap::new();
+    //     let mut map = MemoryBus::new();
     //     map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
     //     map.write_u32(0x02000000, 0x11FF2FE1u32.to_be());
     //     cpu.fetch(&mut map);

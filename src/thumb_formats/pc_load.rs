@@ -1,8 +1,8 @@
 use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU};
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::cpu::{THUMB_PC};
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LDR {
     pub destination: u8,
@@ -25,10 +25,10 @@ impl fmt::Debug for LDR {
 }
 
 impl Instruction for LDR {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let mut current_pc = cpu.get_register(THUMB_PC) + 2; // another +2 in
         current_pc &= !0x02;
-        let value = mem_map.read_u32(current_pc + (self.offset as u32));
+        let value = mem_bus.read_u32(current_pc + (self.offset as u32));
         cpu.set_register(self.destination, value);
     }
 
@@ -71,7 +71,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x490A);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

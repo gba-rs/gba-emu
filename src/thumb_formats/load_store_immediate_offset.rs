@@ -1,8 +1,8 @@
 use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU};
-use crate::memory::memory_map::MemoryMap;
 use std::fmt;
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreImmediateOffset {
     load: bool,
@@ -48,29 +48,29 @@ impl fmt::Debug for LoadStoreImmediateOffset {
 }
 
 impl Instruction for LoadStoreImmediateOffset {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         if !self.load && self.data_type ==  DataType::Word { //str
             //calculating target address by adding together Rb and offset. Store Rd at target
             //assuming word is u32 as shown in load_store
             let target_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
-            mem_map.write_u32(target_address as u32,cpu.get_register(self.rd));
+            mem_bus.write_u32(target_address as u32,cpu.get_register(self.rd));
 
         } else if self.load && self.data_type ==  DataType::Word { //ldr
             //calculate source address by adding Rb and offset. Load rd form source
             let source_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
-            let response = mem_map.read_u32(source_address as u32);
+            let response = mem_bus.read_u32(source_address as u32);
             cpu.set_register(self.rd, response);
 
         } else if !self.load && self.data_type ==  DataType::Byte { //strb
             //calculating target address by adding together Rb and offset. Store Rd at target
             //assuming word is u32 as shown in load_store
             let target_address: u32 = (cpu.get_register(self.rb) + self.offset_register as u32) as u32;
-            mem_map.write_u8(target_address as u32, cpu.get_register(self.rd) as u8);
+            mem_bus.write_u8(target_address as u32, cpu.get_register(self.rd) as u8);
 
         } else if self.load && self.data_type ==  DataType::Byte { //ldrb
             //calculate source address by adding Rb and offset. Load rd form source
             let source_address: u8 = (cpu.get_register(self.rb) + self.offset_register as u32) as u8;
-            let response = mem_map.read_u8(source_address as u32);
+            let response = mem_bus.read_u8(source_address as u32);
             cpu.set_register(self.rd, response as u32);
         }
     }
@@ -136,7 +136,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x613B);
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -164,7 +164,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x613B); //str
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -175,7 +175,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x693B); //ldr
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -202,7 +202,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -229,7 +229,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -241,7 +241,7 @@ mod tests {
         let decode_result = gba.cpu.decode(0x793B); //ldrb
         match decode_result {
             Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus.mem_map);
+                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

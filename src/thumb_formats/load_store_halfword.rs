@@ -1,7 +1,7 @@
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
 use crate::operations::instruction::Instruction;
 use crate::operations::load_store::{apply_offset};
+use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreHalfword {
     pub load: bool,
@@ -22,16 +22,16 @@ impl From<u16> for LoadStoreHalfword {
 }
 
 impl Instruction for LoadStoreHalfword {
-    fn execute(&self, cpu: &mut CPU, mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let base_register_value = cpu.get_register(self.rb);
         let base_address = apply_offset(base_register_value, self.immediate_offset as u32, true, 0);
         cpu.set_register(self.rb, base_address);
         if self.load {
-            let value = mem_map.read_u16(base_address);
+            let value = mem_bus.read_u16(base_address);
             cpu.set_register(self.rd, value as u32);
         } else {
             let value_to_store = cpu.get_register(self.rd);
-            mem_map.write_u16(base_address, value_to_store as u16);
+            mem_bus.write_u16(base_address, value_to_store as u16);
         }
 
     }
@@ -51,7 +51,7 @@ impl Instruction for LoadStoreHalfword {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::{work_ram::WorkRam};
+    use crate::gba::GBA;
 
     #[test]
     fn test_creation_0s() {
@@ -76,47 +76,41 @@ mod tests {
     #[test]
     fn test_load() {
         let load_store_halfword = LoadStoreHalfword::from(0x8C14);
+        let mut gba = GBA::default();
 
-        let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         let expected_offset = 16;
 
-        cpu.set_register(2, 0x0008);
-        mem_map.write_u16(0x0008 + expected_offset, 22);
+        gba.cpu.set_register(2, 0x0008);
+        gba.memory_bus.write_u16(0x0008 + expected_offset, 22);
 
-        load_store_halfword.execute(&mut cpu, &mut mem_map);
+        load_store_halfword.execute(&mut gba.cpu, &mut gba.memory_bus);
 
         assert_eq!(load_store_halfword.load , true);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
-        assert_eq!(cpu.get_register(4), 22);
+        assert_eq!(gba.cpu.get_register(4), 22);
     }
 
     #[test]
     fn test_store() {
         let load_store_halfword = LoadStoreHalfword::from(0x8414);
+        let mut gba = GBA::default();
 
-        let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
-        let wram = WorkRam::new(256000, 0);
-        mem_map.register_memory(0x0000, 0x00FF, &wram.memory);
         let expected_offset = 16;
 
-        cpu.set_register(2, 0x0008);
-        cpu.set_register(4, 22);
+        gba.cpu.set_register(2, 0x0008);
+        gba.cpu.set_register(4, 22);
 
-        load_store_halfword.execute(&mut cpu, &mut mem_map);
+        load_store_halfword.execute(&mut gba.cpu, &mut gba.memory_bus);
 
         assert_eq!(load_store_halfword.load , false);
         assert_eq!(load_store_halfword.immediate_offset, expected_offset as u8);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
-        assert_eq!(mem_map.read_u16(0x0008 + expected_offset), 22);
+        assert_eq!(gba.memory_bus.read_u16(0x0008 + expected_offset), 22);
     }
 
     #[test]

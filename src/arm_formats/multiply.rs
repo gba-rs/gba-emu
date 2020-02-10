@@ -1,7 +1,7 @@
 use crate::{operations::arm_arithmetic};
-use crate::memory::memory_map::MemoryMap;
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::instruction::Instruction;
+use crate::gba::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct Multiply {
@@ -30,7 +30,7 @@ impl From<u32> for Multiply {
 }
 
 impl Instruction for Multiply {
-    fn execute(&self, cpu: &mut CPU, _mem_map: &mut MemoryMap) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
             if self.accumulate { // MLA
                 let (value, flags) = arm_arithmetic::mla(
                         cpu.get_register(self.op1_register),
