@@ -4,17 +4,20 @@ use crate::memory::{io_registers::IORegisters};
 use crate::gpu::gpu::GPU;
 use crate::memory::{interrupt_registers::*, key_input_registers::*};
 use crate::gba::memory_bus::MemoryBus;
+use crate::interrupts::interrupts::Interrupts;
+
 
 pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
     pub memory_bus: MemoryBus,
-    pub io_reg: IORegisters,
     pub ime_interrupt: InterruptMasterEnableRegister,
     pub ie_interrupt: InterruptEnableRegister,
     pub if_interrupt: InterruptRequestFlags,
+    pub io_reg: IORegisters,
     pub key_status: KeyStatus,
-    pub ket_interrupt_control: KeyInterruptControl
+    pub ket_interrupt_control: KeyInterruptControl,
+    pub interrupt_handler: Interrupts
 }
 
 impl Default for GBA {
@@ -35,7 +38,8 @@ impl GBA {
             ie_interrupt: InterruptEnableRegister::new(),
             if_interrupt: InterruptRequestFlags::new(),
             key_status: KeyStatus::new(),
-            ket_interrupt_control: KeyInterruptControl::new()
+            ket_interrupt_control: KeyInterruptControl::new(),
+            interrupt_handler: Interrupts::new()  
         };
 
         temp.gpu.register(&temp.memory_bus.mem_map.memory);
