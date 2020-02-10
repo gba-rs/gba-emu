@@ -17,11 +17,12 @@ impl From<u16> for UnconditionalBranch {
 }
 
 impl Instruction for UnconditionalBranch {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         // execute
         let (signed_offset, _) = arm_arithmetic::add(self.offset, 2);
         let (new_pc, _) = arm_arithmetic::add(cpu.get_register(THUMB_PC), signed_offset);
         cpu.set_register(THUMB_PC, new_pc);
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{

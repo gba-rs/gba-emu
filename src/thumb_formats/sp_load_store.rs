@@ -21,7 +21,7 @@ impl From<u16> for SpLoadStore {
 }
 
 impl Instruction for SpLoadStore {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let stack_pointer = cpu.get_register(THUMB_SP);
         let (address, _) = arm_arithmetic::add(stack_pointer, self.word8 as u32);
         if self.load {
@@ -31,6 +31,7 @@ impl Instruction for SpLoadStore {
             let value = cpu.get_register(self.destination);
             mem_bus.write_u32(address, value);
         }
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{

@@ -19,7 +19,7 @@ impl From<u16> for BL {
 }
 
 impl Instruction for BL {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         if self.offset_bit {
             // H = 1
             // Bottom half of the 23 bit offset (bits 11-1)
@@ -37,6 +37,7 @@ impl Instruction for BL {
             let (lr, _) = arm_arithmetic::add(pc, offset);
             cpu.set_register(THUMB_LR, lr);
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{

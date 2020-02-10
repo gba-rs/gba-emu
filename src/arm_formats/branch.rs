@@ -43,7 +43,7 @@ impl fmt::Debug for Branch {
 }
 
 impl Instruction for Branch {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let current_pc_value = cpu.get_register(current_pc) + 4; // because pipeline bullshit
         let mut offset = (self.offset << 2) as u32;
@@ -62,6 +62,8 @@ impl Instruction for Branch {
         let (value, _) = add(current_pc_value, offset);
 
         cpu.set_register(current_pc, value);
+        _mem_bus.cycle_clock.get_cycles()
+
     }
 
     fn asm(&self) -> String {

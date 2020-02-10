@@ -32,7 +32,7 @@ impl From<u32> for MultiplyLong {
 }
 
 impl Instruction for MultiplyLong {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         let (rdhi, rdlo, flags) = arm_arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);
@@ -72,6 +72,7 @@ impl Instruction for MultiplyLong {
                 cpu.cpsr.flags.signed_overflow = flags.signed_overflow;
             }
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

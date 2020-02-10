@@ -22,7 +22,7 @@ impl From<u16> for LoadStoreHalfword {
 }
 
 impl Instruction for LoadStoreHalfword {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let base_register_value = cpu.get_register(self.rb);
         let base_address = apply_offset(base_register_value, self.immediate_offset as u32, true, 0);
         cpu.set_register(self.rb, base_address);
@@ -33,7 +33,7 @@ impl Instruction for LoadStoreHalfword {
             let value_to_store = cpu.get_register(self.rd);
             mem_bus.write_u16(base_address, value_to_store as u16);
         }
-
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

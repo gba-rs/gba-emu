@@ -31,7 +31,7 @@ impl From<u16> for LoadStoreRegisterOffset {
 }
 
 impl Instruction for LoadStoreRegisterOffset {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let target_address = cpu.get_register(self.rb) + cpu.get_register(self.offset_register);
         if self.load {
             if self.data_type == DataType::Word {
@@ -46,6 +46,7 @@ impl Instruction for LoadStoreRegisterOffset {
                 mem_bus.write_u8(target_address, cpu.get_register(self.rd) as u8);
             }
         }
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

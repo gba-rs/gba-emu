@@ -25,7 +25,7 @@ impl fmt::Debug for BranchExchange {
 }
 
 impl Instruction for BranchExchange {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let new_pc = cpu.get_register(self.rn);
         let mode_bit = new_pc & 0x01;
         debug!("Mode bit: {:X}", mode_bit);
@@ -43,6 +43,8 @@ impl Instruction for BranchExchange {
             cpu.set_register(THUMB_PC, new_pc - 1);
             // Flush Pipeline
         }
+        mem_bus.cycle_clock.get_cycles()
+
     }
 
     fn asm(&self) -> String {

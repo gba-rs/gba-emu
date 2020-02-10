@@ -21,7 +21,7 @@ impl From<u32> for Debug {
 }
 
 impl Instruction for Debug {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32{
         if self.immidiete {
             if self.hex {
                 debug!("{:X}", cpu.get_register(self.source_register));
@@ -31,6 +31,7 @@ impl Instruction for Debug {
         } else {
             // TODO implement null terminated strings here
         }
+        mem_bus.cycle_clock.get_cycles()
     }
     fn cycles(&self) -> u32 {return 0;}
 
