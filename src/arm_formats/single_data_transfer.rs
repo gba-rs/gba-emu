@@ -108,7 +108,7 @@ impl From<u32> for SingleDataTransferOperand {
 }
 
 impl Instruction for SingleDataTransfer {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32{
         let address_with_offset;
         let base;
         if self.op1_register == 15 {
@@ -133,6 +133,8 @@ impl Instruction for SingleDataTransfer {
             destination: self.destination_register,
         };
         data_transfer_execute(transfer_info, base, address_with_offset, cpu, mem_bus);
+        mem_bus.cycle_clock.get_cycles()
+
     }
 
     fn asm(&self) -> String {

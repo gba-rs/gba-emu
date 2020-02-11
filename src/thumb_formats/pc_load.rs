@@ -25,11 +25,12 @@ impl fmt::Debug for LDR {
 }
 
 impl Instruction for LDR {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let mut current_pc = cpu.get_register(THUMB_PC) + 2; // another +2 in
         current_pc &= !0x02;
         let value = mem_bus.read_u32(current_pc + (self.offset as u32));
         cpu.set_register(self.destination, value);
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

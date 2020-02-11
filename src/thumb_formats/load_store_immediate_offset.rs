@@ -48,7 +48,7 @@ impl fmt::Debug for LoadStoreImmediateOffset {
 }
 
 impl Instruction for LoadStoreImmediateOffset {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         if !self.load && self.data_type ==  DataType::Word { //str
             //calculating target address by adding together Rb and offset. Store Rd at target
             //assuming word is u32 as shown in load_store
@@ -73,6 +73,7 @@ impl Instruction for LoadStoreImmediateOffset {
             let response = mem_bus.read_u8(source_address as u32);
             cpu.set_register(self.rd, response as u32);
         }
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

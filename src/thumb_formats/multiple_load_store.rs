@@ -29,7 +29,7 @@ impl From<u16> for MultipleLoadStore {
 }
 
 impl Instruction for MultipleLoadStore {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let base = cpu.get_register(self.rb);
         let mut offset = 0;
         if self.load {
@@ -47,6 +47,7 @@ impl Instruction for MultipleLoadStore {
             }
             cpu.set_register(self.rb, base + offset);
         }
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{

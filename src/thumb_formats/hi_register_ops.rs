@@ -47,7 +47,7 @@ impl From<u16> for HiRegisterOp {
 }
 
 impl Instruction for HiRegisterOp {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32{
         match self.op {
             OpCodes::ADD => {
                 self.add(cpu);
@@ -62,6 +62,7 @@ impl Instruction for HiRegisterOp {
                 self.bx(cpu);
             }
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{

@@ -28,7 +28,7 @@ impl From<u16> for PushPop {
 }
 
 impl Instruction for PushPop {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let stack_pointer: u32 = cpu.get_register(THUMB_SP);
         let mut offset: i32 = 0;
         if self.load {          // LDMIA (Load Multiple Increment After) = POP
@@ -72,6 +72,7 @@ impl Instruction for PushPop {
             let (new_sp, _) = arm_arithmetic::add(stack_pointer, offset as u32);
             cpu.set_register(THUMB_SP, new_sp)
         }
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{

@@ -171,7 +171,7 @@ impl From<u32> for DataProcessingOperand {
 }
 
 impl Instruction for DataProcessing {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let (op2, carry_out) = self.barrel_shifter(cpu);
         let mut op1 = cpu.get_register(self.op1_register);
         if self.op1_register == 15 {
@@ -394,6 +394,8 @@ impl Instruction for DataProcessing {
             0b11111 => cpu.operating_mode = OperatingMode::System,
             _ => panic!("Mode bits set incorrectly {:b}", cpu.cpsr.control_bits.mode_bits)
         }
+        mem_bus.cycle_clock.get_cycles()
+
     }
 
     fn asm(&self) -> String {

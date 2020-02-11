@@ -31,7 +31,7 @@ impl fmt::Debug for LoadAddress {
 }
 
 impl Instruction for LoadAddress {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         if self.sp_pc {
             let sp = cpu.get_register(THUMB_SP);
             let (new, _) = arm_arithmetic::add(sp, self.word8 as u32);
@@ -45,8 +45,7 @@ impl Instruction for LoadAddress {
             let (new, _) = arm_arithmetic::add(pc, self.word8 as u32);
             cpu.set_register(self.destination, new);  
         }
-
-        
+        _mem_bus.cycle_clock.get_cycles()
     }
     fn asm(&self) -> String {
         return format!("{:?}", self);

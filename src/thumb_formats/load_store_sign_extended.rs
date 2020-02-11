@@ -42,7 +42,7 @@ impl fmt::Debug for LoadStoreSignExtended {
 }
 
 impl Instruction for LoadStoreSignExtended {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32{
         let address = cpu.get_register(self.base_register) +
             cpu.get_register(self.offset_register);
         if !self.sign_extended && !self.h_flag {
@@ -80,6 +80,7 @@ impl Instruction for LoadStoreSignExtended {
             cpu.set_register(self.destination_register, value_to_load);
         }
         cpu.set_register(self.base_register, address);
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {
