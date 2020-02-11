@@ -128,13 +128,13 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x613B);
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset, 4);
+        assert_eq!(format.offset, 16);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
-        gba.cpu.set_register(format.rb,1);
-        gba.cpu.set_register(format.rd,2);
+        gba.cpu.set_register(format.rb, 0);
+        gba.cpu.set_register(format.rd, 2);
 
         let decode_result = gba.cpu.decode(0x613B);
         match decode_result {
@@ -146,7 +146,7 @@ mod tests {
             }
         }
 
-        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset << 2) as u32) as u32;
+        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset) as u32) as u32;
         assert_eq!(2, gba.memory_bus.mem_map.read_u32(target_address));
     }
 
@@ -155,12 +155,12 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x693B); //ldr
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset, 4);
+        assert_eq!(format.offset, 16);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
-        gba.cpu.set_register(format.rb,1);
+        gba.cpu.set_register(format.rb,0);
         gba.cpu.set_register(format.rd,2);
 
         //let mem address = 3

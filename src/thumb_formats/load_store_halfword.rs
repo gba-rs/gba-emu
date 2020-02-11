@@ -87,7 +87,7 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8C14);
         let mut gba = GBA::default();
 
-        let expected_offset = 16;
+        let expected_offset = 32;
 
         gba.cpu.set_register(2, 0x0008);
         gba.memory_bus.write_u16(0x0008 + expected_offset, 22);
@@ -107,7 +107,7 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8414);
         let mut gba = GBA::default();
 
-        let expected_offset = 16;
+        let expected_offset = 32;
 
         gba.cpu.set_register(2, 0x0008);
         gba.cpu.set_register(4, 22);

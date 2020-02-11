@@ -167,7 +167,7 @@ mod tests {
         let format = LoadStoreRegisterOffset::from(0x50B3);
         let mut gba = GBA::default();
 
-        let offset_amount = 6;
+        let offset_amount = 4;
         let memory_address = 0x04;
         let value_to_store = 0xFF1;
 
