@@ -1,13 +1,13 @@
-use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
-use crate::cpu::{cpu::CPU};
-use std::fmt;
+use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 use crate::gba::memory_bus::MemoryBus;
+use std::fmt;
 
 pub struct LoadStoreImmediateOffset {
     load: bool,
     data_type: DataType,
-    offset_register: u8,
+    offset: u8,
     rb: u8,
     rd: u8,
 }
@@ -21,10 +21,17 @@ impl From<u16> for LoadStoreImmediateOffset {
         } else {
             data_type = DataType::Byte
         }
+
+        let offset = if data_type == DataType::Word { 
+            (((value & 0x7C0) >> 6) << 2) as u8 
+        } else { 
+            ((value & 0x7C0) >> 6) as u8 
+        };
+
         return LoadStoreImmediateOffset {
             load: ((value & 0x800) >> 11) != 0,
-            data_type,
-            offset_register: ((value & 0x7C0) >> 6) as u8,
+            data_type: data_type,
+            offset: offset,
             rb: ((value & 0x38) >> 3) as u8,
             rd: (value & 0x7) as u8,
         };
@@ -33,13 +40,13 @@ impl From<u16> for LoadStoreImmediateOffset {
 impl fmt::Debug for LoadStoreImmediateOffset {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if !self.load && self.data_type ==  DataType::Word {
-            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
         } else if self.load && self.data_type ==  DataType::Word {
-            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
         } else if !self.load && self.data_type ==  DataType::Byte {
-            write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if self.load && self.data_type ==  DataType::Byte {
-            write!(f, "LDRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset_register)
+            write!(f, "LDRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         }
         else {
             write!(f, "error")
@@ -49,30 +56,25 @@ impl fmt::Debug for LoadStoreImmediateOffset {
 
 impl Instruction for LoadStoreImmediateOffset {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
-        if !self.load && self.data_type ==  DataType::Word { //str
-            //calculating target address by adding together Rb and offset. Store Rd at target
-            //assuming word is u32 as shown in load_store
-            let target_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
-            mem_bus.write_u32(target_address as u32,cpu.get_register(self.rd));
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: self.load,
+            is_signed: false,
+            data_type: self.data_type,
+            base_register: self.rb,
+            destination: self.rd,
+        };
 
-        } else if self.load && self.data_type ==  DataType::Word { //ldr
-            //calculate source address by adding Rb and offset. Load rd form source
-            let source_address: u32 = (cpu.get_register(self.rb) + (self.offset_register << 2) as u32) as u32;
-            let response = mem_bus.read_u32(source_address as u32);
-            cpu.set_register(self.rd, response);
-
-        } else if !self.load && self.data_type ==  DataType::Byte { //strb
-            //calculating target address by adding together Rb and offset. Store Rd at target
-            //assuming word is u32 as shown in load_store
-            let target_address: u32 = (cpu.get_register(self.rb) + self.offset_register as u32) as u32;
-            mem_bus.write_u8(target_address as u32, cpu.get_register(self.rd) as u8);
-
-        } else if self.load && self.data_type ==  DataType::Byte { //ldrb
-            //calculate source address by adding Rb and offset. Load rd form source
-            let source_address: u8 = (cpu.get_register(self.rb) + self.offset_register as u32) as u8;
-            let response = mem_bus.read_u8(source_address as u32);
-            cpu.set_register(self.rd, response as u32);
+        let target_address = cpu.get_register(self.rb) + self.offset as u32;
+        let base;
+        if self.rb == THUMB_PC {
+            base = cpu.get_register(self.rb) + 2;
+        } else {
+            base = cpu.get_register(self.rb);
         }
+
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_bus);
         mem_bus.cycle_clock.get_cycles()
     }
 
@@ -96,7 +98,7 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x6000);
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset_register, 0);
+        assert_eq!(format.offset, 0);
         assert_eq!(format.rb, 0);
         assert_eq!(format.rd, 0);
     }
@@ -107,7 +109,7 @@ mod tests {
 
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.offset, 0x10);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
     }
@@ -117,7 +119,7 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x713B);
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Byte);
-        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.offset, 4);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
     }
@@ -126,13 +128,13 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x613B);
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.offset, 16);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
-        gba.cpu.set_register(format.rb,1);
-        gba.cpu.set_register(format.rd,2);
+        gba.cpu.set_register(format.rb, 0);
+        gba.cpu.set_register(format.rd, 2);
 
         let decode_result = gba.cpu.decode(0x613B);
         match decode_result {
@@ -144,7 +146,7 @@ mod tests {
             }
         }
 
-        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset_register << 2) as u32) as u32;
+        let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset) as u32) as u32;
         assert_eq!(2, gba.memory_bus.mem_map.read_u32(target_address));
     }
 
@@ -153,12 +155,12 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x693B); //ldr
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.offset, 16);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.current_instruction_set = InstructionSet::Thumb;
-        gba.cpu.set_register(format.rb,1);
+        gba.cpu.set_register(format.rb,0);
         gba.cpu.set_register(format.rd,2);
 
         //let mem address = 3
@@ -192,7 +194,7 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x713B); //strb
         assert_eq!(format.load, false);
         assert_eq!(format.data_type, DataType::Byte);
-        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.offset, 4);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
@@ -219,7 +221,7 @@ mod tests {
         let format = LoadStoreImmediateOffset::from(0x793B);//ldrb
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Byte);
-        assert_eq!(format.offset_register, 4);
+        assert_eq!(format.offset, 4);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();

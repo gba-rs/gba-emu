@@ -32,14 +32,18 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
     match data_type {
         DataType::Byte => {
             if is_signed {
-                value = sign_extend_u32(mem_map.read_u8(address) as u32, 7);
+                value = mem_map.read_u8(address) as i8 as i32 as u32;
             } else {
                 value = mem_map.read_u8(address) as u32;
             }
         },
         DataType::Halfword => {
             if is_signed {
-                value = (((sign_extend_u32(mem_map.read_u16(address - (address % 2)) as u32, 15)) as i32) >> (address % 2) * 8) as u32;
+                if address % 2 == 0 {
+                    value = mem_map.read_u16(address - (address % 2)) as u16 as i16 as u32;
+                } else {
+                    value = mem_map.read_u8(address) as i8 as i32 as u32;
+                }
             } else {
                 value = (mem_map.read_u16(address - (address % 2)) as u32).rotate_right((address % 2) * 8);
             }

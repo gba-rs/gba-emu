@@ -1,13 +1,13 @@
 use crate::operations::instruction::Instruction;
-use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_SP};
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 use std::fmt;
 use crate::gba::memory_bus::MemoryBus;
 
 pub struct SpLoadStore {
     pub load: bool,
     pub destination: u8,
-    pub word8: u16,
+    pub offset: u16,
 }
 
 impl From<u16> for SpLoadStore {
@@ -15,22 +15,27 @@ impl From<u16> for SpLoadStore {
         return SpLoadStore {
             load: ((value & 0x800) >> 11) != 0,
             destination: ((value & 0x700) >> 8) as u8,
-            word8: ((value & 0xFF) << 2) as u16
+            offset: ((value & 0xFF) << 2) as u16
         }
     }
 }
 
 impl Instruction for SpLoadStore {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
-        let stack_pointer = cpu.get_register(THUMB_SP);
-        let (address, _) = arm_arithmetic::add(stack_pointer, self.word8 as u32);
-        if self.load {
-            let value = mem_bus.read_u32(address);
-            cpu.set_register(self.destination, value);
-        } else {
-            let value = cpu.get_register(self.destination);
-            mem_bus.write_u32(address, value);
-        }
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: self.load,
+            is_signed: false,
+            data_type: DataType::Word,
+            base_register: THUMB_SP,
+            destination: self.destination,
+        };
+
+        let target_address = cpu.get_register(THUMB_SP) + self.offset as u32;
+        let base = cpu.get_register(THUMB_SP);
+
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_bus);
         mem_bus.cycle_clock.get_cycles()
     }
 
@@ -44,9 +49,9 @@ impl Instruction for SpLoadStore {
 impl fmt::Debug for SpLoadStore {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if self.load {
-            write!(f, "LDR r{}, [SP, #0x{:X}]", self.destination, self.word8)
+            write!(f, "LDR r{}, [SP, #0x{:X}]", self.destination, self.offset)
         } else {
-            write!(f, "STR r{}, [SP, #0x{:X}]", self.destination, self.word8)
+            write!(f, "STR r{}, [SP, #0x{:X}]", self.destination, self.offset)
         }
     }
 }

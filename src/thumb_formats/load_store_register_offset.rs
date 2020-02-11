@@ -1,6 +1,6 @@
-use crate::operations::load_store::DataType;
 use crate::operations::instruction::Instruction;
-use crate::cpu::cpu::CPU;
+use crate::cpu::cpu::{CPU, THUMB_PC};
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreRegisterOffset {
@@ -32,20 +32,26 @@ impl From<u16> for LoadStoreRegisterOffset {
 
 impl Instruction for LoadStoreRegisterOffset {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
+
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: self.load,
+            is_signed: false,
+            data_type: self.data_type,
+            base_register: self.rb,
+            destination: self.rd,
+        };
+
         let target_address = cpu.get_register(self.rb) + cpu.get_register(self.offset_register);
-        if self.load {
-            if self.data_type == DataType::Word {
-                cpu.set_register(self.rd, mem_bus.read_u32(target_address));
-            } else {
-                cpu.set_register(self.rd, mem_bus.read_u8(target_address) as u32);
-            }
+        let base;
+        if self.rb == THUMB_PC {
+            base = cpu.get_register(self.rb) + 2;
         } else {
-            if self.data_type == DataType::Word {
-                mem_bus.write_u32(target_address, cpu.get_register(self.rd));
-            } else {
-                mem_bus.write_u8(target_address, cpu.get_register(self.rd) as u8);
-            }
+            base = cpu.get_register(self.rb);
         }
+
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_bus);
         mem_bus.cycle_clock.get_cycles()
     }
 
@@ -161,7 +167,7 @@ mod tests {
         let format = LoadStoreRegisterOffset::from(0x50B3);
         let mut gba = GBA::default();
 
-        let offset_amount = 6;
+        let offset_amount = 4;
         let memory_address = 0x04;
         let value_to_store = 0xFF1;
 

@@ -168,8 +168,26 @@ impl Instruction for ALU {
                 cpu.cpsr.flags = flags;
             },
             OpCodes::ROR =>{
-                cpu.set_register(self.rd, cpu.get_register(self.rd).rotate_right(cpu.get_register(self.rs)));
-                cpu.cpsr.flags = set_flags(self.rd, self.rs, cpu);
+                let shift = Shift {
+                    shift_type: ShiftType::RotateRight,
+                    shift_amount: 0,
+                    shift_register: self.rs,
+                    immediate: false
+                };
+
+                let (value, carry_out) = apply_shift(op1, &shift, cpu);
+                let (n, z) = logical::check_flags(value);
+
+                cpu.cpsr.flags.negative = n;
+                cpu.cpsr.flags.zero = z;
+                match carry_out {
+                    Some(new_c_val) => {
+                        cpu.cpsr.flags.carry = new_c_val != 0;
+                    },
+                    None => {}
+                }
+
+                cpu.set_register(self.rd, value as u32);
             },
             OpCodes::TST => {
                 let (_, (n, z)) = logical::and(op1, op2);
@@ -222,22 +240,6 @@ impl Instruction for ALU {
     }
     fn cycles(&self) -> u32 {return 1;} // 1s
 
-}
-
-fn set_flags(rd: u8, rs: u8, cpu: &mut CPU) -> ConditionFlags{
-    let op1 = cpu.get_register(rd);
-    let op2 = cpu.get_register(rs);
-    let value = (op1 & op2) as u64;
-    let carryout: bool = (value >> 32) != 0;
-    let op1_sign: bool = (op1 >> 31) != 0;
-    let op2_sign: bool = (op2 >> 31) != 0;
-    let value_sign: bool = ((value >> 31) & 0x01) != 0;
-    return ConditionFlags {
-        negative: (value & (0x1 << 31)) != 0,
-        zero: value == 0,
-        carry: carryout,
-        signed_overflow: (op1_sign == op2_sign) && (op1_sign != value_sign)
-    };
 }
 //Unit Tests
 

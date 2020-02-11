@@ -2,7 +2,7 @@ pub mod memory_bus;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::memory::{io_registers::IORegisters};
 use crate::gpu::gpu::GPU;
-use crate::memory::{interrupt_registers::*, key_input_registers::*};
+use crate::memory::{key_input_registers::*};
 use crate::gba::memory_bus::MemoryBus;
 use crate::interrupts::interrupts::Interrupts;
 
@@ -11,9 +11,6 @@ pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
     pub memory_bus: MemoryBus,
-    pub ime_interrupt: InterruptMasterEnableRegister,
-    pub ie_interrupt: InterruptEnableRegister,
-    pub if_interrupt: InterruptRequestFlags,
     pub io_reg: IORegisters,
     pub key_status: KeyStatus,
     pub ket_interrupt_control: KeyInterruptControl,
@@ -34,9 +31,6 @@ impl GBA {
             gpu: GPU::new(),
             io_reg: IORegisters::new(0),
             memory_bus: MemoryBus::new(),
-            ime_interrupt: InterruptMasterEnableRegister::new(),
-            ie_interrupt: InterruptEnableRegister::new(),
-            if_interrupt: InterruptRequestFlags::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
             interrupt_handler: Interrupts::new()  
@@ -45,9 +39,9 @@ impl GBA {
         temp.gpu.register(&temp.memory_bus.mem_map.memory);
         temp.key_status.register(&temp.memory_bus.mem_map.memory);
         temp.ket_interrupt_control.register(&temp.memory_bus.mem_map.memory);
-        temp.ime_interrupt.register(&temp.memory_bus.mem_map.memory);
-        temp.ie_interrupt.register(&temp.memory_bus.mem_map.memory);
-        temp.if_interrupt.register(&temp.memory_bus.mem_map.memory);
+        temp.interrupt_handler.ime_interrupt.register(&temp.memory_bus.mem_map.memory);
+        temp.interrupt_handler.ie_interrupt.register(&temp.memory_bus.mem_map.memory);
+        temp.interrupt_handler.if_interrupt.register(&temp.memory_bus.mem_map.memory);
         temp.memory_bus.cycle_clock.register(&temp.memory_bus.mem_map.memory);
 
         // setup the PC
@@ -125,6 +119,9 @@ impl GBA {
 
     pub fn step(&mut self) {
         while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
+            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
+                self.interrupt_handler.service(&mut self.cpu);
+            }
             self.cpu.fetch(&mut self.memory_bus);
         }
 

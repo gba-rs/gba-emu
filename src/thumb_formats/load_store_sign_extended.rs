@@ -1,8 +1,9 @@
 use crate::operations::instruction::Instruction;
-use crate::cpu::cpu::CPU;
-use crate::thumb_formats::load_store_halfword::LoadStoreHalfword;
-use core::fmt;
+use crate::cpu::cpu::{CPU, THUMB_PC};
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 use crate::gba::memory_bus::MemoryBus;
+use core::fmt;
+
 
 pub struct LoadStoreSignExtended {
     h_flag: bool,
@@ -42,44 +43,34 @@ impl fmt::Debug for LoadStoreSignExtended {
 }
 
 impl Instruction for LoadStoreSignExtended {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32{
-        let address = cpu.get_register(self.base_register) +
-            cpu.get_register(self.offset_register);
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
+        let data_type = if !self.h_flag && self.sign_extended { DataType::Byte } else { DataType::Halfword };
+        let is_load;
         if !self.sign_extended && !self.h_flag {
-            // store halfword
-            let store_halfword = LoadStoreHalfword {
-                load: false,
-                immediate_offset: cpu.get_register(self.offset_register) as u8,
-                rb: self.base_register,
-                rd: self.destination_register,
-            };
-            store_halfword.execute(cpu, mem_bus);
-        } else if !self.sign_extended && self.h_flag {
-            // load halfword
-            cpu.set_register(self.base_register, address);
-            cpu.set_register(self.destination_register,
-                             mem_bus.read_u16(address) as u32 & 0x0000_FFFF);
-        } else if self.sign_extended && !self.h_flag {
-            // load sign-extended byte
-            let byte_from_memory = mem_bus.read_u8(address);
-            let mut value_to_load = byte_from_memory as u32;
-            if (byte_from_memory & (1 << 7)) > 0 {
-                value_to_load = byte_from_memory as u32 | 0xFFFF_FF00;
-            }
-
-            cpu.set_register(self.destination_register, value_to_load);
+            is_load = false;
         } else {
-            // load sign-extended halfword
-            let halfword_from_memory = mem_bus.read_u16(address);
-            let value_to_load: u32;
-            if (halfword_from_memory & (1 << 15)) > 0 {
-                value_to_load = halfword_from_memory as u32 | 0xFFFF_0000;
-            } else {
-                value_to_load = halfword_from_memory as u32 & 0x0000_FFFF;
-            }
-            cpu.set_register(self.destination_register, value_to_load);
+            is_load = true;
         }
-        cpu.set_register(self.base_register, address);
+
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: is_load,
+            is_signed: self.sign_extended,
+            data_type: data_type,
+            base_register: self.base_register,
+            destination: self.destination_register,
+        };
+
+        let target_address = cpu.get_register(self.base_register) + cpu.get_register(self.offset_register);
+        let base;
+        if self.base_register == THUMB_PC {
+            base = cpu.get_register(self.base_register) + 2;
+        } else {
+            base = cpu.get_register(self.base_register);
+        }
+
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_bus);
         mem_bus.cycle_clock.get_cycles()
     }
 

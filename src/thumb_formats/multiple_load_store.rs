@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
-use crate::cpu::{cpu::CPU};
-use std::fmt;
+use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
 use crate::gba::memory_bus::MemoryBus;
+use std::fmt;
 
 
 pub struct MultipleLoadStore {
@@ -33,19 +33,34 @@ impl Instruction for MultipleLoadStore {
         let base = cpu.get_register(self.rb);
         let mut offset = 0;
         if self.load {
-            for reg_num in self.register_list.iter() {
-                let value = mem_bus.read_u32(base + offset);
-                cpu.set_register(*reg_num, value);
-                offset += 4;
+            if self.register_list.len() == 0 {
+                cpu.set_register(THUMB_PC, mem_bus.read_u32(base));
+                cpu.set_register(self.rb, base + 0x40);
+            } else {
+                for reg_num in self.register_list.iter() {
+                    let value = mem_bus.read_u32(base + offset);
+                    cpu.set_register(*reg_num, value);
+                    offset += 4;
+                }
+                cpu.set_register(self.rb, base + offset);
             }
-            cpu.set_register(self.rb, base + offset);
         } else {
-            for reg_num in self.register_list.iter() {
-                let value = cpu.get_register(*reg_num);
-                mem_bus.write_u32(base + offset, value);
-                offset += 4;
+            if self.register_list.len() == 0 {
+                mem_bus.write_u32(base, cpu.get_register(THUMB_PC) + 4);
+                cpu.set_register(self.rb, base + 0x40);
+            } else {
+
+                if self.register_list.contains(&self.rb) && self.rb != self.register_list[0] {
+                    cpu.set_register(self.rb, base + (4 * self.register_list.len() as u32));
+                }
+
+                for reg_num in self.register_list.iter() {
+                    let value = cpu.get_register(*reg_num);
+                    mem_bus.write_u32(base + offset, value);
+                    offset += 4;
+                }
+                cpu.set_register(self.rb, base + offset);
             }
-            cpu.set_register(self.rb, base + offset);
         }
         mem_bus.cycle_clock.get_cycles()
     }

@@ -8,4 +8,3 @@ pub mod multiply;
 pub mod multiply_long;
 pub mod software_interrupt;
 pub mod branch;
-pub mod debug;

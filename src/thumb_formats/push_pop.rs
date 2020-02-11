@@ -1,8 +1,9 @@
 use crate::operations::instruction::Instruction;
 use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
-use std::fmt;
 use crate::gba::memory_bus::MemoryBus;
+use std::fmt;
+use log::debug;
 
 pub struct PushPop {
     pub load: bool,
@@ -32,7 +33,6 @@ impl Instruction for PushPop {
         let stack_pointer: u32 = cpu.get_register(THUMB_SP);
         let mut offset: i32 = 0;
         if self.load {          // LDMIA (Load Multiple Increment After) = POP
-
             for reg_num in self.register_list.iter() {
                 let (address, _) = arm_arithmetic::add(stack_pointer, offset as u32);
                 let value = mem_bus.read_u32(address);
@@ -44,7 +44,7 @@ impl Instruction for PushPop {
                 // thumb PC
                 let (address, _) = arm_arithmetic::add(stack_pointer, offset as u32);
                 let value = mem_bus.read_u32(address);
-                cpu.set_register(THUMB_PC, value);
+                cpu.set_register(THUMB_PC, value - (value % 2));
                 offset += 4;
             }
 

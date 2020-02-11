@@ -9,7 +9,7 @@ use crate::thumb_formats::{add_subtract::AddSubtract,alu::ALU,conditional_branch
 use crate::thumb_formats::{hi_register_ops::HiRegisterOp, immediate_ops::ImmediateOp, load_address::LoadAddress, load_store_halfword::LoadStoreHalfword};
 use crate::thumb_formats::{move_shifted_register::MoveShifted, load_store_immediate_offset::LoadStoreImmediateOffset, load_store_sign_extended::LoadStoreSignExtended};
 use crate::thumb_formats::{long_branch_link::BL,multiple_load_store::MultipleLoadStore,pc_load::LDR,push_pop::PushPop, software_interrupt::ThumbSoftwareInterrupt};
-use crate::thumb_formats::{sp_load_store::SpLoadStore,unconditional_branch::UnconditionalBranch, add_offset_sp::AddOffsetSP};
+use crate::thumb_formats::{sp_load_store::SpLoadStore,unconditional_branch::UnconditionalBranch, add_offset_sp::AddOffsetSP, load_store_register_offset::LoadStoreRegisterOffset};
 use super::{program_status_register::ProgramStatusRegister};
 use super::{arm_instr::ARM_INSTRUCTIONS};
 use super::{thumb_instr::THUMB_INSTRUCTIONS};
@@ -236,6 +236,9 @@ impl CPU {
             },
             ThumbInstructionFormat::LoadStoreImmediateOffset => {
                 return Ok(Box::new(LoadStoreImmediateOffset::from(thumb_instruction)));
+            },
+            ThumbInstructionFormat::LoadStoreOffset => {
+                return Ok(Box::new(LoadStoreRegisterOffset::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreExtended => {
                 return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction)));

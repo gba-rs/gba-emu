@@ -1,6 +1,6 @@
-use crate::cpu::cpu::CPU;
+use crate::cpu::cpu::{CPU, THUMB_PC};
 use crate::operations::instruction::Instruction;
-use crate::operations::load_store::{apply_offset};
+use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 use crate::gba::memory_bus::MemoryBus;
 
 pub struct LoadStoreHalfword {
@@ -14,7 +14,7 @@ impl From<u16> for LoadStoreHalfword {
     fn from(value: u16) -> LoadStoreHalfword {
         return LoadStoreHalfword {
             load: ((value & 0x800) >> 11) != 0,
-            immediate_offset: ((value & 0x7C0) >> 6) as u8,
+            immediate_offset: (((value & 0x7C0) >> 6) << 1) as u8,
             rb: ((value & 0x38) >> 3) as u8,
             rd: (value & 0x7) as u8,
         };
@@ -23,16 +23,25 @@ impl From<u16> for LoadStoreHalfword {
 
 impl Instruction for LoadStoreHalfword {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
-        let base_register_value = cpu.get_register(self.rb);
-        let base_address = apply_offset(base_register_value, self.immediate_offset as u32, true, 0);
-        cpu.set_register(self.rb, base_address);
-        if self.load {
-            let value = mem_bus.read_u16(base_address);
-            cpu.set_register(self.rd, value as u32);
+        let transfer_info = DataTransfer {
+            is_pre_indexed: true,
+            write_back: false,
+            load: self.load,
+            is_signed: false,
+            data_type: DataType::Halfword,
+            base_register: self.rb,
+            destination: self.rd,
+        };
+
+        let target_address = cpu.get_register(self.rb) + self.immediate_offset as u32;
+        let base;
+        if self.rb == THUMB_PC {
+            base = cpu.get_register(self.rb) + 2;
         } else {
-            let value_to_store = cpu.get_register(self.rd);
-            mem_bus.write_u16(base_address, value_to_store as u16);
+            base = cpu.get_register(self.rb);
         }
+
+        data_transfer_execute(transfer_info, base, target_address, cpu, mem_bus);
         mem_bus.cycle_clock.get_cycles()
     }
 
@@ -68,7 +77,7 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8A14);
 
         assert_eq!(load_store_halfword.load , true);
-        assert_eq!(load_store_halfword.immediate_offset, 8);
+        assert_eq!(load_store_halfword.immediate_offset, 0x10);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
     }
@@ -78,7 +87,7 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8C14);
         let mut gba = GBA::default();
 
-        let expected_offset = 16;
+        let expected_offset = 32;
 
         gba.cpu.set_register(2, 0x0008);
         gba.memory_bus.write_u16(0x0008 + expected_offset, 22);
@@ -98,7 +107,7 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8414);
         let mut gba = GBA::default();
 
-        let expected_offset = 16;
+        let expected_offset = 32;
 
         gba.cpu.set_register(2, 0x0008);
         gba.cpu.set_register(4, 22);
@@ -111,14 +120,5 @@ mod tests {
         assert_eq!(load_store_halfword.rd, 4);
 
         assert_eq!(gba.memory_bus.read_u16(0x0008 + expected_offset), 22);
-    }
-
-    #[test]
-    fn test_asm() {
-        let load_halfword = LoadStoreHalfword::from(0x8C14);
-        let store_halfword = LoadStoreHalfword::from(0x8414);
-
-        assert_eq!(load_halfword.asm(), "LDRH r4, [r2, #0x10]");
-        assert_eq!(store_halfword.asm(), "STRH r4, [r2, #0x10]");
     }
 }
