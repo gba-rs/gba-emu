@@ -25,7 +25,8 @@ pub enum GpuState {
 pub struct Background {
     pub control: BG_Control,
     pub horizontal_offset: BGOffset,
-    pub vertical_offset: BGOffset, 
+    pub vertical_offset: BGOffset,
+    pub scan_line: Vec<Rgb15>
 }
 
 impl Background {
@@ -118,22 +119,26 @@ impl GPU {
                 Background {
                     control: BG_Control::new(0),
                     horizontal_offset: BGOffset::new(0),
-                    vertical_offset: BGOffset::new(1), 
+                    vertical_offset: BGOffset::new(1),
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
                 },
                 Background {
                     control: BG_Control::new(1),
                     horizontal_offset: BGOffset::new(2),
                     vertical_offset: BGOffset::new(3), 
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
                 },
                 Background {
                     control: BG_Control::new(2),
                     horizontal_offset: BGOffset::new(4),
                     vertical_offset: BGOffset::new(5), 
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
                 },
                 Background {
                     control: BG_Control::new(3),
                     horizontal_offset: BGOffset::new(6),
                     vertical_offset: BGOffset::new(7), 
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
                 }
             ],
             bg_affine_components: [
@@ -243,34 +248,13 @@ impl GPU {
                         }
                         4 => {
                             // println!("Mode 4");
-                            let page_ofs: u32 = match self.display_control.get_display_frame_select() {
-                                0 => 0x06000000,
-                                1 => 0x0600A000,
-                                _ => unreachable!(),
-                            };
-
-                            let pa = i32::from(&self.bg_affine_components[0].rotation_scaling_param_a);
-                            let pc = i32::from(&self.bg_affine_components[0].rotation_scaling_param_c);
-                            let ref_point_x = bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_x_internal, 27) as i32;
-                            let ref_point_y =  bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_y_internal, 27) as i32;
-
-                            for x in 0..DISPLAY_WIDTH {
-                                let t = ((ref_point_x + (x as i32) * pa) >> 8, (ref_point_y + (x as i32) * pc) >> 8);
-                                // debug!("T: {}, {}", t.0, t.1);
-                                // TODO check outside of viewport
-                                let bitmap_index = ((DISPLAY_WIDTH as u32) * (t.1 as u32) + (t.0 as u32)) as u32;
-                                let bitmap_offset = page_ofs + bitmap_index;
-                                // debug!("Bitmap index: {:X}", bitmap_offset);
-                                let index = mem_map.read_u8(bitmap_offset) as u32;
-                                // debug!("Index: {:X}", index);
-                                let color = Rgb15::new(mem_map.read_u16((2 * index) + 0x05000000));
-                                let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
-                                self.frame_buffer[frame_buffer_index] = color.to_0rgb();
-                            }
-
+                            self.render_mode_4(mem_map);
                         }
                         _ => panic!("Unimplemented mode: {}", current_mode)
                     }
+
+                    // composite the backgrounds
+                    self.composite_background(mem_map);
 
                     // update refrence points at end of scanline
                     for i in 0..2 {
@@ -314,6 +298,50 @@ impl GPU {
                     self.frame_ready = true;
                 }
             }
+        }
+    }
+
+    pub fn render_mode_4(&mut self, mem_map: &mut MemoryMap) {
+        let page_ofs: u32 = match self.display_control.get_display_frame_select() {
+            0 => 0x06000000,
+            1 => 0x0600A000,
+            _ => unreachable!(),
+        };
+
+        let pa = i32::from(&self.bg_affine_components[0].rotation_scaling_param_a);
+        let pc = i32::from(&self.bg_affine_components[0].rotation_scaling_param_c);
+        let ref_point_x = bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_x_internal, 27) as i32;
+        let ref_point_y =  bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_y_internal, 27) as i32;
+
+        for x in 0..DISPLAY_WIDTH {
+            let t = ((ref_point_x + (x as i32) * pa) >> 8, (ref_point_y + (x as i32) * pc) >> 8);
+            // TODO check outside of viewport
+            let bitmap_index = ((DISPLAY_WIDTH as u32) * (t.1 as u32) + (t.0 as u32)) as u32;
+            let bitmap_offset = page_ofs + bitmap_index;
+            let index = mem_map.read_u8(bitmap_offset) as u32;
+            let color = Rgb15::new(mem_map.read_u16((2 * index) + 0x05000000));
+            self.backgrounds[2].scan_line[x as usize] = color;
+            // let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
+            // self.frame_buffer[frame_buffer_index] = color.to_0rgb();
+        }
+    }
+
+    pub fn render_bg(&mut self, mem_map: &mut MemoryMap, bg_number: u8) {
+
+    }
+
+    pub fn composite_background(&mut self, mem_map: &mut MemoryMap) {
+        let current_scanline = self.vertical_count.get_current_scanline() as u32;
+
+        for x in 0..DISPLAY_WIDTH {
+            let mut top_layer_index = 3;
+            for i in (0..4).rev() {
+                if !self.backgrounds[i].scan_line[x as usize].is_transparent() {
+                    top_layer_index = i;
+                }
+            }
+            let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
+            self.frame_buffer[frame_buffer_index] = self.backgrounds[top_layer_index as usize].scan_line[x as usize].to_0rgb();
         }
     }
 }
