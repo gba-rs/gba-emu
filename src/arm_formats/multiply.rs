@@ -30,7 +30,7 @@ impl From<u32> for Multiply {
 }
 
 impl Instruction for Multiply {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
             if self.accumulate { // MLA
                 let (value, flags) = arm_arithmetic::mla(
                         cpu.get_register(self.op1_register),
@@ -38,7 +38,7 @@ impl Instruction for Multiply {
                         cpu.get_register(self.op3_register));
                 cpu.set_register(self.destination_register, value);
                 if self.set_condition {
-                    cpu.cpsr.flags.negative = flags.negative;
+                    cpu.cpsr.flags.negative = (value >> 31) != 0;
                     cpu.cpsr.flags.zero = flags.zero;
                     cpu.cpsr.flags.carry = flags.carry;
                 }
@@ -53,6 +53,7 @@ impl Instruction for Multiply {
                     cpu.cpsr.flags.carry = flags.carry;
                 }
             }
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

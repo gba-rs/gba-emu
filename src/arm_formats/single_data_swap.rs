@@ -34,7 +34,7 @@ impl fmt::Debug for SingleDataSwap {
 }
 
 impl Instruction for SingleDataSwap {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32{
         // mem read then mem write
         let swap_address = cpu.get_register(self.base_register);
         let source_value = cpu.get_register(self.source_register);
@@ -47,7 +47,7 @@ impl Instruction for SingleDataSwap {
             mem_bus.write_u32(swap_address - (swap_address % 4), source_value);
             cpu.set_register(self.destination_register, swap_address_contents);
         }
-        
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

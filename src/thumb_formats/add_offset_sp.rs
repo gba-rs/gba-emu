@@ -19,7 +19,7 @@ impl From<u16> for AddOffsetSP {
 }
 
 impl Instruction for AddOffsetSP {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         let stack_pointer = cpu.get_register(THUMB_SP);
         if self.sign {
             let value = ((self.immediate as i64) * -1) as u32;
@@ -29,6 +29,7 @@ impl Instruction for AddOffsetSP {
             let (new_sp, _) = arm_arithmetic::add(stack_pointer, self.immediate);
             cpu.set_register(THUMB_SP, new_sp);
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{

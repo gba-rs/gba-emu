@@ -22,7 +22,7 @@ impl From<u16> for LoadStoreHalfword {
 }
 
 impl Instruction for LoadStoreHalfword {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let transfer_info = DataTransfer {
             is_pre_indexed: true,
             write_back: false,
@@ -42,6 +42,7 @@ impl Instruction for LoadStoreHalfword {
         }
 
         data_transfer_execute(transfer_info, base, target_address, cpu, mem_bus);
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

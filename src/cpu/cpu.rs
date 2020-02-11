@@ -299,8 +299,8 @@ impl CPU {
                 // info!("Condition: {}, Instruction: {:?}", check_condition, instr.asm());
 
                 if check_condition {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    self.cycle_count += (instr.borrow_mut() as &mut dyn Instruction).cycles() as usize;
+                    let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
+                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
                 }
             },
             Err(e) => {

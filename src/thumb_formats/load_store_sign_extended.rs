@@ -43,7 +43,7 @@ impl fmt::Debug for LoadStoreSignExtended {
 }
 
 impl Instruction for LoadStoreSignExtended {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         let data_type = if !self.h_flag && self.sign_extended { DataType::Byte } else { DataType::Halfword };
         let is_load;
         if !self.sign_extended && !self.h_flag {
@@ -71,6 +71,7 @@ impl Instruction for LoadStoreSignExtended {
         }
 
         data_transfer_execute(transfer_info, base, target_address, cpu, mem_bus);
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

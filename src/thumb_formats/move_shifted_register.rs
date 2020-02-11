@@ -27,7 +27,7 @@ impl From<u16> for MoveShifted {
 }
 
 impl Instruction for MoveShifted {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32{
         let base_value = cpu.get_register(self.rs);
         let (shifted_value, carry_out) = apply_shift(base_value, &self.shift, cpu);
         cpu.set_register(self.rd, shifted_value);
@@ -43,6 +43,7 @@ impl Instruction for MoveShifted {
         let (n, z) = logical::check_flags(shifted_value);
         cpu.cpsr.flags.negative = n;
         cpu.cpsr.flags.zero = z;
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

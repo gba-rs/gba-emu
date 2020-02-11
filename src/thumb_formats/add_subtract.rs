@@ -69,7 +69,7 @@ impl From<u16> for AddSubtract {
 }
 
 impl Instruction for AddSubtract {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         match self.opcode {
             OpCodes::ADD => {
                 let (value, flags) = arm_arithmetic::add(cpu.get_register(self.op_register), cpu.get_register(self.source_register));
@@ -95,6 +95,7 @@ impl Instruction for AddSubtract {
                 panic!("{:?}", self.opcode);
             }
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
     
     fn asm(&self) -> String{

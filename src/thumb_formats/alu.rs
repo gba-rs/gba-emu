@@ -74,7 +74,7 @@ impl fmt::Debug for ALU {
 }
 
 impl Instruction for ALU {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         let op1 = cpu.get_register(self.rd);
         let op2 = cpu.get_register(self.rs);
 
@@ -232,6 +232,7 @@ impl Instruction for ALU {
                 panic!("Error in processing Thumb ALU instruction");
             }
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
     
     fn asm(&self) -> String{

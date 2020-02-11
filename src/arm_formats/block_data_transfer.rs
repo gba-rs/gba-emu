@@ -37,12 +37,13 @@ impl From<u32> for BlockDataTransfer {
 }
 
 impl Instruction for BlockDataTransfer {
-    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         if self.load {
             self.load_data(cpu, mem_bus);
         } else {
             self.save_data(cpu, mem_bus);
         }
+        mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String {

@@ -40,7 +40,7 @@ impl From<u16> for ImmediateOp {
 }
 
 impl Instruction for ImmediateOp {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32{
         match self.op {
             OpCodes::ADD => {
                 let (value, flags) = arm_arithmetic::add(cpu.get_register(self.destination_register) as u32, self.immediate as u32);
@@ -63,6 +63,7 @@ impl Instruction for ImmediateOp {
                 cpu.cpsr.flags = flags;
             }
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
     fn asm(&self) -> String {
         return format!("{:?} r{}, #0x{:X}", self.op, self.destination_register, self.immediate);

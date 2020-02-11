@@ -19,13 +19,14 @@ impl From<u16> for ConditionalBranch {
 }
 
 impl Instruction for ConditionalBranch {
-    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) {
+    fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         if cpu.check_condition(&self.condition) {
             // execute
             let (signed_offset, _) = arm_arithmetic::add(self.signed_offset, 2);    // Fetch adds the other +2
             let (new_pc, _) = arm_arithmetic::add(cpu.get_register(THUMB_PC), signed_offset);
             cpu.set_register(THUMB_PC, new_pc);
         }
+        _mem_bus.cycle_clock.get_cycles()
     }
 
     fn asm(&self) -> String{
