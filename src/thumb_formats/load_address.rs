@@ -76,7 +76,7 @@ mod tests {
         let mut bus = MemoryBus::new();
         let b: LoadAddress = LoadAddress::from(0xA000);
         b.execute(&mut cpu, &mut bus);
-        assert_eq!(cpu.get_register(0), 2);     // 2 here because we are skipping the fetch
+        assert_eq!(cpu.get_register(0), 0);     // 2 here because we are skipping the fetch
     }
     #[test]
     fn sp_set() {

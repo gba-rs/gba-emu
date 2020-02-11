@@ -108,7 +108,7 @@ mod tests {
 
         assert_eq!(format.load, true);
         assert_eq!(format.data_type, DataType::Word);
-        assert_eq!(format.offset, 4);
+        assert_eq!(format.offset, 0x10);
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
     }

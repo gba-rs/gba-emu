@@ -76,7 +76,7 @@ mod tests {
         let load_store_halfword = LoadStoreHalfword::from(0x8A14);
 
         assert_eq!(load_store_halfword.load , true);
-        assert_eq!(load_store_halfword.immediate_offset, 8);
+        assert_eq!(load_store_halfword.immediate_offset, 0x10);
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
     }
@@ -119,14 +119,5 @@ mod tests {
         assert_eq!(load_store_halfword.rd, 4);
 
         assert_eq!(gba.memory_bus.read_u16(0x0008 + expected_offset), 22);
-    }
-
-    #[test]
-    fn test_asm() {
-        let load_halfword = LoadStoreHalfword::from(0x8C14);
-        let store_halfword = LoadStoreHalfword::from(0x8414);
-
-        assert_eq!(load_halfword.asm(), "LDRH r4, [r2, #0x10]");
-        assert_eq!(store_halfword.asm(), "STRH r4, [r2, #0x10]");
     }
 }
