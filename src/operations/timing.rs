@@ -123,7 +123,7 @@ impl CycleClock {
                     }
                 }
             }
-            _ => { panic!("Trying to read unknown address") }
+            _ => { log::error!("Trying to read unknown address: {:X}", address) }
         }
     }
 

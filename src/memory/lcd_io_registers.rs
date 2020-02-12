@@ -54,7 +54,7 @@ pub struct VerticalCount {
 #[bit_field(character_base_block, 2, 2)]
 #[bit_field(mosaic, 6, 1)]
 #[bit_field(colors, 7, 1)]
-#[bit_field(screen_base_block, 8, 4)]
+#[bit_field(screen_base_block, 8, 5)]
 #[bit_field(display_area_overflow, 13, 1)]
 #[bit_field(screen_size, 14, 2)]
 pub struct BG_Control {

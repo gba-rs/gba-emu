@@ -281,6 +281,7 @@ impl CPU {
     pub fn fetch(&mut self, bus: &mut MemoryBus) {
         let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
+        // log::debug!("PC: {:X}", pc_contents);
 
         let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { bus.read_u32(pc_contents) } else { bus.read_u16(pc_contents) as u32 };
 
