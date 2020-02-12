@@ -17,12 +17,16 @@ impl From<u16> for ThumbSoftwareInterrupt {
 
 impl Instruction for ThumbSoftwareInterrupt {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32{
-        cpu.set_spsr(cpu.cpsr);
+        let old_cpsr = cpu.cpsr;
         let current_pc = cpu.get_register(THUMB_PC);
-        cpu.set_register(THUMB_LR, current_pc + 2); // set LR to the next instruction (fetch does the other +2)      
-        cpu.set_register(THUMB_PC, 0x08);
         cpu.current_instruction_set = InstructionSet::Arm;
         cpu.operating_mode = OperatingMode::Supervisor;
+        cpu.cpsr.control_bits.irq_disable = true;
+        cpu.cpsr.control_bits.mode_bits = 0b10011;
+        cpu.cpsr.control_bits.state_bit = false;
+        cpu.set_spsr(old_cpsr);
+        cpu.set_register(THUMB_LR, current_pc + 4); // set LR to the next instruction (fetch does the other +2)      
+        cpu.set_register(THUMB_PC, 0x08);
         _mem_bus.cycle_clock.get_cycles()
     }
 

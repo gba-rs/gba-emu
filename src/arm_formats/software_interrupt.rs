@@ -21,9 +21,14 @@ impl From<u32> for SoftwareInterrupt {
 
 impl Instruction for SoftwareInterrupt {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
+        let old_cpsr = cpu.cpsr;
+        let current_pc = cpu.get_register(ARM_PC);
         cpu.current_instruction_set = InstructionSet::Arm;
         cpu.operating_mode = OperatingMode::Supervisor;
-        cpu.set_spsr(cpu.cpsr);
+        cpu.cpsr.control_bits.irq_disable = true;
+        cpu.cpsr.control_bits.mode_bits = 0b10011;
+        cpu.cpsr.control_bits.state_bit = false;
+        cpu.set_spsr(old_cpsr);
         let current_pc = cpu.get_register(ARM_PC);
         cpu.set_register(ARM_LR, current_pc + 4); // set LR to the next instruction        
         cpu.set_register(ARM_PC, 0x08);
