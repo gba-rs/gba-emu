@@ -49,25 +49,25 @@ impl GBA {
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
         // setup the SPs'
-        temp.cpu.operating_mode = OperatingMode::Interrupt;
+        temp.cpu.set_operating_mode(OperatingMode::Interrupt);
         temp.cpu.set_register(ARM_SP, 0x03007FA0);
 
-        temp.cpu.operating_mode = OperatingMode::FastInterrupt;
+        temp.cpu.set_operating_mode(OperatingMode::FastInterrupt);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::User;
+        temp.cpu.set_operating_mode(OperatingMode::User);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::Supervisor;
+        temp.cpu.set_operating_mode(OperatingMode::Supervisor);
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
 
-        temp.cpu.operating_mode = OperatingMode::Abort;
+        temp.cpu.set_operating_mode(OperatingMode::Abort);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::Undefined;
+        temp.cpu.set_operating_mode(OperatingMode::Undefined);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::Supervisor;
+        temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
         temp.key_status.set_register(0xFFFF);
 
@@ -112,20 +112,21 @@ impl GBA {
             self.cpu.fetch(&mut self.memory_bus);
 
         } else {
-            self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map);
+            self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
             self.cpu.cycle_count = 0;
         }
     }
 
     pub fn step(&mut self) {
         while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
+            // log::debug!("Checking enabled: {}", self.interrupt_handler.enabled());
             if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
                 self.interrupt_handler.service(&mut self.cpu);
             }
             self.cpu.fetch(&mut self.memory_bus);
         }
 
-        self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map);
+        self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
         self.cpu.cycle_count = 0;
     }
 }

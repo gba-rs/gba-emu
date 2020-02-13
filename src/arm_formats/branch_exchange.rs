@@ -30,7 +30,8 @@ impl Instruction for BranchExchange {
         let mode_bit = new_pc & 0x01;
 
         if mode_bit == 0 {
-            cpu.current_instruction_set = InstructionSet::Arm;
+            cpu.set_instruction_set(InstructionSet::Arm);
+            // cpu.cpsr.control_bits.state_bit = false;
             if new_pc % 4 == 0 {
                 cpu.set_register(ARM_PC, new_pc);
             } else {
@@ -38,7 +39,8 @@ impl Instruction for BranchExchange {
             }
             // Flush Pipeline
         } else if mode_bit == 1 {
-            cpu.current_instruction_set = InstructionSet::Thumb;
+            cpu.set_instruction_set(InstructionSet::Thumb);
+            // cpu.cpsr.control_bits.state_bit = true;
             cpu.set_register(THUMB_PC, new_pc - 1);
             // Flush Pipeline
         }

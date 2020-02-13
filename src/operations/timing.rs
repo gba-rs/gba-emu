@@ -123,7 +123,7 @@ impl CycleClock {
                     }
                 }
             }
-            _ => { log::error!("Trying to read unknown address: {:X}", address) }
+            _ => { }//log::error!("Trying to read unknown address: {:X}", address) }
         }
     }
 

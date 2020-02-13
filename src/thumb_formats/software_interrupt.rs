@@ -1,5 +1,5 @@
 use crate::operations::instruction::Instruction;
-use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR};
+use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR, cpu::ARM_PC, cpu::ARM_LR};
 use std::fmt;
 use crate::gba::memory_bus::MemoryBus;
 
@@ -19,14 +19,14 @@ impl Instruction for ThumbSoftwareInterrupt {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32{
         let old_cpsr = cpu.cpsr;
         let current_pc = cpu.get_register(THUMB_PC);
-        cpu.current_instruction_set = InstructionSet::Arm;
-        cpu.operating_mode = OperatingMode::Supervisor;
+        cpu.set_instruction_set(InstructionSet::Arm);
+        cpu.set_operating_mode(OperatingMode::Supervisor);
         cpu.cpsr.control_bits.irq_disable = true;
-        cpu.cpsr.control_bits.mode_bits = 0b10011;
-        cpu.cpsr.control_bits.state_bit = false;
+        // cpu.cpsr.control_bits.mode_bits = 0b10011;
+        // cpu.cpsr.control_bits.state_bit = false;
         cpu.set_spsr(old_cpsr);
-        cpu.set_register(THUMB_LR, current_pc + 4); // set LR to the next instruction (fetch does the other +2)      
-        cpu.set_register(THUMB_PC, 0x08);
+        cpu.set_register(ARM_LR, current_pc); // set LR to the next instruction (fetch does the other +2)      
+        cpu.set_register(ARM_PC, 0x08);
         _mem_bus.cycle_clock.get_cycles()
     }
 

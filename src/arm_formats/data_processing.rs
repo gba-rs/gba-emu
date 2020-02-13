@@ -266,7 +266,7 @@ impl Instruction for DataProcessing {
             OpCodes::TEQ => { //TEQ EOR
                 if !self.set_condition { //MSR CPSR
                     let new_psr = ProgramStatusRegister::from(op2);
-                    if cpu.operating_mode != OperatingMode::User {    
+                    if cpu.get_operating_mode() != OperatingMode::User {    
                         if self.spsr_field_mask & 0b0001 != 0 {
                             // control field mask
                             cpu.cpsr.control_bits = new_psr.control_bits;
@@ -280,7 +280,7 @@ impl Instruction for DataProcessing {
                             // status field
                             cpu.cpsr.control_bits.fiq_disable = new_psr.control_bits.fiq_disable;
                             cpu.cpsr.control_bits.irq_disable = new_psr.control_bits.irq_disable;
-                            cpu.cpsr.control_bits.state_bit = new_psr.control_bits.state_bit;
+                            // cpu.cpsr.control_bits.state_bit = new_psr.control_bits.state_bit;
                         }
                     }
 
@@ -310,7 +310,7 @@ impl Instruction for DataProcessing {
                 if !self.set_condition { // MSR SPSR
                     let new_psr = ProgramStatusRegister::from(op2);
                     let mut psr = cpu.get_spsr();
-                    if cpu.operating_mode != OperatingMode::User {    
+                    if cpu.get_operating_mode() != OperatingMode::User {    
                         if self.spsr_field_mask & 0b0001 != 0 {
                             // control field mask
                             psr.control_bits = new_psr.control_bits;
@@ -324,7 +324,7 @@ impl Instruction for DataProcessing {
                             // status field
                             psr.control_bits.fiq_disable = new_psr.control_bits.fiq_disable;
                             psr.control_bits.irq_disable = new_psr.control_bits.irq_disable;
-                            psr.control_bits.state_bit = new_psr.control_bits.state_bit;
+                            // psr.control_bits.state_bit = new_psr.control_bits.state_bit;
                         }
                     }
 
@@ -384,16 +384,16 @@ impl Instruction for DataProcessing {
             }
         }
 
-        match cpu.cpsr.control_bits.mode_bits {
-            0b10000 => cpu.operating_mode = OperatingMode::User,
-            0b10001 => cpu.operating_mode = OperatingMode::FastInterrupt,
-            0b10010 => cpu.operating_mode = OperatingMode::Interrupt,
-            0b10011 => cpu.operating_mode = OperatingMode::Supervisor,
-            0b10111 => cpu.operating_mode = OperatingMode::Abort,
-            0b11011 => cpu.operating_mode = OperatingMode::Undefined,
-            0b11111 => cpu.operating_mode = OperatingMode::System,
-            _ => panic!("Mode bits set incorrectly {:b}", cpu.cpsr.control_bits.mode_bits)
-        }
+        // match cpu.cpsr.control_bits.mode_bits {
+        //     0b10000 => cpu.operating_mode = OperatingMode::User,
+        //     0b10001 => cpu.operating_mode = OperatingMode::FastInterrupt,
+        //     0b10010 => cpu.operating_mode = OperatingMode::Interrupt,
+        //     0b10011 => cpu.operating_mode = OperatingMode::Supervisor,
+        //     0b10111 => cpu.operating_mode = OperatingMode::Abort,
+        //     0b11011 => cpu.operating_mode = OperatingMode::Undefined,
+        //     0b11111 => cpu.operating_mode = OperatingMode::System,
+        //     _ => panic!("Mode bits set incorrectly {:b}", cpu.cpsr.control_bits.mode_bits)
+        // }
         mem_bus.cycle_clock.get_cycles()
 
     }

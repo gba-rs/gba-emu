@@ -22,13 +22,14 @@ impl Interrupts {
     }
     pub fn service(&mut self, cpu: &mut cpu::CPU){
         let should_service = self.ie_interrupt.get_register() & self.if_interrupt.get_register();
+        // log::debug!("Should service: {}", should_service);
         if should_service != 0x0 {
-            cpu.operating_mode = OperatingMode::Interrupt;
+            // log::debug!("Serving");
+            cpu.set_operating_mode(OperatingMode::Interrupt);
+            if cpu.get_instruction_set() == InstructionSet::Arm {cpu.set_register(ARM_LR, cpu.get_register(ARM_PC) + 4)} else {cpu.set_register(THUMB_LR, cpu.get_register(THUMB_PC) + 2)};
+            cpu.set_instruction_set(InstructionSet::Arm);
             cpu.set_spsr(cpu.cpsr);
             cpu.cpsr.control_bits.irq_disable = true;
-            if cpu.current_instruction_set == InstructionSet::Arm {cpu.set_register(ARM_LR, cpu.get_register(ARM_PC) + 4)} else {cpu.set_register(THUMB_LR, cpu.get_register(THUMB_PC) + 2)};
-            cpu.cpsr.control_bits.mode_bits = 0b10010;
-            cpu.current_instruction_set = InstructionSet::Arm;
             cpu.set_register(15, 0x18);
         }
     }

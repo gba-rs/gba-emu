@@ -56,7 +56,7 @@ impl BlockDataTransfer {
     fn load_data(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let mut current_address: i64 = cpu.get_register(self.base_register) as i64;
         current_address = self.get_start_address(current_address);
-        let mut current_operating_mode = cpu.operating_mode;
+        let mut current_operating_mode = cpu.get_operating_mode();
         let write_back = self.write_back;
 
         // Handle the psr
@@ -91,7 +91,7 @@ impl BlockDataTransfer {
     fn save_data(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let mut current_address: i64 = cpu.get_register(self.base_register) as i64;
         current_address = self.get_start_address(current_address);
-        let mut current_operating_mode = cpu.operating_mode;
+        let mut current_operating_mode = cpu.get_operating_mode();
         let mut write_back = self.write_back;
 
         if self.register_list.len() == 0 {

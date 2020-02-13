@@ -34,7 +34,7 @@ pub struct InterruptEnableRegister {
 #[memory_segment(2, 0x4000202)]
 #[bit_field(lcd_v_blank, 0, 1)]
 #[bit_field(lcd_h_blank, 1, 1)]
-#[bit_field(lcd_v_counter_, 2, 1)]
+#[bit_field(lcd_v_counter, 2, 1)]
 #[bit_field(timer_zero_overflow, 3, 1)]
 #[bit_field(timer_one_overflow, 4, 1)]
 #[bit_field(timer_two_overflow, 5, 1)]

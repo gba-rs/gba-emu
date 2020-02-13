@@ -125,11 +125,6 @@ pub struct CPU {
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
-    // pub wram: WorkRam,
-    // pub onchip_wram: WorkRam,
-    // pub bios_ram: BiosRam,
-    pub operating_mode: OperatingMode,
-    pub current_instruction_set: InstructionSet,
     pub last_instruction: String,
     pub cycle_count: usize,
 }
@@ -139,19 +134,14 @@ impl CPU {
         return CPU {
             registers: [0; 31],
             spsr: [ProgramStatusRegister::from(0); 7],
-            cpsr: ProgramStatusRegister::from(0b11111),
-            // wram: WorkRam::new(0x40000 + 1, 0),
-            // onchip_wram: WorkRam::new(0x7FFF + 1, 0),
-            // bios_ram: BiosRam::new(0),
-            operating_mode: OperatingMode::System,
-            current_instruction_set: InstructionSet::Arm,
+            cpsr: ProgramStatusRegister::from(0b011111),
             last_instruction: "".to_string(),
             cycle_count: 0
         };
     }
 
     pub fn decode(&self, instruction: u32) -> Result<Box<dyn Instruction>, DecodeError> {
-        if self.current_instruction_set == InstructionSet::Arm {
+        if self.get_instruction_set() == InstructionSet::Arm {
            return self.decode_arm(instruction);
         } else{
             return self.decode_thumb(instruction);
@@ -197,7 +187,7 @@ impl CPU {
                 return Ok(Box::new(SoftwareInterrupt::from(instruction)));
             },
             _ => Err(DecodeError{
-                instruction_set: self.current_instruction_set,
+                instruction_set: self.get_instruction_set(),
                 instruction: instruction,
                 opcode: opcode
             })
@@ -271,7 +261,7 @@ impl CPU {
                 return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction)));
             }
             _ => Err(DecodeError{
-                instruction_set: self.current_instruction_set,
+                instruction_set: self.get_instruction_set(),
                 instruction: instruction,
                 opcode: opcode
             })
@@ -279,25 +269,27 @@ impl CPU {
     }
 
     pub fn fetch(&mut self, bus: &mut MemoryBus) {
-        let current_pc = if self.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if self.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
         // log::debug!("PC: {:X}", pc_contents);
 
-        let instruction: u32 = if self.current_instruction_set == InstructionSet::Arm { bus.read_u32(pc_contents) } else { bus.read_u16(pc_contents) as u32 };
+        let instruction: u32 = if self.get_instruction_set() == InstructionSet::Arm { bus.read_u32(pc_contents) } else { bus.read_u16(pc_contents) as u32 };
 
-        if self.current_instruction_set == InstructionSet::Arm { 
+        if self.get_instruction_set() == InstructionSet::Arm { 
             self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) 
         } else { 
             self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) 
         };
 
-        let condition = if self.current_instruction_set == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {(Condition::from(0x0))};//THUMB codes don't include conditions 
-        let check_condition = if self.current_instruction_set == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
+        let condition = if self.get_instruction_set() == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {(Condition::from(0x0))};//THUMB codes don't include conditions 
+        let check_condition = if self.get_instruction_set() == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
 
         let decode_result = self.decode(instruction);
         match decode_result {
             Ok(mut instr) => {
-                // info!("Condition: {}, Instruction: {:?}", check_condition, instr.asm());
+                info!("Instruction Set: {:?}, PC: {:X}, Instruction: {:?} = {:X}", self.get_instruction_set(), pc_contents, instr.asm(), instruction);
+                info!("R0 = {:X}", self.get_register(0));
+                info!("R2 = {:X}", self.get_register(2));
 
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
@@ -307,6 +299,46 @@ impl CPU {
             Err(e) => {
                 panic!("{:?}", e);
             }
+        }
+    }
+
+    pub fn get_instruction_set(&self) -> InstructionSet {
+        if self.cpsr.control_bits.state_bit {
+            InstructionSet::Thumb
+        } else {
+            InstructionSet::Arm
+        }
+    }
+
+    pub fn set_instruction_set(&mut self, set: InstructionSet) {
+        match set {
+            InstructionSet::Arm =>      self.cpsr.control_bits.state_bit = false,
+            InstructionSet::Thumb =>    self.cpsr.control_bits.state_bit = true
+        }
+    } 
+
+    pub fn get_operating_mode(&self) -> OperatingMode {
+        match self.cpsr.control_bits.mode_bits {
+            0b10000 => OperatingMode::User,
+            0b10001 => OperatingMode::FastInterrupt,
+            0b10010 => OperatingMode::Interrupt,
+            0b10011 => OperatingMode::Supervisor,
+            0b10111 => OperatingMode::Abort,
+            0b11011 => OperatingMode::Undefined,
+            0b11111 => OperatingMode::System,
+            _ => panic!("Mode bits set incorrectly {:b}", self.cpsr.control_bits.mode_bits)
+        }
+    }
+
+    pub fn set_operating_mode(&mut self, mode: OperatingMode) {
+        match mode {
+            OperatingMode::User =>          self.cpsr.control_bits.mode_bits = 0b10000,
+            OperatingMode::FastInterrupt => self.cpsr.control_bits.mode_bits = 0b10001,
+            OperatingMode::Interrupt =>     self.cpsr.control_bits.mode_bits = 0b10010,
+            OperatingMode::Supervisor =>    self.cpsr.control_bits.mode_bits = 0b10011,
+            OperatingMode::Abort =>         self.cpsr.control_bits.mode_bits = 0b10111,
+            OperatingMode::Undefined =>     self.cpsr.control_bits.mode_bits = 0b11011,
+            OperatingMode::System =>        self.cpsr.control_bits.mode_bits = 0b11111,
         }
     }
 
@@ -323,31 +355,31 @@ impl CPU {
     }
 
     pub fn get_register(&self, reg_num: u8) -> u32 {
-        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
-        return self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]];
+        CPU::check_reg_range(&reg_num, &self.get_instruction_set());
+        return self.registers[REG_MAP[self.get_instruction_set() as usize][self.get_operating_mode() as usize][reg_num as usize]];
     }
 
     pub fn set_register(&mut self, reg_num: u8, value: u32) {
-        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
-        self.registers[REG_MAP[self.current_instruction_set as usize][self.operating_mode as usize][reg_num as usize]] = value;
+        CPU::check_reg_range(&reg_num, &self.get_instruction_set());
+        self.registers[REG_MAP[self.get_instruction_set() as usize][self.get_operating_mode() as usize][reg_num as usize]] = value;
     }
 
     pub fn get_register_override_opmode(&self, reg_num: u8, op_mode: OperatingMode) -> u32 {
-        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
-        return self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]];
+        CPU::check_reg_range(&reg_num, &self.get_instruction_set());
+        return self.registers[REG_MAP[self.get_instruction_set() as usize][op_mode as usize][reg_num as usize]];
     }
 
     pub fn set_register_override_opmode(&mut self, reg_num: u8, op_mode: OperatingMode, value: u32) {
-        CPU::check_reg_range(&reg_num, &self.current_instruction_set);
-        self.registers[REG_MAP[self.current_instruction_set as usize][op_mode as usize][reg_num as usize]] = value;
+        CPU::check_reg_range(&reg_num, &self.get_instruction_set());
+        self.registers[REG_MAP[self.get_instruction_set() as usize][op_mode as usize][reg_num as usize]] = value;
     }
     
     pub fn get_register_unsafe(&self, reg_num: u8) -> u32{
-        return self.registers[REG_MAP[InstructionSet::Arm as usize][self.operating_mode as usize][reg_num as usize]];
+        return self.registers[REG_MAP[InstructionSet::Arm as usize][self.get_operating_mode() as usize][reg_num as usize]];
     }
 
     pub fn set_register_unsafe(&mut self, reg_num: u8, value: u32){
-        self.registers[REG_MAP[InstructionSet::Arm as usize][self.operating_mode as usize][reg_num as usize]] = value;
+        self.registers[REG_MAP[InstructionSet::Arm as usize][self.get_operating_mode() as usize][reg_num as usize]] = value;
     }
 
     pub fn check_condition(&self, cond: &Condition) -> bool {
@@ -372,17 +404,17 @@ impl CPU {
     }
 
     pub fn get_spsr(&mut self) -> ProgramStatusRegister {
-        if self.operating_mode == OperatingMode::User {
-            panic!("Invalid operating mode {:?}", self.operating_mode);
+        if self.get_operating_mode() == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", self.get_operating_mode());
         }
-        return self.spsr[self.operating_mode as usize];
+        return self.spsr[self.get_operating_mode() as usize];
     }
 
     pub fn set_spsr(&mut self, psr: ProgramStatusRegister) {
-        if self.operating_mode == OperatingMode::User {
-            panic!("Invalid operating mode {:?}", self.operating_mode);
+        if self.get_operating_mode() == OperatingMode::User {
+            panic!("Invalid operating mode {:?}", self.get_operating_mode());
         }
-        self.spsr[self.operating_mode as usize] = psr;
+        self.spsr[self.get_operating_mode() as usize] = psr;
     }
 }
 
@@ -441,7 +473,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(10, 15);
         let spv_reg_10 = cpu.get_register(10);
-        cpu.operating_mode = OperatingMode::User;
+        cpu.set_operating_mode(OperatingMode::User);
         cpu.set_register(10, 200);
         let usr_reg_10 = cpu.get_register(10);
 
@@ -454,7 +486,7 @@ mod tests {
     #[should_panic]
     fn test_register_access_invalid() {
         let mut cpu = CPU::new();
-        cpu.current_instruction_set = InstructionSet::Thumb;
+        cpu.set_instruction_set(InstructionSet::Thumb);
         let _should_fail = cpu.get_register(11);
     }
 

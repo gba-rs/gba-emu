@@ -154,11 +154,11 @@ impl HiRegisterOp {
         let mode_bit = (source & 0x1) != 0;
         if mode_bit {
             // Thumb
-            cpu.current_instruction_set = InstructionSet::Thumb;
+            cpu.set_instruction_set(InstructionSet::Thumb);
             cpu.set_register(THUMB_PC, source - 1);
         } else {
             // Arm
-            cpu.current_instruction_set = InstructionSet::Arm;
+            cpu.set_instruction_set(InstructionSet::Arm);
             cpu.set_register(ARM_PC, source - (source % 4));
         }
     }
