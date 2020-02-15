@@ -288,12 +288,12 @@ impl CPU {
         match decode_result {
             Ok(mut instr) => {
                 info!("Instruction Set: {:?}, PC: {:X}, Instruction: {:?} = {:X}", self.get_instruction_set(), pc_contents, instr.asm(), instruction);
-                info!("R0 = {:X}", self.get_register(0));
-                info!("R2 = {:X}", self.get_register(2));
+                // info!("R0 = {:X}", self.get_register(0));
+                // info!("R2 = {:X}", self.get_register(2));
 
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
+                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles + 10) as usize;
                 }
             },
             Err(e) => {

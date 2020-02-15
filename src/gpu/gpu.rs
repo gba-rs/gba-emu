@@ -315,7 +315,8 @@ impl GPU {
         let vcount_setting = self.display_status.get_vcount_setting();
         self.display_status.set_vcounter_flag((vcount_setting == self.vertical_count.get_current_scanline()) as u8);
 
-        if self.display_status.get_vblank_irq_enable() == 1 && self.display_status.get_vcounter_flag() == 1{
+        if self.display_status.get_vcounter_irq_enable() == 1 && self.display_status.get_vcounter_flag() == 1{
+            log::debug!("lcd v counter irq");
             irq_ctl.if_interrupt.set_lcd_v_counter(1);
         }
     }
