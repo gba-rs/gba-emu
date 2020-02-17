@@ -288,12 +288,29 @@ impl CPU {
         match decode_result {
             Ok(mut instr) => {
                 info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
+                info!("r0={:X} r1={:X} r2={:X} r3={:X} r4={:X} r5={:X} r6={:X} r7={:X} r8={:X} r9={:X} r10={:X} r11={:X} r12={:X} r13={:X} r14={:X} r15={:X}", 
+                        self.get_register_unsafe(0), 
+                        self.get_register_unsafe(1), 
+                        self.get_register_unsafe(2), 
+                        self.get_register_unsafe(3), 
+                        self.get_register_unsafe(4), 
+                        self.get_register_unsafe(5), 
+                        self.get_register_unsafe(6), 
+                        self.get_register_unsafe(7), 
+                        self.get_register_unsafe(8), 
+                        self.get_register_unsafe(9), 
+                        self.get_register_unsafe(10), 
+                        self.get_register_unsafe(11), 
+                        self.get_register_unsafe(12), 
+                        self.get_register_unsafe(13), 
+                        self.get_register_unsafe(14), 
+                        self.get_register_unsafe(15));
                 // info!("R0 = {:X}", self.get_register(0));
                 // info!("R2 = {:X}", self.get_register(2));
 
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles + 10) as usize;
+                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
                 }
             },
             Err(e) => {
