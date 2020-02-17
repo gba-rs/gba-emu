@@ -1,7 +1,6 @@
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::load_store::{apply_offset, DataType, DataTransfer, data_transfer_execute};
 use crate::operations::shift::{Shift, apply_shift};
-use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
 use crate::gba::memory_bus::MemoryBus;
@@ -140,6 +139,7 @@ impl Instruction for SingleDataTransfer {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
+
     fn cycles(&self) -> u32 {return 3;}
 }
 

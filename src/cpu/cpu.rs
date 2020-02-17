@@ -287,7 +287,7 @@ impl CPU {
         let decode_result = self.decode(instruction);
         match decode_result {
             Ok(mut instr) => {
-                info!("Instruction Set: {:?}, PC: {:X}, Instruction: {:?} = {:X}", self.get_instruction_set(), pc_contents, instr.asm(), instruction);
+                info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
                 // info!("R0 = {:X}", self.get_register(0));
                 // info!("R2 = {:X}", self.get_register(2));
 

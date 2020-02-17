@@ -18,11 +18,7 @@ impl MemoryMap {
         if address > 0x0FFFFFFF { return }
         if address <= 0x03007FFF && address >= 0x03007F00 {
             // mirror memory
-            // log::debug!("Mirroring: {:X}, {:X} = {:X}", address, ((address & 0xFF) + 0x03FFFF00), value);
-            if address == 0x03007FFC || address == 0x03FFFFFC {
-                log::debug!("Writting to 0x03FFFFFC = {:X}", value);
-            }
-            self.memory.borrow_mut()[((address & 0x3) + 0x03FFFF00) as usize] = value;
+            self.memory.borrow_mut()[((address & 0xFF) + 0x03FFFF00) as usize] = value;
         }
         self.memory.borrow_mut()[address as usize] = value;
     }
