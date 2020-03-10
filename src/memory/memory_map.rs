@@ -20,12 +20,19 @@ impl MemoryMap {
             // mirror memory
             self.memory.borrow_mut()[((address & 0xFF) + 0x03FFFF00) as usize] = value;
         }
+
+        if address == 0x3007150 {
+            log::info!("Writing to 0x3007150: {:X}", self.read_u16(address));
+        }
         self.memory.borrow_mut()[address as usize] = value;
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {
         self.write_u8(address + 1, ((value & 0xFF00) >> 8) as u8);
         self.write_u8(address, (value & 0xFF) as u8);
+        if address == 0x3007150 {
+            log::info!("Writing to 0x3007150: {:X}", self.read_u16(address));
+        }
     }
 
     pub fn write_u32(&mut self, address: u32, value: u32) {
@@ -33,6 +40,9 @@ impl MemoryMap {
         self.write_u8(address + 2, ((value & 0xFF0000) >> 16) as u8);
         self.write_u8(address + 1, ((value & 0xFF00) >> 8) as u8);
         self.write_u8(address, (value & 0xFF) as u8);
+        if address == 0x3007150 {
+            log::info!("Writing to 0x3007150: {:X}", self.read_u16(address));
+        }
     }
 
     pub fn write_block(&mut self, address: u32, block: &Vec<u8>) {

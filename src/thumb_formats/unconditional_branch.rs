@@ -11,7 +11,7 @@ pub struct UnconditionalBranch {
 impl From<u16> for UnconditionalBranch {
     fn from(value: u16) -> UnconditionalBranch {
         return UnconditionalBranch {
-            offset: sign_extend_u32(((value & 0x7FF) << 1) as u32, 10)
+            offset: sign_extend_u32(((value & 0x7FF) << 1) as u32, 11)
         };
     }
 }

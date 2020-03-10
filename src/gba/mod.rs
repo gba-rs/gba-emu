@@ -69,7 +69,7 @@ impl GBA {
 
         temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
-        temp.key_status.set_register(0xFFFF);
+        temp.key_status.set_register(0x3FF);
 
         for i in 0..2 {
             temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
@@ -101,16 +101,20 @@ impl GBA {
 
     pub fn frame(&mut self) {
         while !self.gpu.frame_ready {
-            self.step();
+            // self.key_status.set_register(0x3FF);
+            self.single_step();
         }
 
         self.gpu.frame_ready = false;
     }
 
     pub fn single_step(&mut self) {
+        // self.key_status.set_register(0xFFFF);
         if self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
+            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
+                self.interrupt_handler.service(&mut self.cpu);
+            }
             self.cpu.fetch(&mut self.memory_bus);
-
         } else {
             self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
             self.cpu.cycle_count = 0;
@@ -119,7 +123,7 @@ impl GBA {
 
     pub fn step(&mut self) {
         while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
-            // log::debug!("Checking enabled: {}", self.interrupt_handler.enabled());
+            // self.key_status.set_register(0x3FF);
             if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
                 self.interrupt_handler.service(&mut self.cpu);
             }
