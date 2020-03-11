@@ -4,7 +4,8 @@ use std::rc::Rc;
 
 pub struct Timer {
     pub timer: TimerDataRegister,
-    pub controller: TimerControlRegister
+    pub controller: TimerControlRegister,
+    pub initial_value: u16
 }
 
 impl Timer {
@@ -24,19 +25,24 @@ impl TimerHandler {
             timers: [
                 Timer {
                     timer: TimerDataRegister::new(0),
-                    controller: TimerControlRegister::new(0)
+                    controller: TimerControlRegister::new(0),
+                    initial_value: 0
                 },
                 Timer {
                     timer: TimerDataRegister::new(1),
-                    controller: TimerControlRegister::new(1)
+                    controller: TimerControlRegister::new(1),
+                    initial_value: 0
+
                 },
                 Timer {
                     timer: TimerDataRegister::new(2),
-                    controller: TimerControlRegister::new(2)
+                    controller: TimerControlRegister::new   (2),
+                    initial_value: 0
                 },
                 Timer {
                     timer: TimerDataRegister::new(3),
-                    controller: TimerControlRegister::new(3)
+                    controller: TimerControlRegister::new(3),
+                    initial_value: 0
                 },
             ]
         }
@@ -46,4 +52,14 @@ impl TimerHandler {
             self.timers[i].register(mem);
         }
     }
+    pub fn write_to_register(&mut self, timer_number: usize, initial_value: u16){
+        self.timers[timer_number].initial_value = initial_value;
+    }
+    pub fn start(&mut self, timer_number: usize){
+        //TODO
+    }
+    pub fn set_enable(&mut self, timer_number: usize){
+        //TODO
+    }
+
 }
