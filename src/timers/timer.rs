@@ -5,7 +5,8 @@ use std::rc::Rc;
 pub struct Timer {
     pub timer: TimerDataRegister,
     pub controller: TimerControlRegister,
-    pub initial_value: u16
+    pub initial_value: u16,
+    pub cycles: usize
 }
 
 impl Timer {
@@ -47,6 +48,16 @@ impl TimerHandler {
             ]
         }
     }
+    fn frequency(&self) -> usize {
+        match self.controller.pre_scalar_selection {
+            0 => 1,
+            1 => 64,
+            2 => 256,
+            3 => 1024,
+            _ => err!(),
+        }
+    }
+
     pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
         for i in 0..4 {
             self.timers[i].register(mem);
@@ -55,8 +66,11 @@ impl TimerHandler {
     pub fn write_to_register(&mut self, timer_number: usize, initial_value: u16){
         self.timers[timer_number].initial_value = initial_value;
     }
-    pub fn start(&mut self, timer_number: usize){
-        //TODO
+    pub fn update(&mut self, cycles: usize, timer_number: usize ){
+        let num_overflows = 0;
+        let freq = self.frequency();
+
+
     }
     pub fn set_enable(&mut self, timer_number: usize){
         //TODO
