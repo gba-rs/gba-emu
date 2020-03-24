@@ -124,7 +124,7 @@ impl GBA {
             }
             self.cpu.fetch(&mut self.memory_bus);
         }
-
+        //self.timers.update(self.cpu.cycle_count);
         self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map);
         self.cpu.cycle_count = 0;
     }
