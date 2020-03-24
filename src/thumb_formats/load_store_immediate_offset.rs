@@ -40,9 +40,9 @@ impl From<u16> for LoadStoreImmediateOffset {
 impl fmt::Debug for LoadStoreImmediateOffset {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if !self.load && self.data_type ==  DataType::Word {
-            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
+            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if self.load && self.data_type ==  DataType::Word {
-            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
+            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if !self.load && self.data_type ==  DataType::Byte {
             write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if self.load && self.data_type ==  DataType::Byte {
