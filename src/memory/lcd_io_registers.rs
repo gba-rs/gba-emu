@@ -25,6 +25,15 @@ pub struct DisplayControl {
     pub memory: Rc<RefCell<GbaMem>>,
 }
 
+impl DisplayControl {
+    pub fn should_display(&self, bg_num: u8) -> bool {
+        return bg_num == 0 && self.get_screen_display_bg0() == 1 ||
+               bg_num == 1 && self.get_screen_display_bg1() == 1 ||
+               bg_num == 2 && self.get_screen_display_bg2() == 1 ||
+               bg_num == 3 && self.get_screen_display_bg3() == 1;
+    }
+}
+
 #[memory_segment(2, 0x4000002)]
 #[bit_field(green_swap, 0, 1)]
 pub struct GreenSwap {
@@ -60,6 +69,18 @@ pub struct VerticalCount {
 pub struct BG_Control {
     pub memory: Rc<RefCell<GbaMem>>,
     index: usize
+}
+
+impl BG_Control {
+    pub fn get_tileset_location(&self) -> u32 {
+        return 0x600_0000 + (self.get_character_base_block() as u32) * 0x4000;
+    }
+
+    pub fn get_tilemap_location(&self) -> u32 {
+        return 0x600_0000 + (self.get_screen_base_block() as u32) * 0x800;
+    }
+
+    // pub fn get_background_
 }
 
 #[multiple_memory_segment(2, 0x4000010, 0x4000012, 0x4000014, 0x4000016, 0x4000018, 0x400001A, 0x400001C, 0x400001E)]

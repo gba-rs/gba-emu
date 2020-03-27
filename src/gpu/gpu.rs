@@ -242,24 +242,29 @@ impl GPU {
                     log::debug!("Current mode: {}", current_mode);
                     match current_mode {
                         0 => {
-                            if self.display_control.get_screen_display_bg0() == 1 {
-                                // self.render_bg(mem_map, 0);
-                                log::debug!("Drawing bg 0");
-                            }
+                            // if self.display_control.get_screen_display_bg0() == 1 {
+                            //     self.render_bg(mem_map, 0);
+                            //     log::debug!("Drawing bg 0");
+                            // }
                             
-                            if self.display_control.get_screen_display_bg1() == 1 {
-                                self.render_bg(mem_map, 1);
-                                log::debug!("Drawing bg 1");
-                            }
+                            // if self.display_control.get_screen_display_bg1() == 1 {
+                            //     self.render_bg(mem_map, 1);
+                            //     log::debug!("Drawing bg 1");
+                            // }
 
-                            if self.display_control.get_screen_display_bg2() == 1 {
-                                self.render_bg(mem_map, 2);
-                                log::debug!("Drawing bg 2");
-                            }
+                            // if self.display_control.get_screen_display_bg2() == 1 {
+                            //     self.render_bg(mem_map, 2);
+                            //     log::debug!("Drawing bg 2");
+                            // }
 
-                            if self.display_control.get_screen_display_bg3() == 1 {
-                                self.render_bg(mem_map, 3);
-                                log::debug!("Drawing bg 3");
+                            // if self.display_control.get_screen_display_bg3() == 1 {
+                            //     self.render_bg(mem_map, 3);
+                            //     log::debug!("Drawing bg 3");
+                            // }
+                            for i in 0..4 {
+                                if self.display_control.should_display(i) {
+                                    self.render_bg(mem_map, i as usize);
+                                }
                             }
                         },
                         1 => {
@@ -410,10 +415,9 @@ impl GPU {
     pub fn render_bg(&mut self, mem_map: &mut MemoryMap, bg_number: usize) {
         let vertical_offset = self.backgrounds[bg_number].vertical_offset.get_offset() as u32; 
         let horizontal_offset = self.backgrounds[bg_number].horizontal_offset.get_offset() as u32; 
-        let tileset_location = 0x600_0000 + (self.backgrounds[bg_number].control.get_character_base_block() as u32) * 0x4000;
-        let tilemap_location = 0x600_0000 + (self.backgrounds[bg_number].control.get_screen_base_block() as u32) * 0x800;
+        let tileset_location = self.backgrounds[bg_number].control.get_tileset_location();
+        let tilemap_location = self.backgrounds[bg_number].control.get_tilemap_location();
         let bg_size_number = self.backgrounds[bg_number].control.get_screen_size() as u32;
-        log::debug!("BG {}: tileset({}) {:X}, map({}) {:X}", bg_number, self.backgrounds[bg_number].control.get_character_base_block(), tileset_location, self.backgrounds[bg_number].control.get_screen_base_block(), tilemap_location);
 
         let background_width;
         let background_height;
@@ -437,29 +441,19 @@ impl GPU {
             _ => panic!("Invalid screen size")
         }
 
-        log::debug!("BG Width: {}, BG Height {}", background_width, background_height);
-
         let pixel_format = if self.backgrounds[bg_number].control.get_colors() == 1 {
             PixelFormat::EightBit
         } else {
             PixelFormat::FourBit
         };
 
-        log::debug!("Pixel format: {:?}", pixel_format);
-
         let tile_size = if self.backgrounds[bg_number].control.get_colors() == 1 { 64 } else { 32 };
-
-        log::debug!("Tile size: {}", tile_size);
 
         let current_scanline = self.vertical_count.get_current_scanline() as u32;
         let mut x = 0;
 
-        log::debug!("Current Scanline: {}", current_scanline);
-
         let background_x = (x + horizontal_offset) % background_width;
         let background_y = (current_scanline + vertical_offset) % background_height;
-
-        log::debug!("Background pos: {}, {}", background_x, background_y);
 
         let mut sbb: u32 = 0;
         if background_width == 256 && background_height == 256 {
@@ -472,12 +466,8 @@ impl GPU {
             sbb = (2 * (background_y / 256) + (background_x / 256)) as u32;
         }
 
-        log::debug!("SBB: {}", sbb);
-
         let mut se_row = (background_x / 8) % 32;
         let se_column = (background_y / 8) % 32;
-
-        log::debug!("SE: {}, {}", se_row, se_column);
 
         let mut start_tile_x = background_x % 8;
         let tile_py = background_y % 8;
@@ -485,12 +475,8 @@ impl GPU {
         loop {
             let mut map_address = tilemap_location + 0x800u32 * sbb + 2u32 * (32 * se_column + se_row);
             for _ in se_row..32 {
-                log::debug!("Raw Entry: {:X}", mem_map.read_u16(map_address));
                 let entry_value = TileMapEntry::from(mem_map.read_u16(map_address));
                 let tile_address = tileset_location + (entry_value.tile_index as u32) * tile_size;
-                log::debug!("Map address: {:X}", map_address);
-                log::debug!("Tile address: {:X}, Location: {:X}", tile_address, tileset_location);
-                log::debug!("Screen Entry: {:?}", entry_value);
 
                 for tile_px in start_tile_x..8 {
                     let pixel_x = if entry_value.vertical_flip { 7 - tile_px } else { tile_px };
@@ -553,7 +539,7 @@ impl GPU {
         for x in 0..DISPLAY_WIDTH {
             let mut top_layer_index = 3;
             for i in (0..4).rev() {
-                if !self.backgrounds[i].scan_line[x as usize].is_transparent() {
+                if self.display_control.should_display(i as u8) && !self.backgrounds[i].scan_line[x as usize].is_transparent() {
                     top_layer_index = i;
                 }
             }
