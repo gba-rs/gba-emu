@@ -305,12 +305,12 @@ impl CPU {
                 //         self.get_register_unsafe(13), 
                 //         self.get_register_unsafe(14), 
                 //         self.get_register_unsafe(15));
-                // info!("R0 = {:X}", self.get_register(0));
+                // info!("R1 = {:X}", self.get_register_unsafe(1));
                 // info!("R2 = {:X}", self.get_register(2));
 
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
+                    self.cycle_count += 1; // ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
                 }
             },
             Err(e) => {
@@ -410,7 +410,7 @@ impl CPU {
             Condition::VS => return self.cpsr.flags.signed_overflow,
             Condition::VC => return !self.cpsr.flags.signed_overflow,
             Condition::HI => return self.cpsr.flags.carry && !self.cpsr.flags.zero,
-            Condition::LS => return !self.cpsr.flags.carry && self.cpsr.flags.zero,
+            Condition::LS => return !self.cpsr.flags.carry || self.cpsr.flags.zero,
             Condition::GE => return self.cpsr.flags.negative == self.cpsr.flags.signed_overflow,
             Condition::LT => return self.cpsr.flags.negative != self.cpsr.flags.signed_overflow,
             Condition::GT => return !self.cpsr.flags.zero && (self.cpsr.flags.negative == self.cpsr.flags.signed_overflow),

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct TileMapEntry {
     pub tile_index: u16,
     pub vertical_flip: bool,
@@ -8,7 +9,7 @@ pub struct TileMapEntry {
 impl From<u16> for TileMapEntry {
     fn from(value: u16) -> TileMapEntry {
         return TileMapEntry {
-            tile_index: (value & 0x1F) as u16,
+            tile_index: (value & 0x3FF) as u16,
             vertical_flip: ((value >> 10) & 0x1) != 0,
             horizontal_flip: ((value >> 11) & 0x1) != 0,
             palette_bank: (value >> 12) as u8

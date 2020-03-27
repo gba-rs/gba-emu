@@ -17,8 +17,8 @@ impl Rgb15 {
     }
 
     pub fn to_0rgb(&self) -> u32 {
-        let (r, g, b) = (self.red as u32, self.green as u32, self.blue as u32);
-        (r << 19) | (g << 11) | (b << 3)
+        let (r, g, b) = ((self.red as u32) * 255 / 31, (self.green as u32) * 255 / 31, (self.blue as u32) * 255 / 31);
+        (r << 16) | (g << 8) | (b)
     }
 
     pub fn is_transparent(&self) -> bool {

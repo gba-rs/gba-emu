@@ -24,7 +24,17 @@ impl MemoryMap {
         if address == 0x3007150 {
             log::info!("Writing to 0x3007150: {:X}", self.read_u16(address));
         }
-        self.memory.borrow_mut()[address as usize] = value;
+
+        if address == 0x03006818 {
+            log::info!("Writing to 0x03006818: {:X}", self.read_u16(address));
+        }
+
+        if address == 0x4000202 || address == 0x4000203 {
+            let new_val = self.read_u8(address) & !value;
+            self.memory.borrow_mut()[address as usize] = new_val;
+        } else {
+            self.memory.borrow_mut()[address as usize] = value;
+        }
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {
@@ -32,6 +42,11 @@ impl MemoryMap {
         self.write_u8(address, (value & 0xFF) as u8);
         if address == 0x3007150 {
             log::info!("Writing to 0x3007150: {:X}", self.read_u16(address));
+        }
+
+        
+        if address == 0x03006818 {
+            log::info!("Writing to 0x03006818: {:X}", self.read_u16(address));
         }
     }
 
@@ -42,6 +57,11 @@ impl MemoryMap {
         self.write_u8(address, (value & 0xFF) as u8);
         if address == 0x3007150 {
             log::info!("Writing to 0x3007150: {:X}", self.read_u16(address));
+        }
+
+        
+        if address == 0x03006818 {
+            log::info!("Writing to 0x03006818: {:X}", self.read_u16(address));
         }
     }
 
@@ -71,11 +91,19 @@ impl MemoryMap {
 
     pub fn read_u16(&self, address: u32) -> u16 {
         let result: u16 = ((self.read_u8(address + 1) as u16) << 8) | (self.read_u8(address) as u16);
+        if address == 0x06004000 {
+            log::info!("Reading at 0x06004000: {:X}", result);
+        }
         return result;
     }
 
     pub fn read_u8(&self, address: u32) -> u8 {
         if address > 0x0FFFFFFF { return 0; }
+
+        if address == 0x06004000 || address == 0x06004001 {
+            log::info!("Reading at 0x06004000: {:X}", self.memory.borrow()[address as usize]);
+        }
+
         return self.memory.borrow()[address as usize];
     }
 }
