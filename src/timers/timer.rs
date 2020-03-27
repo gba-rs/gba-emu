@@ -15,7 +15,7 @@ impl Timer {
         self.timer.register(mem);
         self.controller.register(mem);
     }
-    fn frequency(&mut self) -> usize {
+    fn frequency(&self) -> usize {
         match self.controller.get_pre_scalar_selection() {
             0 => 1,
             1 => 64,
