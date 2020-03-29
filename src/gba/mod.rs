@@ -3,6 +3,7 @@ use crate::gpu::gpu::GPU;
 use crate::memory::{key_input_registers::*};
 use crate::memory::memory_bus::MemoryBus;
 use crate::interrupts::interrupts::Interrupts;
+use crate::timers::timer::TimerHandler;
 
 
 pub struct GBA {
@@ -11,7 +12,8 @@ pub struct GBA {
     pub memory_bus: MemoryBus,
     pub key_status: KeyStatus,
     pub ket_interrupt_control: KeyInterruptControl,
-    pub interrupt_handler: Interrupts
+    pub interrupt_handler: Interrupts,
+    pub timer_handler: TimerHandler
 }
 
 impl Default for GBA {
@@ -29,7 +31,9 @@ impl GBA {
             memory_bus: MemoryBus::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
-            interrupt_handler: Interrupts::new()  
+            interrupt_handler: Interrupts::new()  ,
+            timer_handler: TimerHandler::new()
+
         };
 
         temp.gpu.register(&temp.memory_bus.mem_map.memory);
@@ -38,6 +42,7 @@ impl GBA {
         temp.interrupt_handler.ime_interrupt.register(&temp.memory_bus.mem_map.memory);
         temp.interrupt_handler.ie_interrupt.register(&temp.memory_bus.mem_map.memory);
         temp.interrupt_handler.if_interrupt.register(&temp.memory_bus.mem_map.memory);
+        temp.timer_handler.register(&temp.memory_bus.mem_map.memory);
         temp.memory_bus.cycle_clock.register(&temp.memory_bus.mem_map.memory);
 
         // setup the PC
@@ -127,6 +132,7 @@ impl GBA {
         }
 
         self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
+        self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
         self.cpu.cycle_count = 0;
     }
 }
