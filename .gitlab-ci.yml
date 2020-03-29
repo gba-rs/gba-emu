@@ -15,6 +15,7 @@ build:
     - rustc --version
     - cargo --version
     - rustup --version
+    - rustup default
     - cargo build --all --verbose
 
 test:

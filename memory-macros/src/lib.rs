@@ -4,10 +4,9 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use quote::format_ident;
-use syn::{ItemStruct, DeriveInput};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::{parse_macro_input, Ident, Token, Lit, Expr, token::Bracket};
-use quote::{ToTokens, TokenStreamExt};
+use quote::{ToTokens};
 
 enum BitFieldOption {
     SingleAddress(IORegister),
@@ -148,7 +147,7 @@ fn parse_fields(input: ParseStream) -> Vec<BitField> {
         }
 
         match input.parse::<Token![,]>() {
-            Ok(comma) => {
+            Ok(_) => {
                 if input.is_empty() {
                     break
                 }

@@ -19,7 +19,7 @@ io_register! (
 );
 
 io_register! (
-    DMAControl => 2, 0x40000BA, 0x40000C6, 0x40000D2, 0x40000DE],
+    DMAControl => 2, [0x40000BA, 0x40000C6, 0x40000D2, 0x40000DE],
     destination_address_control: 5, 2,
     source_address_control: 7, 2,
     dma_repeat: 9, 1,
