@@ -2,7 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC, cpu::THUMB_LR};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct BL {
     pub offset_bit: bool,

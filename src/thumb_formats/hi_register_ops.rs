@@ -3,7 +3,7 @@ use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC};
 use std::fmt;
 use log::{error};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]

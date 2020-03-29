@@ -3,7 +3,7 @@ use crate::operations::load_store::{apply_offset, DataType, DataTransfer, data_t
 use crate::operations::shift::{Shift, apply_shift};
 use crate::operations::instruction::Instruction;
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct SingleDataTransfer {
     pub offset: SingleDataTransferOperand,

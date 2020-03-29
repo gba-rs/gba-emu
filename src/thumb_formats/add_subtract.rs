@@ -3,7 +3,7 @@ use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {

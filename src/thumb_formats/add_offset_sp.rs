@@ -2,7 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::THUMB_SP};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct AddOffsetSP{
     pub sign: bool,

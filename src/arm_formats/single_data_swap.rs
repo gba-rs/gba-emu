@@ -1,7 +1,7 @@
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct SingleDataSwap {
     pub source_register: u8,

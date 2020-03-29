@@ -3,7 +3,7 @@ use crate::operations::shift::{Shift, apply_shift};
 use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU, program_status_register::ProgramStatusRegister, condition::Condition, cpu::OperatingMode};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {

@@ -18,7 +18,7 @@ use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::borrow::{BorrowMut};
 use log::{info};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 
 pub const ARM_PC: u8 = 15;

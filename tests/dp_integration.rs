@@ -10,7 +10,7 @@ mod tests {
     use gba_emulator::gba::GBA;
     use std::borrow::BorrowMut;
     use std::borrow::Borrow;
-    use gba_emulator::gba::memory_bus::MemoryBus;
+    use gba_emulator::memory::memory_bus::MemoryBus;
 
 
     #[test]

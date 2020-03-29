@@ -2,7 +2,7 @@ use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, cond
 use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct BranchExchange {
     pub condition: Condition,

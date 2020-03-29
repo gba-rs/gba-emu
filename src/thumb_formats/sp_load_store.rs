@@ -2,7 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU, cpu::THUMB_SP};
 use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct SpLoadStore {
     pub load: bool,

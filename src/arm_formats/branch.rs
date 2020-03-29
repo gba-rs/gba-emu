@@ -2,7 +2,7 @@ use crate::operations::arm_arithmetic::add;
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, cpu::ARM_LR, condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 
 pub struct Branch {

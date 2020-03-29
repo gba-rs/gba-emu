@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
 use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use std::fmt;
 use log::debug;
 

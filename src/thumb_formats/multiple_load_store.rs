@@ -1,6 +1,6 @@
 use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use std::fmt;
 
 

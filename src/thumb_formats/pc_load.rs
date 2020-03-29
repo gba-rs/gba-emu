@@ -2,7 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU};
 use crate::cpu::cpu::{THUMB_PC};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct LDR {
     pub destination: u8,

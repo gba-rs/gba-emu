@@ -1,8 +1,7 @@
-pub mod memory_bus;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::gpu::gpu::GPU;
 use crate::memory::{key_input_registers::*};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use crate::interrupts::interrupts::Interrupts;
 
 

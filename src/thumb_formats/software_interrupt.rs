@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR, cpu::ARM_PC, cpu::ARM_LR};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct ThumbSoftwareInterrupt {
     pub comment_immediate: u8

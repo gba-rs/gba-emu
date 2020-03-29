@@ -3,7 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use log::{debug};
 use crate::operations::bitutils::sign_extend_u32;
 use crate::operations::arm_arithmetic;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {

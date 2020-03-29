@@ -1,6 +1,6 @@
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, condition::Condition};
 use crate::operations::instruction::Instruction;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use std::fmt;
 
 pub struct BlockDataTransfer {
