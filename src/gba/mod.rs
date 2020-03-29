@@ -132,7 +132,7 @@ impl GBA {
         }
 
         self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
-        self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
+        // self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
         self.cpu.cycle_count = 0;
     }
 }

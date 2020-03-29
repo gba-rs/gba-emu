@@ -310,7 +310,7 @@ impl CPU {
 
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    self.cycle_count += 1; // ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
+                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
                 }
             },
             Err(e) => {
