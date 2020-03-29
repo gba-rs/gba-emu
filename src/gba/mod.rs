@@ -1,6 +1,5 @@
 pub mod memory_bus;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
-use crate::memory::{io_registers::IORegisters};
 use crate::gpu::gpu::GPU;
 use crate::memory::{key_input_registers::*};
 use crate::gba::memory_bus::MemoryBus;
@@ -11,7 +10,6 @@ pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
     pub memory_bus: MemoryBus,
-    pub io_reg: IORegisters,
     pub key_status: KeyStatus,
     pub ket_interrupt_control: KeyInterruptControl,
     pub interrupt_handler: Interrupts
@@ -29,7 +27,6 @@ impl GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-            io_reg: IORegisters::new(0),
             memory_bus: MemoryBus::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
