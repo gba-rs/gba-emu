@@ -515,6 +515,6 @@ mod tests {
     //     map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
     //     map.write_u32(0x02000000, 0x11FF2FE1u32.to_be());
     //     cpu.fetch(&mut map);
-    //     assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
+    //     assert_eq!(cpu.get_instruction_set(), InstructionSet::Thumb);
     // }
 }

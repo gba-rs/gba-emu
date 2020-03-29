@@ -198,7 +198,7 @@ mod tests {
                 }
             }
 
-            assert_eq!(gba.cpu.operating_mode, OperatingMode::FastInterrupt);
+            assert_eq!(gba.cpu.get_operating_mode(), OperatingMode::FastInterrupt);
         }
         #[test]
         fn correct_operation_called_msr_spsr() {
@@ -215,6 +215,6 @@ mod tests {
                 }
             }
 
-            assert_eq!(gba.cpu.operating_mode, OperatingMode::FastInterrupt);
+            assert_eq!(gba.cpu.get_operating_mode(), OperatingMode::FastInterrupt);
         }
 }

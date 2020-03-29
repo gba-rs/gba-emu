@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn branch_long_negative_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         // Offset: 11111111111 11111110110 0 = -20
         //          upper 11    lower 11
@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn branch_long_positive_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         // Offset: 00000000000 00000001010 0 = 20
         //          upper 11    lower 11

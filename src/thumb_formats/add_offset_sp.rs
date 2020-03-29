@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn add_positive_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         gba.cpu.set_register(THUMB_SP, 12);
 
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn add_negative_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         gba.cpu.set_register(THUMB_SP, 12);
 

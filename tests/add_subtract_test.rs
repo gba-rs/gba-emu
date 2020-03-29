@@ -15,7 +15,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,1);
@@ -29,7 +29,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,5);
@@ -43,7 +43,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,1);
@@ -57,7 +57,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,4);

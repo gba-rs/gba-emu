@@ -52,7 +52,7 @@ mod tests{
     #[test]
     fn branch_conditional_negative_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.cpsr.flags.zero = true;
 
         let decode_result = gba.cpu.decode(0xD0F6);
@@ -72,7 +72,7 @@ mod tests{
     #[test]
     fn branch_conditional_positive_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.cpsr.flags.zero = true;
 
         let decode_result = gba.cpu.decode(0xD00A);
@@ -91,7 +91,7 @@ mod tests{
     #[test]
     fn branch_conditional_false_condition() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.cpsr.flags.zero = false;
 
         let decode_result = gba.cpu.decode(0xD00A);

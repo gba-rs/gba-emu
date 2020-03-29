@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.set_register(format.rb, 0);
         gba.cpu.set_register(format.rd, 2);
 
@@ -159,7 +159,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.set_register(format.rb,0);
         gba.cpu.set_register(format.rd,2);
 
@@ -198,7 +198,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.set_register(format.rb,7);
         gba.cpu.set_register(format.rd,3);
         //let mem address = 3
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         //let mem address = 3
         gba.cpu.set_register(format.rb,1);
         gba.cpu.set_register(format.rd,2); //value we want to get

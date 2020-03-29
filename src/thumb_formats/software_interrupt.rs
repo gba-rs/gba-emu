@@ -51,8 +51,8 @@ mod tests {
     #[test]
     fn swi_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
-        gba.cpu.operating_mode = OperatingMode::Supervisor;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
+        gba.cpu.set_operating_mode(OperatingMode::Supervisor);
 
         gba.cpu.set_register(THUMB_PC, 24);
 
@@ -66,9 +66,9 @@ mod tests {
             }
         }
 
-        assert_eq!(InstructionSet::Arm, gba.cpu.current_instruction_set);
-        assert_eq!(OperatingMode::Supervisor, gba.cpu.operating_mode);
+        assert_eq!(InstructionSet::Arm, gba.cpu.get_instruction_set());
+        assert_eq!(OperatingMode::Supervisor, gba.cpu.get_operating_mode());
         assert_eq!(0x8, gba.cpu.get_register(ARM_PC));
-        assert_eq!(26, gba.cpu.get_register(ARM_LR));
+        assert_eq!(24, gba.cpu.get_register(ARM_LR));
     }
 }

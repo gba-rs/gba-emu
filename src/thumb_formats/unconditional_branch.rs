@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn branch_unconditional_negative_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         let decode_result = gba.cpu.decode(0xE7F6);
         match decode_result {
@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn branch_unconditional_positive_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         let decode_result = gba.cpu.decode(0xE00A);
         match decode_result {

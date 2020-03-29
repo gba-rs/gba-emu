@@ -67,12 +67,12 @@ mod tests {
         let a: BranchExchange = BranchExchange::from(0xD12F_FF1F); //Final bit is 1
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 0);
         a.execute(&mut cpu,&mut bus);
-        assert_eq!(cpu.current_instruction_set, InstructionSet::Arm);
+        assert_eq!(cpu.get_instruction_set(), InstructionSet::Arm);
         cpu.set_register(current_pc, 1);
         a.execute(&mut cpu,&mut bus);
-        assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
+        assert_eq!(cpu.get_instruction_set(), InstructionSet::Thumb);
     }
 }

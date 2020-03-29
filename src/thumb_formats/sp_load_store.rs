@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn ldr_sp_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         gba.memory_bus.mem_map.write_u32(0x02000050, 1000);
         gba.cpu.set_register(THUMB_SP, 0x02000000);
@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn str_sp_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         gba.cpu.set_register(THUMB_SP, 0x02000000);
         gba.cpu.set_register(4, 1000);

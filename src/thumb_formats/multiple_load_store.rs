@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn stmia_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         for i in 0..8 {
             gba.cpu.set_register(i, (i as u32) * 100);
@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn ldmia_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         let base = 0x02000000;
 

@@ -63,7 +63,7 @@ mod tests {
     #[test]
     fn pc_set() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         gba.cpu.set_register(THUMB_PC, 0x08000000);
         gba.memory_bus.mem_map.write_u32(0x08000000 + 40, 2000);

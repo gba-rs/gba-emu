@@ -23,13 +23,6 @@ pub enum GpuState {
     VBlank
 }
 
-#[repr(u8)]
-#[derive(Debug)]
-pub enum PixelFormat {
-    FourBit,
-    EightBit
-}
-
 pub struct Background {
     pub control: BG_Control,
     pub horizontal_offset: BGOffset,
@@ -42,6 +35,10 @@ impl Background {
         self.control.register(mem);
         self.horizontal_offset.register(mem);
         self.vertical_offset.register(mem);
+    }
+
+    pub fn get_offsets(&self) -> (u32, u32) {
+        return (self.vertical_offset.get_offset() as u32, self.horizontal_offset.get_offset() as u32);
     }
 }
 
@@ -239,28 +236,8 @@ impl GPU {
                 if current_scanline < DISPLAY_HEIGHT {
                     // render scanline
                     let current_mode = self.display_control.get_bg_mode();
-                    log::debug!("Current mode: {}", current_mode);
                     match current_mode {
                         0 => {
-                            // if self.display_control.get_screen_display_bg0() == 1 {
-                            //     self.render_bg(mem_map, 0);
-                            //     log::debug!("Drawing bg 0");
-                            // }
-                            
-                            // if self.display_control.get_screen_display_bg1() == 1 {
-                            //     self.render_bg(mem_map, 1);
-                            //     log::debug!("Drawing bg 1");
-                            // }
-
-                            // if self.display_control.get_screen_display_bg2() == 1 {
-                            //     self.render_bg(mem_map, 2);
-                            //     log::debug!("Drawing bg 2");
-                            // }
-
-                            // if self.display_control.get_screen_display_bg3() == 1 {
-                            //     self.render_bg(mem_map, 3);
-                            //     log::debug!("Drawing bg 3");
-                            // }
                             for i in 0..4 {
                                 if self.display_control.should_display(i) {
                                     self.render_bg(mem_map, i as usize);
@@ -277,7 +254,6 @@ impl GPU {
                             self.render_mode_3(mem_map);
                         },
                         4 => {
-                            // log::debug!("Mode 4");
                             self.render_mode_4(mem_map);
                         },
                         5 => {
@@ -345,7 +321,6 @@ impl GPU {
         self.display_status.set_vcounter_flag((vcount_setting == self.vertical_count.get_current_scanline()) as u8);
 
         if self.display_status.get_vcounter_irq_enable() == 1 && self.display_status.get_vcounter_flag() == 1{
-            log::debug!("lcd v counter irq");
             irq_ctl.if_interrupt.set_lcd_v_counter(1);
         }
     }
@@ -413,41 +388,13 @@ impl GPU {
     }
 
     pub fn render_bg(&mut self, mem_map: &mut MemoryMap, bg_number: usize) {
-        let vertical_offset = self.backgrounds[bg_number].vertical_offset.get_offset() as u32; 
-        let horizontal_offset = self.backgrounds[bg_number].horizontal_offset.get_offset() as u32; 
+        let (vertical_offset, horizontal_offset) = self.backgrounds[bg_number].get_offsets();
         let tileset_location = self.backgrounds[bg_number].control.get_tileset_location();
         let tilemap_location = self.backgrounds[bg_number].control.get_tilemap_location();
-        let bg_size_number = self.backgrounds[bg_number].control.get_screen_size() as u32;
+        let (background_width, background_height) = self.backgrounds[bg_number].control.get_background_dimensions();
 
-        let background_width;
-        let background_height;
-        match bg_size_number {
-            0 => {
-                background_width = 256;
-                background_height = 256;
-            },
-            1 => {
-                background_width = 512;
-                background_height = 256;
-            },
-            2 => {
-                background_width = 256;
-                background_height = 512;
-            },
-            3 => {
-                background_width = 512;
-                background_height = 512;
-            },
-            _ => panic!("Invalid screen size")
-        }
-
-        let pixel_format = if self.backgrounds[bg_number].control.get_colors() == 1 {
-            PixelFormat::EightBit
-        } else {
-            PixelFormat::FourBit
-        };
-
-        let tile_size = if self.backgrounds[bg_number].control.get_colors() == 1 { 64 } else { 32 };
+        let pixel_format = self.backgrounds[bg_number].control.get_pixel_format();
+        let tile_size = self.backgrounds[bg_number].control.get_tilesize();
 
         let current_scanline = self.vertical_count.get_current_scanline() as u32;
         let mut x = 0;
@@ -481,11 +428,9 @@ impl GPU {
                 for tile_px in start_tile_x..8 {
                     let pixel_x = if entry_value.vertical_flip { 7 - tile_px } else { tile_px };
                     let pixel_y = if entry_value.horizontal_flip { 7 - tile_py } else { tile_py };
-                    // log::debug!("Pixel pos: {}, {}", pixel_x, pixel_y);
                     let pixel_index = match pixel_format {
                         PixelFormat::EightBit => {
                             let pixel_index_address = tile_address + (8 * pixel_y + pixel_x);
-                            // log::debug!("Pixel index address: {:X}", pixel_index_address);
                             mem_map.read_u8(pixel_index_address)
                         },
                         PixelFormat::FourBit => {
@@ -504,19 +449,13 @@ impl GPU {
                         PixelFormat::EightBit => 0u32,
                     };
 
-                    // log::debug!("Pixel index: {}", pixel_index);
-
                     let color = if pixel_index == 0 || (palette_bank != 0 && pixel_index % 16 == 0) {
                         Rgb15::new(0x8000)
                     } else {
-                        // log::debug!("Reading color");
-                        // Rgb15::new(mem_map.read_u16(pixel_index + 0x500_0000u32))
                         let palette_ram_index = 2 * pixel_index + 0x20 * palette_bank;
                         Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
                     };
 
-                    // log::debug!("X: {}", x);
-                    // log::debug!("Color: bg{}: {}, {} = {:?}", bg_number, x, current_scanline, color);
                     self.backgrounds[bg_number].scan_line[x as usize] = color;
                     x += 1;
                     if DISPLAY_WIDTH == x {
