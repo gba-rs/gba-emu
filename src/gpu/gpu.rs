@@ -23,6 +23,39 @@ pub enum GpuState {
     VBlank
 }
 
+pub struct ObjAttribute0 {
+    pub y_coordinate: u16,
+    pub rotation_flag: bool,
+    pub double_size_flag: bool, // Both of these occupy bit 9,
+    pub obj_disable_flag: bool, // but they depend on rotation flag
+    pub obj_mode: u8,
+    pub mosaic_flag: bool,
+    pub color_flag: bool,
+    pub obj_shape: u8
+}
+
+
+pub struct ObjAttribute1 {
+    pub x_coordinate: u16,
+    pub rotation_scaling_param: _____, // If rotation flag is set, bits 9-13
+    pub horizontal_flip: bool,         // If rotation flag is not, bit 12
+    pub vertical_flip: bool,           // If rotation flag is not, bit 13
+    pub obj_size: u8,
+}
+
+
+pub struct ObjAttribute2 {
+    pub character_name: u16,
+    pub priority_rel_to_bg: u8,
+    pub palette_number: u8
+}
+
+pub struct Object {
+    pub obj0: ObjAttribute0,
+    pub obj1: ObjAttribute1,
+    pub obj2: ObjAttribute2
+}
+
 pub struct Background {
     pub control: BG_Control,
     pub horizontal_offset: BGOffset,
@@ -85,6 +118,8 @@ pub struct GPU {
     pub backgrounds: [Background; 4],
     pub bg_affine_components: [BgAffineComponent; 2],
     pub windows: [Window; 2],
+
+    pub objects: [Object; 128],
 
     pub control_window_inside: ControlWindowInside,
     pub control_window_outside: ControlWindowOutside,
@@ -385,6 +420,10 @@ impl GPU {
             let color = Rgb15::new(mem_map.read_u16(bitmap_offset));
             self.backgrounds[2].scan_line[x as usize] = color;
         }
+    }
+
+    pub fn render_obj(&mut self, mem_map: &mut MemoryMap) {
+
     }
 
     pub fn render_bg(&mut self, mem_map: &mut MemoryMap, bg_number: usize) {

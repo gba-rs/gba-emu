@@ -124,7 +124,7 @@ impl GBA {
 
     pub fn step(&mut self) {
         while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
-            // self.key_status.set_register(0x3FF);
+            self.key_status.set_register(0x3FF);
             if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
                 self.interrupt_handler.service(&mut self.cpu);
             }
@@ -132,7 +132,7 @@ impl GBA {
         }
 
         self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
-        // self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
+        self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
         self.cpu.cycle_count = 0;
     }
 }
