@@ -384,16 +384,6 @@ impl Instruction for DataProcessing {
             }
         }
 
-        // match cpu.cpsr.control_bits.mode_bits {
-        //     0b10000 => cpu.operating_mode = OperatingMode::User,
-        //     0b10001 => cpu.operating_mode = OperatingMode::FastInterrupt,
-        //     0b10010 => cpu.operating_mode = OperatingMode::Interrupt,
-        //     0b10011 => cpu.operating_mode = OperatingMode::Supervisor,
-        //     0b10111 => cpu.operating_mode = OperatingMode::Abort,
-        //     0b11011 => cpu.operating_mode = OperatingMode::Undefined,
-        //     0b11111 => cpu.operating_mode = OperatingMode::System,
-        //     _ => panic!("Mode bits set incorrectly {:b}", cpu.cpsr.control_bits.mode_bits)
-        // }
         mem_bus.cycle_clock.get_cycles()
 
     }
