@@ -49,14 +49,19 @@ impl Instruction for MultipleLoadStore {
                 mem_bus.write_u32(base, cpu.get_register(THUMB_PC) + 4);
                 cpu.set_register(self.rb, base + 0x40);
             } else {
-
-                if self.register_list.contains(&self.rb) && self.rb != self.register_list[0] {
-                    cpu.set_register(self.rb, base + (4 * self.register_list.len() as u32));
-                }
-
                 for reg_num in self.register_list.iter() {
                     let value = cpu.get_register(*reg_num);
-                    mem_bus.write_u32(base + offset, value);
+                    if *reg_num == self.rb {
+                        if *reg_num == self.register_list[0] {
+                            //old
+                            mem_bus.write_u32(base + offset, value);
+                        } else {
+                            //new
+                            mem_bus.write_u32(base + offset, base + (4 * self.register_list.len() as u32));
+                        }
+                    } else {
+                        mem_bus.write_u32(base + offset, value);
+                    }
                     offset += 4;
                 }
                 cpu.set_register(self.rb, base + offset);

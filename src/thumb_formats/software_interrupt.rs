@@ -23,7 +23,7 @@ impl Instruction for ThumbSoftwareInterrupt {
         cpu.set_operating_mode(OperatingMode::Supervisor);
         cpu.cpsr.control_bits.irq_disable = true;
         cpu.set_spsr(old_cpsr);
-        cpu.set_register(ARM_LR, current_pc); // set LR to the next instruction (fetch does the other +2)      
+        cpu.set_register(ARM_LR, current_pc);      
         cpu.set_register(ARM_PC, 0x08);
         _mem_bus.cycle_clock.get_cycles()
     }

@@ -5,7 +5,6 @@ use crate::memory::memory_bus::MemoryBus;
 use crate::interrupts::interrupts::Interrupts;
 use crate::timers::timer::TimerHandler;
 
-
 pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
@@ -31,9 +30,8 @@ impl GBA {
             memory_bus: MemoryBus::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
-            interrupt_handler: Interrupts::new()  ,
+            interrupt_handler: Interrupts::new(),
             timer_handler: TimerHandler::new()
-
         };
 
         temp.gpu.register(&temp.memory_bus.mem_map.memory);

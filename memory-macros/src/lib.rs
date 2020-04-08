@@ -307,7 +307,7 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, bit_fields: &Multip
 
             pub fn new(index: usize) -> #name {
                 return #name {
-                    memory: Rc::new(RefCell::new(vec![0; #segment_size])),
+                    memory: Rc::new(RefCell::new(Vec::new())),
                     index: index
                 };
             }
