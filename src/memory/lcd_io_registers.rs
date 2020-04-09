@@ -139,7 +139,7 @@ impl From<&BGRotScaleParam> for i32 {
 }
 
 io_register! (
-    ObjAttribute0 => 2[
+    ObjAttribute0 => 2, [
         117440512usize,
         117440520usize,
         117440528usize,
@@ -269,18 +269,18 @@ io_register! (
         117441520usize,
         117441528usize,
     ],
-    y_coordinate: 0,7,
-    rotation_flag: 8,8,
-    double_size_flag: 9,9, // Both of these occupy bit 9,
-    obj_disable_flag: 9,9, // but they depend on rotation flag
-    obj_mode: 10,11,
-    mosaic_flag: 12,12,
-    color_flag: 13,13,
-    obj_shape: 14,15
+    y_coordinate: 0, 8,
+    rotation_flag: 8, 1,
+    double_size_flag: 9, 1, // Both of these occupy bit 9,
+    obj_disable_flag: 9, 1, // but they depend on rotation flag
+    obj_mode: 10, 2,
+    mosaic_flag: 12, 1,
+    color_flag: 13, 1,
+    obj_shape: 14, 2
 );
 
 io_register! (
-    ObjAttribute1 => 2[
+    ObjAttribute1 => 2, [
         117440514usize,
         117440522usize,
         117440530usize,
@@ -410,15 +410,15 @@ io_register! (
         117441522usize,
         117441530usize
     ],
-    x_coordinate: 0,8,
-    rotation_scaling_param: 9,13,
-    horizontal_flip: 12,12,
-    vertical_flip: 13,13,
-    obj_size: 14,15
+    x_coordinate: 0, 9,
+    rotation_scaling_param: 9, 4,
+    horizontal_flip: 12, 1,
+    vertical_flip: 13, 1,
+    obj_size: 14, 2
 );
 
 io_register! (
-    ObjAttribute2 => 2[
+    ObjAttribute2 => 2, [
         117440516usize,
         117440524usize,
         117440532usize,
@@ -548,9 +548,9 @@ io_register! (
         117441524usize,
         117441532usize,
     ],
-    character_name: 0,9,
-    priority_rel_to_bg: 10,11,
-    palette_number: 12,15,
+    character_name: 0, 10,
+    priority_rel_to_bg: 10, 2,
+    palette_number: 12, 3,
 );
 
 

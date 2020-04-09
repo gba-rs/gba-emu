@@ -1,5 +1,6 @@
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
-use crate::gpu::gpu::GPU;
+use crate::gpu::{gpu::GPU, gpu::DISPLAY_WIDTH, gpu::DISPLAY_HEIGHT};
+use crate::gpu::rgb15::Rgb15;
 use crate::memory::{key_input_registers::*};
 use crate::memory::memory_bus::MemoryBus;
 use crate::interrupts::interrupts::Interrupts;
@@ -107,6 +108,7 @@ impl GBA {
         }
 
         self.gpu.frame_ready = false;
+        self.gpu.obj_buffer = vec![Rgb15::new(0x8000); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize];
     }
 
     pub fn single_step(&mut self) {

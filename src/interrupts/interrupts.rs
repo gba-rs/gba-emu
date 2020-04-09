@@ -28,7 +28,7 @@ impl Interrupts {
             let old_cpsr = cpu.cpsr;
             cpu.set_operating_mode(OperatingMode::Interrupt);
             if cpu.get_instruction_set() == InstructionSet::Arm {
-                cpu.set_register(ARM_LR, cpu.get_register(ARM_PC) + 8)
+                cpu.set_register(ARM_LR, cpu.get_register(ARM_PC) + 4)
             } else {
                 cpu.set_register(THUMB_LR, cpu.get_register(THUMB_PC) + 4)
             };

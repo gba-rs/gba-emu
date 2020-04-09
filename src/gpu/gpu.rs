@@ -23,37 +23,36 @@ pub enum GpuState {
     VBlank
 }
 
-pub struct ObjAttribute0 {
-    pub y_coordinate: u16,
-    pub rotation_flag: bool,
-    pub double_size_flag: bool, // Both of these occupy bit 9,
-    pub obj_disable_flag: bool, // but they depend on rotation flag
-    pub obj_mode: u8,
-    pub mosaic_flag: bool,
-    pub color_flag: bool,
-    pub obj_shape: u8
-}
-
-
-pub struct ObjAttribute1 {
-    pub x_coordinate: u16,
-    pub rotation_scaling_param: _____, // If rotation flag is set, bits 9-13
-    pub horizontal_flip: bool,         // If rotation flag is not, bit 12
-    pub vertical_flip: bool,           // If rotation flag is not, bit 13
-    pub obj_size: u8,
-}
-
-
-pub struct ObjAttribute2 {
-    pub character_name: u16,
-    pub priority_rel_to_bg: u8,
-    pub palette_number: u8
-}
-
 pub struct Object {
-    pub obj0: ObjAttribute0,
-    pub obj1: ObjAttribute1,
-    pub obj2: ObjAttribute2
+    pub attr0: ObjAttribute0,
+    pub attr1: ObjAttribute1,
+    pub attr2: ObjAttribute2
+}
+
+impl Object {
+    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
+        self.attr0.register(mem);
+        self.attr1.register(mem);
+        self.attr2.register(mem);
+    }
+
+    pub fn size(&self) -> (i32,i32){
+        match (self.attr1.get_obj_size(), self.attr0.get_obj_shape()) {
+            (0, 0)  => (8, 8),
+            (1, 0)  => (16, 16),
+            (2, 0)  => (32, 32),
+            (3, 0)  => (64, 64),
+            (0, 1)  => (16, 8),
+            (1, 1)  => (32, 8),
+            (2, 1)  => (32, 16),
+            (3, 1)  => (64, 32),
+            (0, 2)  => (8, 16),
+            (1, 2)  => (8, 32),
+            (2, 2)  => (16, 32),
+            (3, 2)  => (32, 64),
+            _ => (8, 8)
+        }
+    }
 }
 
 pub struct Background {
@@ -132,7 +131,8 @@ pub struct GPU {
     pub cycles_to_next_state: u32,
     pub current_state: GpuState,
     pub frame_ready: bool,
-    pub frame_buffer: Vec<u32>
+    pub frame_buffer: Vec<u32>,
+    pub obj_buffer: Vec<Rgb15>
 }
 
 impl GPU {
@@ -187,6 +187,648 @@ impl GPU {
                     rotation_scaling_param_d: BGRotScaleParam::new(7)
                 }
             ],
+            objects: [
+                Object {
+                    attr0: ObjAttribute0::new(0),
+                    attr1: ObjAttribute1::new(0),
+                    attr2: ObjAttribute2::new(0)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(1),
+                    attr1: ObjAttribute1::new(1),
+                    attr2: ObjAttribute2::new(1)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(2),
+                    attr1: ObjAttribute1::new(2),
+                    attr2: ObjAttribute2::new(2)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(3),
+                    attr1: ObjAttribute1::new(3),
+                    attr2: ObjAttribute2::new(3)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(4),
+                    attr1: ObjAttribute1::new(4),
+                    attr2: ObjAttribute2::new(4)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(5),
+                    attr1: ObjAttribute1::new(5),
+                    attr2: ObjAttribute2::new(5)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(6),
+                    attr1: ObjAttribute1::new(6),
+                    attr2: ObjAttribute2::new(6)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(7),
+                    attr1: ObjAttribute1::new(7),
+                    attr2: ObjAttribute2::new(7)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(8),
+                    attr1: ObjAttribute1::new(8),
+                    attr2: ObjAttribute2::new(8)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(9),
+                    attr1: ObjAttribute1::new(9),
+                    attr2: ObjAttribute2::new(9)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(10),
+                    attr1: ObjAttribute1::new(10),
+                    attr2: ObjAttribute2::new(10)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(11),
+                    attr1: ObjAttribute1::new(11),
+                    attr2: ObjAttribute2::new(11)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(12),
+                    attr1: ObjAttribute1::new(12),
+                    attr2: ObjAttribute2::new(12)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(13),
+                    attr1: ObjAttribute1::new(13),
+                    attr2: ObjAttribute2::new(13)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(14),
+                    attr1: ObjAttribute1::new(14),
+                    attr2: ObjAttribute2::new(14)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(15),
+                    attr1: ObjAttribute1::new(15),
+                    attr2: ObjAttribute2::new(15)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(16),
+                    attr1: ObjAttribute1::new(16),
+                    attr2: ObjAttribute2::new(16)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(17),
+                    attr1: ObjAttribute1::new(17),
+                    attr2: ObjAttribute2::new(17)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(18),
+                    attr1: ObjAttribute1::new(18),
+                    attr2: ObjAttribute2::new(18)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(19),
+                    attr1: ObjAttribute1::new(19),
+                    attr2: ObjAttribute2::new(19)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(20),
+                    attr1: ObjAttribute1::new(20),
+                    attr2: ObjAttribute2::new(20)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(21),
+                    attr1: ObjAttribute1::new(21),
+                    attr2: ObjAttribute2::new(21)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(22),
+                    attr1: ObjAttribute1::new(22),
+                    attr2: ObjAttribute2::new(22)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(23),
+                    attr1: ObjAttribute1::new(23),
+                    attr2: ObjAttribute2::new(23)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(24),
+                    attr1: ObjAttribute1::new(24),
+                    attr2: ObjAttribute2::new(24)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(25),
+                    attr1: ObjAttribute1::new(25),
+                    attr2: ObjAttribute2::new(25)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(26),
+                    attr1: ObjAttribute1::new(26),
+                    attr2: ObjAttribute2::new(26)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(27),
+                    attr1: ObjAttribute1::new(27),
+                    attr2: ObjAttribute2::new(27)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(28),
+                    attr1: ObjAttribute1::new(28),
+                    attr2: ObjAttribute2::new(28)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(29),
+                    attr1: ObjAttribute1::new(29),
+                    attr2: ObjAttribute2::new(29)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(30),
+                    attr1: ObjAttribute1::new(30),
+                    attr2: ObjAttribute2::new(30)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(31),
+                    attr1: ObjAttribute1::new(31),
+                    attr2: ObjAttribute2::new(31)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(32),
+                    attr1: ObjAttribute1::new(32),
+                    attr2: ObjAttribute2::new(32)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(33),
+                    attr1: ObjAttribute1::new(33),
+                    attr2: ObjAttribute2::new(33)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(34),
+                    attr1: ObjAttribute1::new(34),
+                    attr2: ObjAttribute2::new(34)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(35),
+                    attr1: ObjAttribute1::new(35),
+                    attr2: ObjAttribute2::new(35)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(36),
+                    attr1: ObjAttribute1::new(36),
+                    attr2: ObjAttribute2::new(36)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(37),
+                    attr1: ObjAttribute1::new(37),
+                    attr2: ObjAttribute2::new(37)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(38),
+                    attr1: ObjAttribute1::new(38),
+                    attr2: ObjAttribute2::new(38)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(39),
+                    attr1: ObjAttribute1::new(39),
+                    attr2: ObjAttribute2::new(39)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(40),
+                    attr1: ObjAttribute1::new(40),
+                    attr2: ObjAttribute2::new(40)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(41),
+                    attr1: ObjAttribute1::new(41),
+                    attr2: ObjAttribute2::new(41)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(42),
+                    attr1: ObjAttribute1::new(42),
+                    attr2: ObjAttribute2::new(42)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(43),
+                    attr1: ObjAttribute1::new(43),
+                    attr2: ObjAttribute2::new(43)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(44),
+                    attr1: ObjAttribute1::new(44),
+                    attr2: ObjAttribute2::new(44)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(45),
+                    attr1: ObjAttribute1::new(45),
+                    attr2: ObjAttribute2::new(45)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(46),
+                    attr1: ObjAttribute1::new(46),
+                    attr2: ObjAttribute2::new(46)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(47),
+                    attr1: ObjAttribute1::new(47),
+                    attr2: ObjAttribute2::new(47)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(48),
+                    attr1: ObjAttribute1::new(48),
+                    attr2: ObjAttribute2::new(48)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(49),
+                    attr1: ObjAttribute1::new(49),
+                    attr2: ObjAttribute2::new(49)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(50),
+                    attr1: ObjAttribute1::new(50),
+                    attr2: ObjAttribute2::new(50)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(51),
+                    attr1: ObjAttribute1::new(51),
+                    attr2: ObjAttribute2::new(51)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(52),
+                    attr1: ObjAttribute1::new(52),
+                    attr2: ObjAttribute2::new(52)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(53),
+                    attr1: ObjAttribute1::new(53),
+                    attr2: ObjAttribute2::new(53)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(54),
+                    attr1: ObjAttribute1::new(54),
+                    attr2: ObjAttribute2::new(54)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(55),
+                    attr1: ObjAttribute1::new(55),
+                    attr2: ObjAttribute2::new(55)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(56),
+                    attr1: ObjAttribute1::new(56),
+                    attr2: ObjAttribute2::new(56)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(57),
+                    attr1: ObjAttribute1::new(57),
+                    attr2: ObjAttribute2::new(57)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(58),
+                    attr1: ObjAttribute1::new(58),
+                    attr2: ObjAttribute2::new(58)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(59),
+                    attr1: ObjAttribute1::new(59),
+                    attr2: ObjAttribute2::new(59)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(60),
+                    attr1: ObjAttribute1::new(60),
+                    attr2: ObjAttribute2::new(60)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(61),
+                    attr1: ObjAttribute1::new(61),
+                    attr2: ObjAttribute2::new(61)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(62),
+                    attr1: ObjAttribute1::new(62),
+                    attr2: ObjAttribute2::new(62)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(63),
+                    attr1: ObjAttribute1::new(63),
+                    attr2: ObjAttribute2::new(63)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(64),
+                    attr1: ObjAttribute1::new(64),
+                    attr2: ObjAttribute2::new(64)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(65),
+                    attr1: ObjAttribute1::new(65),
+                    attr2: ObjAttribute2::new(65)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(66),
+                    attr1: ObjAttribute1::new(66),
+                    attr2: ObjAttribute2::new(66)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(67),
+                    attr1: ObjAttribute1::new(67),
+                    attr2: ObjAttribute2::new(67)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(68),
+                    attr1: ObjAttribute1::new(68),
+                    attr2: ObjAttribute2::new(68)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(69),
+                    attr1: ObjAttribute1::new(69),
+                    attr2: ObjAttribute2::new(69)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(70),
+                    attr1: ObjAttribute1::new(70),
+                    attr2: ObjAttribute2::new(70)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(71),
+                    attr1: ObjAttribute1::new(71),
+                    attr2: ObjAttribute2::new(71)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(72),
+                    attr1: ObjAttribute1::new(72),
+                    attr2: ObjAttribute2::new(72)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(73),
+                    attr1: ObjAttribute1::new(73),
+                    attr2: ObjAttribute2::new(73)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(74),
+                    attr1: ObjAttribute1::new(74),
+                    attr2: ObjAttribute2::new(74)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(75),
+                    attr1: ObjAttribute1::new(75),
+                    attr2: ObjAttribute2::new(75)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(76),
+                    attr1: ObjAttribute1::new(76),
+                    attr2: ObjAttribute2::new(76)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(77),
+                    attr1: ObjAttribute1::new(77),
+                    attr2: ObjAttribute2::new(77)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(78),
+                    attr1: ObjAttribute1::new(78),
+                    attr2: ObjAttribute2::new(78)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(79),
+                    attr1: ObjAttribute1::new(79),
+                    attr2: ObjAttribute2::new(79)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(80),
+                    attr1: ObjAttribute1::new(80),
+                    attr2: ObjAttribute2::new(80)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(81),
+                    attr1: ObjAttribute1::new(81),
+                    attr2: ObjAttribute2::new(81)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(82),
+                    attr1: ObjAttribute1::new(82),
+                    attr2: ObjAttribute2::new(82)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(83),
+                    attr1: ObjAttribute1::new(83),
+                    attr2: ObjAttribute2::new(83)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(84),
+                    attr1: ObjAttribute1::new(84),
+                    attr2: ObjAttribute2::new(84)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(85),
+                    attr1: ObjAttribute1::new(85),
+                    attr2: ObjAttribute2::new(85)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(86),
+                    attr1: ObjAttribute1::new(86),
+                    attr2: ObjAttribute2::new(86)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(87),
+                    attr1: ObjAttribute1::new(87),
+                    attr2: ObjAttribute2::new(87)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(88),
+                    attr1: ObjAttribute1::new(88),
+                    attr2: ObjAttribute2::new(88)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(89),
+                    attr1: ObjAttribute1::new(89),
+                    attr2: ObjAttribute2::new(89)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(90),
+                    attr1: ObjAttribute1::new(90),
+                    attr2: ObjAttribute2::new(90)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(91),
+                    attr1: ObjAttribute1::new(91),
+                    attr2: ObjAttribute2::new(91)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(92),
+                    attr1: ObjAttribute1::new(92),
+                    attr2: ObjAttribute2::new(92)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(93),
+                    attr1: ObjAttribute1::new(93),
+                    attr2: ObjAttribute2::new(93)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(94),
+                    attr1: ObjAttribute1::new(94),
+                    attr2: ObjAttribute2::new(94)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(95),
+                    attr1: ObjAttribute1::new(95),
+                    attr2: ObjAttribute2::new(95)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(96),
+                    attr1: ObjAttribute1::new(96),
+                    attr2: ObjAttribute2::new(96)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(97),
+                    attr1: ObjAttribute1::new(97),
+                    attr2: ObjAttribute2::new(97)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(98),
+                    attr1: ObjAttribute1::new(98),
+                    attr2: ObjAttribute2::new(98)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(99),
+                    attr1: ObjAttribute1::new(99),
+                    attr2: ObjAttribute2::new(99)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(100),
+                    attr1: ObjAttribute1::new(100),
+                    attr2: ObjAttribute2::new(100)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(101),
+                    attr1: ObjAttribute1::new(101),
+                    attr2: ObjAttribute2::new(101)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(102),
+                    attr1: ObjAttribute1::new(102),
+                    attr2: ObjAttribute2::new(102)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(103),
+                    attr1: ObjAttribute1::new(103),
+                    attr2: ObjAttribute2::new(103)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(104),
+                    attr1: ObjAttribute1::new(104),
+                    attr2: ObjAttribute2::new(104)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(105),
+                    attr1: ObjAttribute1::new(105),
+                    attr2: ObjAttribute2::new(105)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(106),
+                    attr1: ObjAttribute1::new(106),
+                    attr2: ObjAttribute2::new(106)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(107),
+                    attr1: ObjAttribute1::new(107),
+                    attr2: ObjAttribute2::new(107)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(108),
+                    attr1: ObjAttribute1::new(108),
+                    attr2: ObjAttribute2::new(108)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(109),
+                    attr1: ObjAttribute1::new(109),
+                    attr2: ObjAttribute2::new(109)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(110),
+                    attr1: ObjAttribute1::new(110),
+                    attr2: ObjAttribute2::new(110)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(111),
+                    attr1: ObjAttribute1::new(111),
+                    attr2: ObjAttribute2::new(111)
+                },                
+                Object {
+                    attr0: ObjAttribute0::new(112),
+                    attr1: ObjAttribute1::new(112),
+                    attr2: ObjAttribute2::new(112)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(113),
+                    attr1: ObjAttribute1::new(113),
+                    attr2: ObjAttribute2::new(113)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(114),
+                    attr1: ObjAttribute1::new(114),
+                    attr2: ObjAttribute2::new(114)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(115),
+                    attr1: ObjAttribute1::new(115),
+                    attr2: ObjAttribute2::new(115)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(116),
+                    attr1: ObjAttribute1::new(116),
+                    attr2: ObjAttribute2::new(116)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(117),
+                    attr1: ObjAttribute1::new(117),
+                    attr2: ObjAttribute2::new(117)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(118),
+                    attr1: ObjAttribute1::new(118),
+                    attr2: ObjAttribute2::new(118)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(119),
+                    attr1: ObjAttribute1::new(119),
+                    attr2: ObjAttribute2::new(119)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(120),
+                    attr1: ObjAttribute1::new(120),
+                    attr2: ObjAttribute2::new(120)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(121),
+                    attr1: ObjAttribute1::new(121),
+                    attr2: ObjAttribute2::new(121)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(122),
+                    attr1: ObjAttribute1::new(122),
+                    attr2: ObjAttribute2::new(122)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(123),
+                    attr1: ObjAttribute1::new(123),
+                    attr2: ObjAttribute2::new(123)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(124),
+                    attr1: ObjAttribute1::new(124),
+                    attr2: ObjAttribute2::new(124)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(125),
+                    attr1: ObjAttribute1::new(125),
+                    attr2: ObjAttribute2::new(125)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(126),
+                    attr1: ObjAttribute1::new(126),
+                    attr2: ObjAttribute2::new(126)
+                },
+                Object {
+                    attr0: ObjAttribute0::new(127),
+                    attr1: ObjAttribute1::new(127),
+                    attr2: ObjAttribute2::new(127)
+                }
+            ],
             windows: [
                 Window {
                     horizontal_dimensions: WindowHorizontalDimension::new(0),
@@ -215,7 +857,8 @@ impl GPU {
             cycles_to_next_state: HDRAW_CYCLES,
             current_state: GpuState::HDraw,
             frame_ready: false,
-            frame_buffer: vec![0; (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
+            frame_buffer: vec![0; (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize],
+            obj_buffer: vec![Rgb15::new(0x8000); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
         };
     }
 
@@ -227,6 +870,10 @@ impl GPU {
         for i in 0..2 {
             self.bg_affine_components[i].register(mem);
             self.windows[i].register(mem);
+        }
+
+        for i in 0..128 {
+            self.objects[i].register(mem);
         }
 
         // Registers
@@ -295,6 +942,10 @@ impl GPU {
                             self.render_mode_5(mem_map);
                         }
                         _ => panic!("Unimplemented mode: {}", current_mode)
+                    }
+
+                    if self.display_control.get_screen_display_obj() == 1 {
+                        self.render_obj(mem_map);
                     }
 
                     // composite the backgrounds
@@ -423,6 +1074,133 @@ impl GPU {
     }
 
     pub fn render_obj(&mut self, mem_map: &mut MemoryMap) {
+        for i in 0..128 {
+            match self.objects[i].attr0.get_obj_mode() {
+                0 => self.render_normal_obj(i, mem_map),
+                1 => self.render_semi_transp_obj(i, mem_map),
+                2 => self.render_obj_window(i, mem_map),
+                _ => unreachable!() 
+            };
+        }
+    }
+/**
+ * Parse out individual attributes
+ * Parse pixel data
+ * And pixel data for the line
+ */
+    fn render_normal_obj(&mut self, sprite_num: usize, mem_map: &mut MemoryMap) {
+        let mut sprite = &mut self.objects[sprite_num];
+        let current_scanline = self.vertical_count.get_current_scanline() as i32;
+        let mut obj_x = sprite.attr1.get_x_coordinate() as i16 as i32;
+        let mut obj_y = sprite.attr0.get_y_coordinate() as i16 as i32;
+
+        if obj_y >= (DISPLAY_HEIGHT as i32) {
+            obj_y -= 1 << 8;
+        }
+        if obj_x >= (DISPLAY_WIDTH as i32) {
+            obj_x -= 1 << 9;
+        }
+        let (obj_w, obj_h) = sprite.size();
+
+        if !(current_scanline >= obj_y && current_scanline < obj_y + obj_h) {
+            return;
+        }
+
+        let mode = self.display_control.get_bg_mode();
+
+        let tile_index = sprite.attr2.get_character_name();
+        let tile_base = (if mode > 2 { 0x06014000 } else { 0x06010000 }) + 0x20 * (tile_index as u32);
+
+        let pixel_format = if sprite.attr0.get_color_flag() == 0 {
+            PixelFormat::FourBit
+        } else {
+            PixelFormat::EightBit
+        };
+
+        let tile_size = if sprite.attr0.get_color_flag() == 0 {
+            0x20
+        } else {
+            0x40
+        };
+
+        let palette_bank = match pixel_format {
+            PixelFormat::FourBit => sprite.attr2.get_palette_number() as u32,
+            PixelFormat::EightBit => 0u32,
+        };
+
+
+        let screen_width = DISPLAY_WIDTH as i32;
+        let end_x = obj_x + obj_w;
+        let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
+            let temp = match pixel_format {
+                PixelFormat::FourBit => 32,
+                PixelFormat::EightBit => 16
+            };
+            temp
+        } else {
+            obj_w / 8
+        };
+
+        for x in obj_x..end_x {
+            if x < 0 {
+                continue;
+            } 
+            if x >= screen_width {
+                break;
+            }
+            
+            // todo check priority here
+
+            let mut sprite_y = current_scanline - obj_y;
+            let mut sprite_x = x - obj_x;
+
+            sprite_y = if sprite.attr1.get_vertical_flip() != 0 {
+                obj_h - sprite_y - 1
+            } else {
+                sprite_y
+            };
+
+            sprite_x = if sprite.attr1.get_horizontal_flip() != 0 {
+                obj_w - sprite_x - 1
+            } else {
+                sprite_x
+            };
+
+            let tile_x = sprite_x % 8;
+            let tile_y = sprite_y % 8;
+            let tile_addr = tile_base + ((tile_array_width as u32) * ((sprite_y as u32) / 8) + ((sprite_x as u32) / 8)) * (tile_size as u32);
+            let pixel_index = match pixel_format {
+                PixelFormat::EightBit => {
+                    let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
+                    mem_map.read_u8(pixel_index_address)
+                },
+                PixelFormat::FourBit => {
+                    let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
+                    let value = mem_map.read_u8(pixel_index_address);
+                    if tile_x & 1 != 0 {
+                        (value >> 4)
+                    } else {
+                        value & 0xf
+                    }
+                }
+            } as u32;
+
+            let color = if pixel_index == 0 || (palette_bank != 0 && pixel_index % 16 == 0) {
+                Rgb15::new(0x8000)
+            } else {
+                let palette_ram_index = 2 * pixel_index + 0x20 * palette_bank;
+                Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+            };
+
+            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
+            self.obj_buffer[obj_buffer_index] = color;
+        }
+
+    }
+    fn render_semi_transp_obj(&mut self, sprite_num: usize, mem_map: &mut MemoryMap) {
+
+    }
+    fn render_obj_window(&mut self, sprite_num: usize, mem_map: &mut MemoryMap) {
 
     }
 
@@ -521,8 +1299,18 @@ impl GPU {
                     top_layer_index = i;
                 }
             }
+
+            let mut color = self.backgrounds[top_layer_index].scan_line[x as usize].to_0rgb();
+
+            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
+            
+            if !self.obj_buffer[obj_buffer_index].is_transparent() {
+                color = self.obj_buffer[obj_buffer_index].to_0rgb();
+                // log::info!("We are drawing a sprite pixel: {:?}", self.obj_buffer[obj_buffer_index]);
+            }
+
             let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
-            self.frame_buffer[frame_buffer_index] = self.backgrounds[top_layer_index].scan_line[x as usize].to_0rgb();
+            self.frame_buffer[frame_buffer_index] = color;
         }
     }
 }
