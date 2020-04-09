@@ -1,11 +1,14 @@
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::gpu::gpu::GPU;
 use crate::memory::{key_input_registers::*};
-use crate::memory::memory_bus::MemoryBus;
+use crate::memory::{memory_bus::MemoryBus, memory_bus::BackupType};
 use crate::memory::memory_bus::HaltState;
 use crate::interrupts::interrupts::Interrupts;
 use crate::dma::DMAController;
 use crate::timers::timer::TimerHandler;
+
+
+pub const MEM_STRINGS: [&str; 5] = ["SRAM", "EEPROM", "FLASH_", "FLASH512_", "FLASH1M_"];
 
 pub struct GBA {
     pub cpu: CPU,
@@ -25,6 +28,23 @@ impl Default for GBA {
 }
 
 impl GBA {
+
+    fn detect_backup_type(&mut self, rom: &Vec<u8>) {
+        for i in 0..5 {
+            let mem_string_bytes = MEM_STRINGS[i].as_bytes();
+            let result = rom.windows(mem_string_bytes.len()).position(|window| window == mem_string_bytes);
+            match result {
+                Some(_) => {
+                    // string exists
+                    log::info!("Found backup type: {}", MEM_STRINGS[i]);
+                },
+                None => {
+                    // string doesn't exist
+                }
+            }
+        }
+    }
+
     pub fn new(pc_address: u32, bios: &Vec<u8>, rom: &Vec<u8>) -> GBA {
 
         let mut temp: GBA = GBA {
@@ -37,6 +57,8 @@ impl GBA {
             timer_handler: TimerHandler::new(),
             dma_control: DMAController::new()
         };
+
+        temp.detect_backup_type(rom);
 
         temp.gpu.register(&temp.memory_bus.mem_map.memory);
         temp.key_status.register(&temp.memory_bus.mem_map.memory);
@@ -107,12 +129,10 @@ impl GBA {
     }
 
     pub fn single_step(&mut self) {
-        // let cycles = self.cpu.fetch(&mut self.memory_bus);
 
         let cycles = if self.memory_bus.halt_state == HaltState::Running {
             self.cpu.fetch(&mut self.memory_bus)
         } else {
-            // log::info!("to next: {}", self.gpu.cycles_to_next_state);
             self.gpu.cycles_to_next_state as usize
         };
 

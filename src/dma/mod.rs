@@ -36,7 +36,9 @@ impl DMAChannel {
         self.control.register(mem);
     }
 
-    pub fn update_addresses(&mut self, word_size: u32) {
+    pub fn update_source_address(&mut self) {
+        let word_size = if self.control.get_dma_transfer_type() == 0 { 2 } else { 4 };
+
         match self.control.get_source_address_control() {
             0 => {
                 self.internal_source_address += word_size;
@@ -47,6 +49,11 @@ impl DMAChannel {
             2 => {},
             _ => panic!("Invalid source address control")
         }
+    }
+
+    
+    pub fn update_destination_address(&mut self) {
+        let word_size = if self.control.get_dma_transfer_type() == 0 { 2 } else { 4 };
 
         match self.control.get_source_address_control() {
             0 | 3 => {
@@ -65,10 +72,6 @@ impl DMAChannel {
         self.internal_destination_address = self.destination_address.get_address();
         self.internal_word_count = self.word_count.get_word_count();
 
-        // log::info!("Transfer on channel {}: {:X}, {:X}, {:X}", self.id, self.internal_source_address, self.internal_destination_address, self.internal_word_count);
-
-        // check the word size
-        // go for up to word count reading and writing
 
         match self.control.get_dma_transfer_type() {
             0 => {  // 16
@@ -76,7 +79,8 @@ impl DMAChannel {
                     let value = mem_map.read_u16(self.internal_source_address & !1);
                     mem_map.write_u16(self.internal_destination_address & !1, value);
 
-                    self.update_addresses(2);
+                    self.update_source_address();
+                    self.update_destination_address();
                 }
             },
             1 => { // 32
@@ -84,7 +88,8 @@ impl DMAChannel {
                     let value = mem_map.read_u32(self.internal_source_address & !3);
                     mem_map.write_u32(self.internal_destination_address & !3, value);
 
-                    self.update_addresses(4);
+                    self.update_source_address();
+                    self.update_destination_address();
                 }
             },
             _ => panic!("DMA transfer type error")

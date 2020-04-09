@@ -8,10 +8,20 @@ pub enum HaltState {
     Stop
 }
 
+#[derive(Debug, PartialEq)]
+pub enum BackupType {
+    Sram,
+    Eeprom,
+    Flash64K,
+    Flash128K,
+    Error
+}
+
 pub struct MemoryBus {
     pub mem_map: MemoryMap,
     pub cycle_clock: CycleClock,
-    pub halt_state: HaltState
+    pub halt_state: HaltState,
+    pub backup_type: BackupType
 }
 
 impl MemoryBus {
@@ -19,7 +29,8 @@ impl MemoryBus {
         return MemoryBus {
             mem_map: MemoryMap::new(),
             cycle_clock: CycleClock::new(),
-            halt_state: HaltState::Running
+            halt_state: HaltState::Running,
+            backup_type: BackupType::Error
         };
     }
 
