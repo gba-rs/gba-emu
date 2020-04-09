@@ -126,7 +126,6 @@ pub struct CPU {
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
     pub last_instruction: String,
-    pub cycle_count: usize,
 }
 
 impl CPU {
@@ -136,7 +135,6 @@ impl CPU {
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b011111),
             last_instruction: "".to_string(),
-            cycle_count: 0
         };
     }
 
@@ -268,7 +266,7 @@ impl CPU {
         }
     }
 
-    pub fn fetch(&mut self, bus: &mut MemoryBus) {
+    pub fn fetch(&mut self, bus: &mut MemoryBus) -> usize {
         let current_pc = if self.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
         // log::debug!("PC: {:X}", pc_contents);
@@ -285,17 +283,21 @@ impl CPU {
         let check_condition = if self.get_instruction_set() == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
 
         let decode_result = self.decode(instruction);
-        match decode_result {
+        let cycles: usize = match decode_result {
             Ok(mut instr) => {
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
+                    ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize
+                } else {
+                    0usize
                 }
             },
             Err(e) => {
                 panic!("{:?}", e);
             }
-        }
+        };
+
+        return cycles;
     }
 
     pub fn get_instruction_set(&self) -> InstructionSet {

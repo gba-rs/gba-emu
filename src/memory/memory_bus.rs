@@ -1,16 +1,25 @@
 use crate::memory::memory_map::MemoryMap;
 use crate::operations::timing::{CycleClock, MemAccessSize};
 
+#[derive(Debug, PartialEq)]
+pub enum HaltState {
+    Running,
+    Halt,
+    Stop
+}
+
 pub struct MemoryBus {
     pub mem_map: MemoryMap,
-    pub cycle_clock: CycleClock
+    pub cycle_clock: CycleClock,
+    pub halt_state: HaltState
 }
 
 impl MemoryBus {
     pub fn new() -> MemoryBus {
         return MemoryBus {
             mem_map: MemoryMap::new(),
-            cycle_clock: CycleClock::new()
+            cycle_clock: CycleClock::new(),
+            halt_state: HaltState::Running
         };
     }
 
@@ -31,6 +40,17 @@ impl MemoryBus {
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem8);
+
+        if address == 0x4000301 {
+            if value == 0 {
+                self.halt_state = HaltState::Halt;
+            } else {
+                self.halt_state = HaltState::Stop
+            }
+
+            return;
+        }
+
         self.mem_map.write_u8(address, value);
     }
 

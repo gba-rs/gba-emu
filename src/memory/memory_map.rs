@@ -24,9 +24,18 @@ impl MemoryMap {
         if address == 0x4000202 || address == 0x4000203 {
             let new_val = self.read_u8(address) & !value;
             self.memory.borrow_mut()[address as usize] = new_val;
-        } else {
-            self.memory.borrow_mut()[address as usize] = value;
+            return;
         }
+
+        if address == 0x4000100 || address == 0x4000101 ||
+           address == 0x4000104 || address == 0x4000105 ||
+           address == 0x4000108 || address == 0x4000109 ||
+           address == 0x400010C || address == 0x400010D {
+            let index: usize = (address & 0xF) as usize;
+            self.memory.borrow_mut()[0x1000_0000usize + index] = value;
+        }
+
+        self.memory.borrow_mut()[address as usize] = value;
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {

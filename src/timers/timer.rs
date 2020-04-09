@@ -39,7 +39,7 @@ impl Timer {
                     3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
                     _ => panic!("Error in processing timer")
                 }
-                self.timer.set_data(self.initial_value);
+                self.timer.set_data(self.timer.get_reload());
                 overflows+=1;
             }
         }
@@ -121,7 +121,7 @@ impl TimerHandler {
 
     pub fn update(&mut self, cycles: usize, irq_ctrl: &mut Interrupts){
         for id in 0..4 {
-            if self.timers[id].controller.get_count_up_enable() == 1 {
+            if self.timers[id].controller.get_timer_start_stop() == 1 && self.timers[id].controller.get_count_up_enable() == 1 {
                 let timer = &mut self.timers[id];
                 let overflows = timer.update(cycles, irq_ctrl);
                 if overflows > 0 {

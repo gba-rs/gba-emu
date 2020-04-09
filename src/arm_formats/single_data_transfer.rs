@@ -22,15 +22,15 @@ pub struct SingleDataTransfer {
 impl fmt::Debug for SingleDataTransfer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.load {
-            write!(f, "LDR{:?}", self.condition)?;
+            write!(f, "LDR")?;
         } else {
-            write!(f, "STR{:?}", self.condition)?;
+            write!(f, "STR")?;
         }
 
         if self.is_byte {
-            write!(f, "B ")?;
+            write!(f, "B{:?} ", self.condition)?;
         } else {
-            write!(f, " ")?;
+            write!(f, "{:?} ", self.condition)?;
         }
 
         write!(f, "r{}, [r{}", self.destination_register, self.op1_register)?;

@@ -146,6 +146,7 @@ fn parse_fields(input: ParseStream) -> Vec<BitField> {
             }
         }
 
+
         match input.parse::<Token![,]>() {
             Ok(_) => {
                 if input.is_empty() {

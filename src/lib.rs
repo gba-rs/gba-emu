@@ -8,6 +8,7 @@ pub mod thumb_formats;
 pub mod gpu;
 pub mod interrupts;
 pub mod timers;
+pub mod dma;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
