@@ -1,4 +1,5 @@
-use crate::memory::{dma_registers::*, GbaMem, memory_map::MemoryMap};
+use crate::memory::{dma_registers::*, GbaMem, memory_bus::MemoryBus};
+use crate::interrupts::interrupts::Interrupts;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -9,8 +10,7 @@ pub struct DMAChannel {
     pub control: DMAControl,
     pub internal_source_address: u32,
     pub internal_destination_address: u32,
-    pub internal_word_count: u16,
-    pub start_transfer: bool,
+    pub internal_word_count: u32,
     pub id: usize
 }
 
@@ -25,7 +25,6 @@ impl DMAChannel {
             internal_source_address: 0,
             internal_destination_address: 0,
             internal_word_count: 0,
-            start_transfer: false,
             id: channel
         }
     }
@@ -37,32 +36,84 @@ impl DMAChannel {
         self.control.register(mem);
     }
 
-    pub fn transfer(&mut self, mem_map: &mut MemoryMap) {
-        
-        // if we are doing a fifo just skip it for now. 
-        // TODO remove this for sound shit
-        if self.control.get_dma_start_timing() == 3 && self.control.get_dma_repeat() == 1 && (self.id == 1 || self.id == 2) {
-            self.control.set_dma_enable(0);
-            self.start_transfer = false;
-            return;
+    pub fn update_source_address(&mut self) {
+        let word_size = if self.control.get_dma_transfer_type() == 0 { 2 } else { 4 };
+
+        match self.control.get_source_address_control() {
+            0 => {
+                self.internal_source_address += word_size;
+            },
+            1 => {
+                self.internal_source_address -= word_size;
+            },
+            2 => {},
+            _ => panic!("Invalid source address control")
         }
-        
+    }
+
+    
+    pub fn update_destination_address(&mut self) {
+        let word_size = if self.control.get_dma_transfer_type() == 0 { 2 } else { 4 };
+
+        match self.control.get_source_address_control() {
+            0 | 3 => {
+                self.internal_destination_address += word_size;
+            },
+            1 => {
+                self.internal_destination_address -= word_size;
+            },
+            2 => {},
+            _ => panic!("Invalid source address control")
+        }
+    }
+
+    pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {        
         self.internal_source_address = self.source_address.get_address();
         self.internal_destination_address = self.destination_address.get_address();
-        self.internal_word_count = self.word_count.get_register();
+        self.internal_word_count = self.word_count.get_word_count();
 
 
+        match self.control.get_dma_transfer_type() {
+            0 => {  // 16
+                for _ in 0..self.internal_word_count {
+                    let value = mem_map.read_u16(self.internal_source_address & !1);
+                    mem_map.write_u16(self.internal_destination_address & !1, value);
+
+                    self.update_source_address();
+                    self.update_destination_address();
+                }
+            },
+            1 => { // 32
+                for _ in 0..self.internal_word_count {
+                    let value = mem_map.read_u32(self.internal_source_address & !3);
+                    mem_map.write_u32(self.internal_destination_address & !3, value);
+
+                    self.update_source_address();
+                    self.update_destination_address();
+                }
+            },
+            _ => panic!("DMA transfer type error")
+        } 
+
+        // trigger IRQ here
+        irq_ctl.if_interrupt.set_register((irq_ctl.if_interrupt.get_register() as u32) | (0x1 << (8 + self.id)));
 
         // if we aren't repeating reset the enable bit
         if self.control.get_dma_repeat() == 0 {
             self.control.set_dma_enable(0);
-            self.start_transfer = false;
+        } else {
+            if self.control.get_destination_address_control() == 3 {
+                // reload
+                self.internal_destination_address = self.destination_address.get_address();
+            }
         }
     }
 }
 
 pub struct DMAController {
-    pub dma_channels: [DMAChannel; 4]
+    pub dma_channels: [DMAChannel; 4],
+    pub hblanking: bool,
+    pub vblanking: bool
 }
 
 impl DMAController {
@@ -71,30 +122,36 @@ impl DMAController {
             self.dma_channels[i].register(mem);
         }
     }
-    
-    pub fn set_starting(&mut self, val: u8) {
-        for i in 0..4 {
-            let start_time = self.dma_channels[i].control.get_dma_start_timing();
-            self.dma_channels[i].start_transfer = (start_time == val) || start_time == 0;
-        }
-    }
 
-    pub fn is_active(&self) -> bool {
-        let mut result = false;
+    pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
         for i in 0..4 {
-            if self.dma_channels[i].control.get_dma_enable() == 1 && self.dma_channels[i].start_transfer {
-                result = true;
-            }
-        }
-
-        return result;
-    }
-
-    pub fn start_transfer(&mut self, mem_map: &mut MemoryMap) {
-        for i in 0..4 {
-            if self.dma_channels[i].control.get_dma_enable() == 1  && self.dma_channels[i].start_transfer {
-                log::debug!("DMA_{}: Source: {:X}, Destination: {:X}, Word Count: {}, Dma Repeat: {}, Start Timing: {}", i, self.dma_channels[i].source_address.get_address(), self.dma_channels[i].destination_address.get_address(), self.dma_channels[i].word_count.get_register(), self.dma_channels[i].control.get_dma_repeat(), self.dma_channels[i].control.get_dma_start_timing());
-                self.dma_channels[i].transfer(mem_map);
+            if self.dma_channels[i].control.get_dma_enable() == 1 {
+                match self.dma_channels[i].control.get_dma_start_timing() {
+                    0 => {
+                        // start immedietly 
+                        self.dma_channels[i].transfer(mem_map, irq_ctl);
+                    },
+                    1 => {
+                        // start at vblank
+                        if self.vblanking {
+                            self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        }
+                    },
+                    2 => {
+                        // start at hblank
+                        if self.hblanking {
+                            self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        }
+                    },
+                    3 => {
+                        // special
+                        // TODO implement this
+                        self.dma_channels[i].control.set_dma_enable(0);
+                    },
+                    _ => {
+                        panic!("DMA Update fucked up")
+                    }
+                }
             }
         }
     }
@@ -106,7 +163,9 @@ impl DMAController {
                 DMAChannel::new(1),
                 DMAChannel::new(2),
                 DMAChannel::new(3),
-            ]
+            ],
+            hblanking: false,
+            vblanking: false
         }
     }
 }

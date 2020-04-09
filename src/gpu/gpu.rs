@@ -3,6 +3,7 @@ use crate::memory::memory_map::MemoryMap;
 use crate::interrupts::interrupts::Interrupts;
 use super::{rgb15::Rgb15, tile_map_entry::TileMapEntry};
 use crate::operations::bitutils;
+use crate::dma::DMAController;
 use std::cell::RefCell;
 use std::rc::Rc;
 use log::debug;
@@ -11,11 +12,11 @@ pub const DISPLAY_WIDTH: u32 = 240;
 pub const DISPLAY_HEIGHT: u32 = 160;
 pub const VBLANK_LENGTH: u32 = 68;
 
-pub const HDRAW_CYCLES: u32 = 960;
-pub const HBLANK_CYCLES: u32 = 272;
-pub const SCANLINE_CYCLES: u32 = 1232;
-pub const VDRAW_CYCLES: u32 = 197120;
-pub const VBLANK_CYCLES: u32 = 83776;
+pub const HDRAW_CYCLES: i64 = 960;
+pub const HBLANK_CYCLES: i64 = 272;
+pub const SCANLINE_CYCLES: i64 = 1232;
+pub const VDRAW_CYCLES: i64 = 197120;
+pub const VBLANK_CYCLES: i64 = 83776;
 
 pub enum GpuState {
     HDraw,
@@ -128,7 +129,7 @@ pub struct GPU {
     pub alpha_blending_coefficients: AlphaBlendingCoefficients,
     pub brightness_coefficient: BrightnessCoefficient,
 
-    pub cycles_to_next_state: u32,
+    pub cycles_to_next_state: i64,
     pub current_state: GpuState,
     pub frame_ready: bool,
     pub frame_buffer: Vec<u32>,
@@ -891,13 +892,18 @@ impl GPU {
         self.brightness_coefficient.register(mem);
     }
 
-    pub fn step(&mut self, cycles: u32, mem_map: &mut MemoryMap, irq_ctl: &mut Interrupts) {
-        if self.cycles_to_next_state <= cycles {
-            self.transition_state(mem_map, irq_ctl);       
+    pub fn step(&mut self, cycles: usize, mem_map: &mut MemoryMap, irq_ctl: &mut Interrupts, dma_ctl: &mut DMAController) {
+        let temp_cycles: i64 = self.cycles_to_next_state - (cycles as i64);
+
+        if temp_cycles <= 0 {
+            self.transition_state(mem_map, irq_ctl, dma_ctl);
+            self.cycles_to_next_state += temp_cycles;       
+        } else {
+            self.cycles_to_next_state = temp_cycles;
         }
     }
 
-    pub fn transition_state(&mut self, mem_map: &mut MemoryMap, irq_ctl: &mut Interrupts) {
+    pub fn transition_state(&mut self, mem_map: &mut MemoryMap, irq_ctl: &mut Interrupts, dma_ctl: &mut DMAController) {
         let mut current_scanline = self.vertical_count.get_current_scanline() as u32;
         match self.current_state {
             GpuState::HDraw => {
@@ -907,6 +913,8 @@ impl GPU {
                     irq_ctl.if_interrupt.set_lcd_h_blank(1);
                 }
 
+                dma_ctl.hblanking = true;
+
                 self.current_state = GpuState::HBlank;
                 self.cycles_to_next_state = HBLANK_CYCLES;
             },
@@ -914,6 +922,8 @@ impl GPU {
                 self.update_vcount((current_scanline + 1) as u8, irq_ctl);
                 current_scanline += 1;
                 self.display_status.set_hblank_flag(0);
+
+                dma_ctl.hblanking = false;
 
                 if current_scanline < DISPLAY_HEIGHT {
                     // render scanline
@@ -930,7 +940,13 @@ impl GPU {
 
                         },
                         2 => {
-
+                            if self.display_control.should_display(2) {
+                                self.render_aff_bg(mem_map, 2);
+                            }
+                            
+                            if self.display_control.should_display(3) {
+                                self.render_aff_bg(mem_map, 3);
+                            }
                         },
                         3 => {
                             self.render_mode_3(mem_map);
@@ -976,6 +992,8 @@ impl GPU {
                     }
 
                     // do dma stuff
+                    dma_ctl.vblanking = true;
+
                     self.display_status.set_vblank_flag(1);
                     self.current_state = GpuState::VBlank;
                     self.cycles_to_next_state = SCANLINE_CYCLES;
@@ -991,6 +1009,9 @@ impl GPU {
                     self.cycles_to_next_state = SCANLINE_CYCLES;
                 } else {
                     self.display_status.set_vblank_flag(0);
+
+                    dma_ctl.vblanking = false;
+
                     self.update_vcount(0, irq_ctl);
                     current_scanline = 0;
                     self.current_state = GpuState::HDraw;
@@ -1287,6 +1308,40 @@ impl GPU {
                 sbb = sbb ^ 1;
             }
         }
+    }
+
+    pub fn render_aff_bg(&mut self, mem_map: &mut MemoryMap, bg_number: usize) {
+        let texture_size = 128 << self.backgrounds[bg_number].control.get_screen_size();
+
+        let ref_point_x = self.bg_affine_components[bg_number - 2].refrence_point_x_internal as i32;
+        let ref_point_y = self.bg_affine_components[bg_number - 2].refrence_point_y_internal as i32;
+
+        let pa = self.bg_affine_components[bg_number - 2].rotation_scaling_param_a.get_register() as i16 as i32;
+        let pc = self.bg_affine_components[bg_number - 2].rotation_scaling_param_c.get_register() as i16 as i32;
+
+        let screen_block = self.backgrounds[bg_number].control.get_tilemap_location();
+        let char_block = self.backgrounds[bg_number].control.get_tileset_location();
+
+        let wraparound = self.backgrounds[bg_number].control.get_display_area_overflow();
+
+        for screen_x in 0..(DISPLAY_WIDTH as i32) {
+            let mut point_x = ((ref_point_x + screen_x * pa) >> 8);
+            let mut point_y = ((ref_point_y + screen_x * pc) >> 8);
+
+            let map_addr = screen_block + ((texture_size as u32 / 8) * (point_y as u32 / 8) + (point_x as u32 / 8));
+            let tile_index = mem_map.read_u8(map_addr) as u32;
+            let tile_addr = char_block + tile_index * 0x40;
+
+            let pixel_index_address = tile_addr + (8 * ((point_y % 8) as u32) + ((point_x % 8) as u32));
+            let pixel_index = mem_map.read_u8(pixel_index_address) as u32;
+
+
+            let palette_ram_index = 2 * pixel_index;
+            let color = Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32));
+
+            self.backgrounds[bg_number].scan_line[screen_x as usize] = color;
+        }
+
     }
 
     pub fn composite_background(&mut self) {

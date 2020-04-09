@@ -2,10 +2,14 @@ use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::gpu::{gpu::GPU, gpu::DISPLAY_WIDTH, gpu::DISPLAY_HEIGHT};
 use crate::gpu::rgb15::Rgb15;
 use crate::memory::{key_input_registers::*};
-use crate::memory::memory_bus::MemoryBus;
+use crate::memory::{memory_bus::MemoryBus, memory_bus::BackupType};
+use crate::memory::memory_bus::HaltState;
 use crate::interrupts::interrupts::Interrupts;
+use crate::dma::DMAController;
 use crate::timers::timer::TimerHandler;
 
+
+pub const MEM_STRINGS: [&str; 5] = ["SRAM", "EEPROM", "FLASH_", "FLASH512_", "FLASH1M_"];
 
 pub struct GBA {
     pub cpu: CPU,
@@ -14,7 +18,8 @@ pub struct GBA {
     pub key_status: KeyStatus,
     pub ket_interrupt_control: KeyInterruptControl,
     pub interrupt_handler: Interrupts,
-    pub timer_handler: TimerHandler
+    pub timer_handler: TimerHandler,
+    pub dma_control: DMAController
 }
 
 impl Default for GBA {
@@ -24,6 +29,23 @@ impl Default for GBA {
 }
 
 impl GBA {
+
+    fn detect_backup_type(&mut self, rom: &Vec<u8>) {
+        for i in 0..5 {
+            let mem_string_bytes = MEM_STRINGS[i].as_bytes();
+            let result = rom.windows(mem_string_bytes.len()).position(|window| window == mem_string_bytes);
+            match result {
+                Some(_) => {
+                    // string exists
+                    log::info!("Found backup type: {}", MEM_STRINGS[i]);
+                },
+                None => {
+                    // string doesn't exist
+                }
+            }
+        }
+    }
+
     pub fn new(pc_address: u32, bios: &Vec<u8>, rom: &Vec<u8>) -> GBA {
 
         let mut temp: GBA = GBA {
@@ -32,10 +54,12 @@ impl GBA {
             memory_bus: MemoryBus::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
-            interrupt_handler: Interrupts::new()  ,
-            timer_handler: TimerHandler::new()
-
+            interrupt_handler: Interrupts::new(),
+            timer_handler: TimerHandler::new(),
+            dma_control: DMAController::new()
         };
+
+        temp.detect_backup_type(rom);
 
         temp.gpu.register(&temp.memory_bus.mem_map.memory);
         temp.key_status.register(&temp.memory_bus.mem_map.memory);
@@ -45,6 +69,7 @@ impl GBA {
         temp.interrupt_handler.if_interrupt.register(&temp.memory_bus.mem_map.memory);
         temp.timer_handler.register(&temp.memory_bus.mem_map.memory);
         temp.memory_bus.cycle_clock.register(&temp.memory_bus.mem_map.memory);
+        temp.dma_control.register(&temp.memory_bus.mem_map.memory);
 
         // setup the PC
         temp.cpu.set_register(ARM_PC, pc_address);
@@ -95,12 +120,6 @@ impl GBA {
         self.memory_bus.mem_map.write_block(0x08000000, rom)
     }
 
-    pub fn run(&mut self) {
-        loop {
-            self.cpu.fetch(&mut self.memory_bus);
-        }
-    }
-
     pub fn frame(&mut self) {
         while !self.gpu.frame_ready {
             // self.key_status.set_register(0x3FF);
@@ -112,29 +131,16 @@ impl GBA {
     }
 
     pub fn single_step(&mut self) {
-        // self.key_status.set_register(0xFFFF);
-        if self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
-            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
-                self.interrupt_handler.service(&mut self.cpu);
-            }
-            self.cpu.fetch(&mut self.memory_bus);
+
+        let cycles = if self.memory_bus.halt_state == HaltState::Running {
+            self.cpu.fetch(&mut self.memory_bus)
         } else {
-            self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
-            self.cpu.cycle_count = 0;
-        }
-    }
+            self.gpu.cycles_to_next_state as usize
+        };
 
-    pub fn step(&mut self) {
-        while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
-            self.key_status.set_register(0x3FF);
-            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
-                self.interrupt_handler.service(&mut self.cpu);
-            }
-            self.cpu.fetch(&mut self.memory_bus);
-        }
-
-        self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
-        self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
-        self.cpu.cycle_count = 0;
+        self.gpu.step(cycles, &mut self.memory_bus.mem_map, &mut self.interrupt_handler, &mut self.dma_control);
+        self.timer_handler.update(cycles, &mut self.interrupt_handler);
+        self.dma_control.update(&mut self.memory_bus, &mut self.interrupt_handler);
+        self.interrupt_handler.service(&mut self.cpu, &mut self.memory_bus);
     }
 }
