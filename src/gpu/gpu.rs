@@ -1097,9 +1097,9 @@ impl GPU {
     pub fn render_obj(&mut self, mem_map: &mut MemoryMap) {
         for i in 0..128 {
             match self.objects[i].attr0.get_obj_mode() {
-                0 => self.render_normal_obj(i, mem_map),
-                1 => self.render_semi_transp_obj(i, mem_map),
-                2 => self.render_obj_window(i, mem_map),
+                0b10 => continue,
+                0b00 => self.render_normal_obj(i, mem_map),
+                0b01 | 0b11 => continue,
                 _ => unreachable!() 
             };
         }
@@ -1209,7 +1209,7 @@ impl GPU {
             let color = if pixel_index == 0 || (palette_bank != 0 && pixel_index % 16 == 0) {
                 Rgb15::new(0x8000)
             } else {
-                let palette_ram_index = 2 * pixel_index + 0x20 * palette_bank;
+                let palette_ram_index = 0x200 + 2 * pixel_index + 0x20 * palette_bank;
                 Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
             };
 

@@ -270,10 +270,8 @@ io_register! (
         117441528usize,
     ],
     y_coordinate: 0, 8,
-    rotation_flag: 8, 1,
-    double_size_flag: 9, 1, // Both of these occupy bit 9,
-    obj_disable_flag: 9, 1, // but they depend on rotation flag
-    obj_mode: 10, 2,
+    obj_mode: 8, 2,
+    gfx_mode: 10, 2,
     mosaic_flag: 12, 1,
     color_flag: 13, 1,
     obj_shape: 14, 2
