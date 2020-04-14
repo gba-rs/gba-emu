@@ -3,7 +3,7 @@ use crate::cpu::{cpu::CPU};
 use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
 use std::fmt;
 use log::debug;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct LoadAddress {
     pub sp_pc: bool, //bit 11, calculates an address by adding a 10 bit constant to pc or sp

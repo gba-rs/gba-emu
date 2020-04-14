@@ -2,7 +2,7 @@ use crate::operations::instruction::Instruction;
 use crate::operations::{arm_arithmetic, bitutils::sign_extend_u32};
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct UnconditionalBranch {
     pub offset: u32
@@ -11,7 +11,7 @@ pub struct UnconditionalBranch {
 impl From<u16> for UnconditionalBranch {
     fn from(value: u16) -> UnconditionalBranch {
         return UnconditionalBranch {
-            offset: sign_extend_u32(((value & 0x7FF) << 1) as u32, 10)
+            offset: sign_extend_u32(((value & 0x7FF) << 1) as u32, 11)
         };
     }
 }
@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn branch_unconditional_negative_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         let decode_result = gba.cpu.decode(0xE7F6);
         match decode_result {
@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn branch_unconditional_positive_offset() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         let decode_result = gba.cpu.decode(0xE00A);
         match decode_result {

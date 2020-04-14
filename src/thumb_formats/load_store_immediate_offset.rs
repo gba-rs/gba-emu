@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
 use crate::cpu::{cpu::CPU, cpu::THUMB_PC};
 use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use std::fmt;
 
 pub struct LoadStoreImmediateOffset {
@@ -40,9 +40,9 @@ impl From<u16> for LoadStoreImmediateOffset {
 impl fmt::Debug for LoadStoreImmediateOffset {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
         if !self.load && self.data_type ==  DataType::Word {
-            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
+            write!(f, "STR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if self.load && self.data_type ==  DataType::Word {
-            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset << 2)
+            write!(f, "LDR r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if !self.load && self.data_type ==  DataType::Byte {
             write!(f, "STRB r{}, [r{}, #0x{:X}]", self.rd, self.rb, self.offset)
         } else if self.load && self.data_type ==  DataType::Byte {
@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.set_register(format.rb, 0);
         gba.cpu.set_register(format.rd, 2);
 
@@ -159,7 +159,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.set_register(format.rb,0);
         gba.cpu.set_register(format.rd,2);
 
@@ -198,7 +198,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         gba.cpu.set_register(format.rb,7);
         gba.cpu.set_register(format.rd,3);
         //let mem address = 3
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(format.rb, 7);
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
         //let mem address = 3
         gba.cpu.set_register(format.rb,1);
         gba.cpu.set_register(format.rd,2); //value we want to get

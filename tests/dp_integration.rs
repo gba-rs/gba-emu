@@ -10,7 +10,7 @@ mod tests {
     use gba_emulator::gba::GBA;
     use std::borrow::BorrowMut;
     use std::borrow::Borrow;
-    use gba_emulator::gba::memory_bus::MemoryBus;
+    use gba_emulator::memory::memory_bus::MemoryBus;
 
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
                 }
             }
 
-            assert_eq!(gba.cpu.operating_mode, OperatingMode::FastInterrupt);
+            assert_eq!(gba.cpu.get_operating_mode(), OperatingMode::FastInterrupt);
         }
         #[test]
         fn correct_operation_called_msr_spsr() {
@@ -215,6 +215,6 @@ mod tests {
                 }
             }
 
-            assert_eq!(gba.cpu.operating_mode, OperatingMode::FastInterrupt);
+            assert_eq!(gba.cpu.get_operating_mode(), OperatingMode::FastInterrupt);
         }
 }

@@ -2,7 +2,7 @@ use crate::cpu::cpu::CPU;
 use crate::operations::instruction::Instruction;
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::operations::logical;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct MoveShifted {

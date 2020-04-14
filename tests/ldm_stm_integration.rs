@@ -5,7 +5,7 @@ mod tests {
     use gba_emulator::cpu::cpu::{CPU};
     use gba_emulator::arm_formats::block_data_transfer::BlockDataTransfer;
     use gba_emulator::operations::instruction::Instruction;
-    use gba_emulator::gba::memory_bus::MemoryBus;
+    use gba_emulator::memory::memory_bus::MemoryBus;
 
     #[test]
     fn test_stmib() {

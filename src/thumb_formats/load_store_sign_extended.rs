@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
 use crate::cpu::cpu::{CPU, THUMB_PC};
 use crate::operations::load_store::{DataTransfer, DataType, data_transfer_execute};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use core::fmt;
 
 

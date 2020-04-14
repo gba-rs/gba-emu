@@ -4,7 +4,7 @@ use crate::operations::{arm_arithmetic, logical};
 use crate::operations::shift::{Shift, ShiftType, apply_shift};
 use crate::cpu::program_status_register::ConditionFlags;
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Debug, PartialEq)]
 pub enum OpCodes {

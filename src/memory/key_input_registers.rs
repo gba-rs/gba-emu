@@ -4,34 +4,32 @@ use memory_macros::*;
 use crate::operations::bitutils::*;
 use super::GbaMem;
 
-#[memory_segment(2, 0x4000130)]
-#[bit_field(button_a, 0, 1)]
-#[bit_field(button_b, 1, 1)]
-#[bit_field(button_select, 2, 1)]
-#[bit_field(button_start, 3, 1)]
-#[bit_field(dpad_right, 4, 1)]
-#[bit_field(dpad_left, 5, 1)]
-#[bit_field(dpad_up, 6, 1)]
-#[bit_field(dpad_down, 7, 1)]
-#[bit_field(button_r, 8, 1)]
-#[bit_field(button_l, 9, 1)]
-pub struct KeyStatus {
-    pub memory: Rc<RefCell<GbaMem>>,
-}
+io_register! (
+    KeyStatus => 2, 0x4000130,
+    button_a: 0, 1,
+    button_b: 1, 1,
+    button_select: 2, 1,
+    button_start: 3, 1,
+    dpad_right: 4, 1,
+    dpad_left: 5, 1,
+    dpad_up: 6, 1,
+    dpad_down: 7, 1,
+    button_r: 8, 1,
+    button_l: 9, 1,
+);
 
-#[memory_segment(2, 0x4000132)]
-#[bit_field(button_a, 0, 1)]
-#[bit_field(button_b, 1, 1)]
-#[bit_field(button_select, 2, 1)]
-#[bit_field(button_start, 3, 1)]
-#[bit_field(dpad_right, 4, 1)]
-#[bit_field(dpad_left, 5, 1)]
-#[bit_field(dpad_up, 6, 1)]
-#[bit_field(dpad_down, 7, 1)]
-#[bit_field(button_r, 8, 1)]
-#[bit_field(button_l, 9, 1)]
-#[bit_field(irq_enable_flag, 14, 1)]
-#[bit_field(irq_condition, 15, 1)]
-pub struct KeyInterruptControl {
-    pub memory: Rc<RefCell<GbaMem>>,
-}
+io_register! (
+    KeyInterruptControl => 2, 0x4000132,
+    button_a: 0, 1,
+    button_b: 1, 1,
+    button_select: 2, 1,
+    button_start: 3, 1,
+    dpad_right: 4, 1,
+    dpad_left: 5, 1,
+    dpad_up: 6, 1,
+    dpad_down: 7, 1,
+    button_r: 8, 1,
+    button_l: 9, 1,
+    irq_enable_flag: 14, 1,
+    irq_condition: 15, 1,
+);

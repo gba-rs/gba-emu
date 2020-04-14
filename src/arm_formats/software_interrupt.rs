@@ -1,6 +1,6 @@
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::OperatingMode, cpu::ARM_PC, cpu::ARM_LR, condition::Condition};
 use crate::operations::instruction::Instruction;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct SoftwareInterrupt {
@@ -21,10 +21,12 @@ impl From<u32> for SoftwareInterrupt {
 
 impl Instruction for SoftwareInterrupt {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
-        cpu.current_instruction_set = InstructionSet::Arm;
-        cpu.operating_mode = OperatingMode::Supervisor;
-        cpu.set_spsr(cpu.cpsr);
+        let old_cpsr = cpu.cpsr;
         let current_pc = cpu.get_register(ARM_PC);
+        cpu.set_instruction_set(InstructionSet::Arm);
+        cpu.set_operating_mode(OperatingMode::Supervisor);
+        cpu.cpsr.control_bits.irq_disable = true;
+        cpu.set_spsr(old_cpsr);
         cpu.set_register(ARM_LR, current_pc + 4); // set LR to the next instruction        
         cpu.set_register(ARM_PC, 0x08);
         _mem_bus.cycle_clock.get_cycles()

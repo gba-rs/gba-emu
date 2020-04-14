@@ -2,29 +2,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use log::error;
 
-pub struct Range<T: Ord> {
-    pub lower: T,
-    pub higher: T
-}
-
-impl<T> Range<T> where T: std::cmp::Ord {
-    pub fn new(lower: T, upper: T) -> Range<T>  {
-        return Range {
-            lower: lower,
-            higher: upper
-        };
-    }
-
-    pub fn contains(&self, value: T) -> bool {
-        return value <= self.higher && value >= self.lower;
-    }
-}
-
-pub struct MemoryBlock {
-    pub range: Range<u32>,
-    pub memory: Rc<RefCell<Vec<u8>>>
-}
-
 pub struct MemoryMap {
     pub memory: Rc<RefCell<Vec<u8>>>
 }
@@ -39,7 +16,17 @@ impl MemoryMap {
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
         if address > 0x0FFFFFFF { return }
-        self.memory.borrow_mut()[address as usize] = value;
+        if address <= 0x03007FFF && address >= 0x03007F00 {
+            // mirror memory
+            self.memory.borrow_mut()[((address & 0xFF) + 0x03FFFF00) as usize] = value;
+        }
+
+        if address == 0x4000202 || address == 0x4000203 {
+            let new_val = self.read_u8(address) & !value;
+            self.memory.borrow_mut()[address as usize] = new_val;
+        } else {
+            self.memory.borrow_mut()[address as usize] = value;
+        }
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {

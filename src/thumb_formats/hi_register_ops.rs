@@ -3,7 +3,7 @@ use crate::operations::{arm_arithmetic};
 use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC};
 use std::fmt;
 use log::{error};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -154,11 +154,11 @@ impl HiRegisterOp {
         let mode_bit = (source & 0x1) != 0;
         if mode_bit {
             // Thumb
-            cpu.current_instruction_set = InstructionSet::Thumb;
+            cpu.set_instruction_set(InstructionSet::Thumb);
             cpu.set_register(THUMB_PC, source - 1);
         } else {
             // Arm
-            cpu.current_instruction_set = InstructionSet::Arm;
+            cpu.set_instruction_set(InstructionSet::Arm);
             cpu.set_register(ARM_PC, source - (source % 4));
         }
     }
@@ -222,7 +222,7 @@ mod tests {
         // hs = r12 = 200
         gba.cpu.set_register(11, 200);
         
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         // rd = r3 = 10
         gba.cpu.set_register(3, 10);
@@ -247,7 +247,7 @@ mod tests {
 
         // hd = r12 = 10
         gba.cpu.set_register(11, 10);
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         // rs = r3 = 10
         gba.cpu.set_register(3, 10);
@@ -278,7 +278,7 @@ mod tests {
         // hs = r12 = 200
         gba.cpu.set_register(12, 200);
 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
 
 
@@ -301,7 +301,7 @@ mod tests {
     #[test]
     fn bx_arm_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         gba.cpu.set_register(3, 200);
 
@@ -314,14 +314,14 @@ mod tests {
             }
         }
 
-        assert_eq!(InstructionSet::Arm, gba.cpu.current_instruction_set);
+        assert_eq!(InstructionSet::Arm, gba.cpu.get_instruction_set());
         assert_eq!(200, gba.cpu.get_register(ARM_PC));
     }
 
     #[test]
     fn bx_thumb_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         gba.cpu.set_register(3, 201);
 
@@ -334,7 +334,7 @@ mod tests {
             }
         }
 
-        assert_eq!(InstructionSet::Thumb, gba.cpu.current_instruction_set);
+        assert_eq!(InstructionSet::Thumb, gba.cpu.get_instruction_set());
         assert_eq!(200, gba.cpu.get_register(THUMB_PC));
     }
 }

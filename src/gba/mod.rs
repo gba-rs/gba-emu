@@ -1,9 +1,7 @@
-pub mod memory_bus;
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
-use crate::memory::{io_registers::IORegisters};
 use crate::gpu::gpu::GPU;
 use crate::memory::{key_input_registers::*};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use crate::interrupts::interrupts::Interrupts;
 use crate::timers::timer::TimerHandler;
 
@@ -12,7 +10,6 @@ pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
     pub memory_bus: MemoryBus,
-    pub io_reg: IORegisters,
     pub key_status: KeyStatus,
     pub ket_interrupt_control: KeyInterruptControl,
     pub interrupt_handler: Interrupts,
@@ -31,7 +28,6 @@ impl GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-            io_reg: IORegisters::new(0),
             memory_bus: MemoryBus::new(),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
@@ -54,27 +50,27 @@ impl GBA {
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
         // setup the SPs'
-        temp.cpu.operating_mode = OperatingMode::Interrupt;
+        temp.cpu.set_operating_mode(OperatingMode::Interrupt);
         temp.cpu.set_register(ARM_SP, 0x03007FA0);
 
-        temp.cpu.operating_mode = OperatingMode::FastInterrupt;
+        temp.cpu.set_operating_mode(OperatingMode::FastInterrupt);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::User;
+        temp.cpu.set_operating_mode(OperatingMode::User);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::Supervisor;
+        temp.cpu.set_operating_mode(OperatingMode::Supervisor);
         temp.cpu.set_register(ARM_SP, 0x03007FE0);
 
-        temp.cpu.operating_mode = OperatingMode::Abort;
+        temp.cpu.set_operating_mode(OperatingMode::Abort);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::Undefined;
+        temp.cpu.set_operating_mode(OperatingMode::Undefined);
         temp.cpu.set_register(ARM_SP, 0x03007F00);
 
-        temp.cpu.operating_mode = OperatingMode::Supervisor;
+        temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
-        temp.key_status.set_register(0xFFFF);
+        temp.key_status.set_register(0x3FF);
 
         for i in 0..2 {
             temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
@@ -106,31 +102,37 @@ impl GBA {
 
     pub fn frame(&mut self) {
         while !self.gpu.frame_ready {
-            self.step();
+            // self.key_status.set_register(0x3FF);
+            self.single_step();
         }
 
         self.gpu.frame_ready = false;
     }
 
     pub fn single_step(&mut self) {
+        // self.key_status.set_register(0xFFFF);
         if self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
+            if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
+                self.interrupt_handler.service(&mut self.cpu);
+            }
             self.cpu.fetch(&mut self.memory_bus);
-
         } else {
-            self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map);
+            self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
             self.cpu.cycle_count = 0;
         }
     }
 
     pub fn step(&mut self) {
         while self.cpu.cycle_count < (self.gpu.cycles_to_next_state as usize) {
+            // self.key_status.set_register(0x3FF);
             if self.interrupt_handler.enabled() && !self.cpu.cpsr.control_bits.irq_disable {
                 self.interrupt_handler.service(&mut self.cpu);
             }
             self.cpu.fetch(&mut self.memory_bus);
         }
-        self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map);
-        self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
+
+        self.gpu.step(self.cpu.cycle_count as u32, &mut self.memory_bus.mem_map, &mut self.interrupt_handler);
+        // self.timer_handler.update(self.cpu.cycle_count, &mut self.interrupt_handler);
         self.cpu.cycle_count = 0;
     }
 }

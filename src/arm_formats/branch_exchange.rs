@@ -2,7 +2,7 @@ use crate::cpu::{cpu::CPU, cpu::InstructionSet, cpu::ARM_PC, cpu::THUMB_PC, cond
 use log::{debug};
 use crate::operations::instruction::Instruction;
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct BranchExchange {
     pub condition: Condition,
@@ -30,7 +30,8 @@ impl Instruction for BranchExchange {
         let mode_bit = new_pc & 0x01;
 
         if mode_bit == 0 {
-            cpu.current_instruction_set = InstructionSet::Arm;
+            cpu.set_instruction_set(InstructionSet::Arm);
+            // cpu.cpsr.control_bits.state_bit = false;
             if new_pc % 4 == 0 {
                 cpu.set_register(ARM_PC, new_pc);
             } else {
@@ -38,7 +39,8 @@ impl Instruction for BranchExchange {
             }
             // Flush Pipeline
         } else if mode_bit == 1 {
-            cpu.current_instruction_set = InstructionSet::Thumb;
+            cpu.set_instruction_set(InstructionSet::Thumb);
+            // cpu.cpsr.control_bits.state_bit = true;
             cpu.set_register(THUMB_PC, new_pc - 1);
             // Flush Pipeline
         }
@@ -65,12 +67,12 @@ mod tests {
         let a: BranchExchange = BranchExchange::from(0xD12F_FF1F); //Final bit is 1
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 0);
         a.execute(&mut cpu,&mut bus);
-        assert_eq!(cpu.current_instruction_set, InstructionSet::Arm);
+        assert_eq!(cpu.get_instruction_set(), InstructionSet::Arm);
         cpu.set_register(current_pc, 1);
         a.execute(&mut cpu,&mut bus);
-        assert_eq!(cpu.current_instruction_set, InstructionSet::Thumb);
+        assert_eq!(cpu.get_instruction_set(), InstructionSet::Thumb);
     }
 }

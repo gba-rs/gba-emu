@@ -12,14 +12,25 @@ build:
       - cargo/
       - target/
   script:
+    - rustup update
+    - rustup toolchain install nightly
+    - rustup default nightly
     - rustc --version
     - cargo --version
     - rustup --version
+    - rustup default
     - cargo build --all --verbose
 
 test:
   stage: test
   script:
+    - rustup update
+    - rustup toolchain install nightly
+    - rustup default nightly
+    - rustc --version
+    - cargo --version
+    - rustup --version
+    - rustup default
     - cargo test --all --verbose
 
 #wasm-check:

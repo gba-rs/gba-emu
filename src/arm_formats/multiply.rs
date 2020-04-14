@@ -1,7 +1,7 @@
 use crate::{operations::arm_arithmetic};
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::instruction::Instruction;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Debug)]
 pub struct Multiply {

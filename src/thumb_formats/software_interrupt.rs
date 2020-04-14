@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
-use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR};
+use crate::cpu::{cpu::CPU,  cpu::InstructionSet, cpu::OperatingMode, cpu::THUMB_PC, cpu::THUMB_LR, cpu::ARM_PC, cpu::ARM_LR};
 use std::fmt;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 
 pub struct ThumbSoftwareInterrupt {
     pub comment_immediate: u8
@@ -17,12 +17,14 @@ impl From<u16> for ThumbSoftwareInterrupt {
 
 impl Instruction for ThumbSoftwareInterrupt {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32{
-        cpu.set_spsr(cpu.cpsr);
+        let old_cpsr = cpu.cpsr;
         let current_pc = cpu.get_register(THUMB_PC);
-        cpu.set_register(THUMB_LR, current_pc + 2); // set LR to the next instruction (fetch does the other +2)      
-        cpu.set_register(THUMB_PC, 0x08);
-        cpu.current_instruction_set = InstructionSet::Arm;
-        cpu.operating_mode = OperatingMode::Supervisor;
+        cpu.set_instruction_set(InstructionSet::Arm);
+        cpu.set_operating_mode(OperatingMode::Supervisor);
+        cpu.cpsr.control_bits.irq_disable = true;
+        cpu.set_spsr(old_cpsr);
+        cpu.set_register(ARM_LR, current_pc); // set LR to the next instruction (fetch does the other +2)      
+        cpu.set_register(ARM_PC, 0x08);
         _mem_bus.cycle_clock.get_cycles()
     }
 
@@ -49,8 +51,8 @@ mod tests {
     #[test]
     fn swi_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
-        gba.cpu.operating_mode = OperatingMode::Supervisor;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
+        gba.cpu.set_operating_mode(OperatingMode::Supervisor);
 
         gba.cpu.set_register(THUMB_PC, 24);
 
@@ -64,9 +66,9 @@ mod tests {
             }
         }
 
-        assert_eq!(InstructionSet::Arm, gba.cpu.current_instruction_set);
-        assert_eq!(OperatingMode::Supervisor, gba.cpu.operating_mode);
+        assert_eq!(InstructionSet::Arm, gba.cpu.get_instruction_set());
+        assert_eq!(OperatingMode::Supervisor, gba.cpu.get_operating_mode());
         assert_eq!(0x8, gba.cpu.get_register(ARM_PC));
-        assert_eq!(26, gba.cpu.get_register(ARM_LR));
+        assert_eq!(24, gba.cpu.get_register(ARM_LR));
     }
 }

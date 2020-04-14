@@ -6,7 +6,7 @@ mod test {
     use gba_emulator::thumb_formats::add_subtract::AddSubtract;
     use gba_emulator::arm_formats::branch_exchange::BranchExchange;
     use gba_emulator::operations::instruction::Instruction;
-    use gba_emulator::gba::memory_bus::MemoryBus;
+    use gba_emulator::memory::memory_bus::MemoryBus;
 
 
     #[test]
@@ -15,7 +15,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,1);
@@ -29,7 +29,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,5);
@@ -43,7 +43,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,1);
@@ -57,7 +57,7 @@ mod test {
         let b: BranchExchange = BranchExchange::from(0xD12F_FF1F);
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new();
-        let current_pc = if cpu.current_instruction_set == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let current_pc = if cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         cpu.set_register(current_pc, 1);
         b.execute(&mut cpu,&mut bus);
         cpu.set_register(1,4);

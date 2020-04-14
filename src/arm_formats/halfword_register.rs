@@ -1,15 +1,14 @@
 use crate::cpu::{cpu::CPU, condition::Condition};
 use crate::operations::load_store::*;
 use crate::operations::instruction::Instruction;
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
+use std::fmt;
 
-#[derive(Debug)]
 pub struct HalfwordRegisterOffset {
     pub halfword_common: HalfwordCommon,
     pub offset_register: u8,
 }
 
-#[derive(Debug)]
 pub struct HalfwordImmediateOffset {
     pub halfword_common: HalfwordCommon,
     pub offset_high_nibble: u8,
@@ -53,6 +52,102 @@ impl From<u32> for HalfwordCommon {
             condition: Condition::from((value & 0xF000_0000) >> 28),
             data_type: data_type,
         };
+    }
+}
+
+impl fmt::Debug for HalfwordImmediateOffset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.halfword_common.load {
+            write!(f, "LDR{:?}", self.halfword_common.condition)?;
+        } else {
+            write!(f, "STR{:?}", self.halfword_common.condition)?;
+        }
+
+        if self.halfword_common.is_signed {
+            write!(f, "S")?;
+        }
+
+        match self.halfword_common.data_type {
+            DataType::Halfword => {
+                write!(f, "H")?;
+            },
+            DataType::Byte => {
+                write!(f, "B")?;
+            },
+            _ => {}
+        }
+
+        write!(f, " r{}, [r{}", self.halfword_common.destination, self.halfword_common.base_register)?;
+
+        if self.halfword_common.is_pre_indexed {
+            if self.halfword_common.up_down_bit {
+                write!(f, ", +#0x{:X}]", (self.offset_high_nibble << 4) | self.offset_low_nibble)?;
+            } else {
+                write!(f, ", -#0x{:X}]", (self.offset_high_nibble << 4) | self.offset_low_nibble)?;
+            }
+
+            if self.halfword_common.write_back {
+                write!(f, "!")?;
+            }
+
+        } else {
+            if self.halfword_common.up_down_bit {
+                write!(f, "], +#0x{:X}", (self.offset_high_nibble << 4) | self.offset_low_nibble)?;
+            } else {
+                write!(f, "], -#0x{:X}", (self.offset_high_nibble << 4) | self.offset_low_nibble)?;
+            }
+        }
+
+        write!(f, "")
+
+    }
+}
+
+impl fmt::Debug for HalfwordRegisterOffset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.halfword_common.load {
+            write!(f, "LDR{:?}", self.halfword_common.condition)?;
+        } else {
+            write!(f, "STR{:?}", self.halfword_common.condition)?;
+        }
+
+        if self.halfword_common.is_signed {
+            write!(f, "S")?;
+        }
+
+        match self.halfword_common.data_type {
+            DataType::Halfword => {
+                write!(f, "H")?;
+            },
+            DataType::Byte => {
+                write!(f, "B")?;
+            },
+            _ => {}
+        }
+
+        write!(f, " r{}, [r{}", self.halfword_common.destination, self.halfword_common.base_register)?;
+
+        if self.halfword_common.is_pre_indexed {
+            if self.halfword_common.up_down_bit {
+                write!(f, ", +r{}]", self.offset_register)?;
+            } else {
+                write!(f, ", -r{}]", self.offset_register)?;
+            }
+
+            if self.halfword_common.write_back {
+                write!(f, "!")?;
+            }
+
+        } else {
+            if self.halfword_common.up_down_bit {
+                write!(f, "], +r{}", self.offset_register)?;
+            } else {
+                write!(f, "], -r{}", self.offset_register)?;
+            }
+        }
+
+        write!(f, "")
+
     }
 }
 

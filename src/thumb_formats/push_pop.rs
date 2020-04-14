@@ -1,7 +1,7 @@
 use crate::operations::instruction::Instruction;
 use crate::operations::arm_arithmetic;
 use crate::cpu::{cpu::CPU, cpu::THUMB_LR, cpu::THUMB_SP, cpu::THUMB_PC};
-use crate::gba::memory_bus::MemoryBus;
+use crate::memory::memory_bus::MemoryBus;
 use std::fmt;
 use log::debug;
 
@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn push_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         for i in 0..8 {
             gba.cpu.set_register(i, (i as u32) * 100);
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn pop_test() {
         let mut gba: GBA = GBA::default(); 
-        gba.cpu.current_instruction_set = InstructionSet::Thumb;
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
 
         let base = 0x02000000;
 
