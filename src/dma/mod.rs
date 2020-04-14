@@ -72,6 +72,8 @@ impl DMAChannel {
         self.internal_destination_address = self.destination_address.get_address();
         self.internal_word_count = self.word_count.get_word_count();
 
+        // log::info!("DMA Transfer: s {:X}, d {:X}, wc {:X}", self.internal_source_address, self.internal_destination_address, self.internal_word_count);
+
 
         match self.control.get_dma_transfer_type() {
             0 => {  // 16

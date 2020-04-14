@@ -37,7 +37,7 @@ impl Instruction for ThumbSoftwareInterrupt {
 
 impl fmt::Debug for ThumbSoftwareInterrupt {
     fn fmt( & self, f: & mut fmt::Formatter < '_ > ) -> fmt::Result {
-        write!(f, "SWI {}", self.comment_immediate)
+        write!(f, "SWI 0x{:X}", self.comment_immediate)
     }
 }
 

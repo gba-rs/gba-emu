@@ -9,6 +9,7 @@ pub mod gpu;
 pub mod interrupts;
 pub mod timers;
 pub mod dma;
+pub mod gamepak;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.

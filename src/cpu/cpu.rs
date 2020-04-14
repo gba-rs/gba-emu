@@ -285,6 +285,7 @@ impl CPU {
         let decode_result = self.decode(instruction);
         let cycles: usize = match decode_result {
             Ok(mut instr) => {
+                // log::info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
                     ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize

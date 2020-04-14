@@ -60,7 +60,8 @@ pub struct Background {
     pub control: BG_Control,
     pub horizontal_offset: BGOffset,
     pub vertical_offset: BGOffset,
-    pub scan_line: Vec<Rgb15>
+    pub scan_line: Vec<Rgb15>,
+    pub id: usize
 }
 
 impl Background {
@@ -107,6 +108,22 @@ impl Window {
         self.horizontal_dimensions.register(mem);
         self.vertical_dimensions.register(mem);
     }
+
+    pub fn inside(&self, x: u32, y: u32) -> bool {
+        let left = self.horizontal_dimensions.get_X1() as u32;
+        let mut right = self.horizontal_dimensions.get_X2() as u32;
+        let top = self.vertical_dimensions.get_Y1() as u32;
+        let mut bottom = self.vertical_dimensions.get_Y2() as u32;
+
+        if right > DISPLAY_WIDTH || right < left {
+            right = DISPLAY_WIDTH;
+        }
+        if bottom > DISPLAY_HEIGHT || bottom < top {
+            bottom = DISPLAY_HEIGHT;
+        }
+
+        (x >= left && x < right) && (y >= top && y < bottom)
+    }
 }
 
 pub struct GPU {
@@ -133,7 +150,7 @@ pub struct GPU {
     pub current_state: GpuState,
     pub frame_ready: bool,
     pub frame_buffer: Vec<u32>,
-    pub obj_buffer: Vec<Rgb15>
+    pub obj_buffer: Vec<(Rgb15, u8)>
 }
 
 impl GPU {
@@ -145,25 +162,29 @@ impl GPU {
                     control: BG_Control::new(0),
                     horizontal_offset: BGOffset::new(0),
                     vertical_offset: BGOffset::new(1),
-                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize],
+                    id: 0
                 },
                 Background {
                     control: BG_Control::new(1),
                     horizontal_offset: BGOffset::new(2),
                     vertical_offset: BGOffset::new(3), 
-                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize],
+                    id: 1
                 },
                 Background {
                     control: BG_Control::new(2),
                     horizontal_offset: BGOffset::new(4),
                     vertical_offset: BGOffset::new(5), 
-                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize],
+                    id: 2
                 },
                 Background {
                     control: BG_Control::new(3),
                     horizontal_offset: BGOffset::new(6),
                     vertical_offset: BGOffset::new(7), 
-                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize]
+                    scan_line: vec![Rgb15::new(0x8000); DISPLAY_WIDTH as usize],
+                    id: 3
                 }
             ],
             bg_affine_components: [
@@ -859,7 +880,7 @@ impl GPU {
             current_state: GpuState::HDraw,
             frame_ready: false,
             frame_buffer: vec![0; (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize],
-            obj_buffer: vec![Rgb15::new(0x8000); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
+            obj_buffer: vec![(Rgb15::new(0x8000), 4); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
         };
     }
 
@@ -1114,6 +1135,7 @@ impl GPU {
         let current_scanline = self.vertical_count.get_current_scanline() as i32;
         let mut obj_x = sprite.attr1.get_x_coordinate() as i16 as i32;
         let mut obj_y = sprite.attr0.get_y_coordinate() as i16 as i32;
+        let priority = sprite.attr2.get_priority_rel_to_bg();
 
         if obj_y >= (DISPLAY_HEIGHT as i32) {
             obj_y -= 1 << 8;
@@ -1166,12 +1188,16 @@ impl GPU {
             if x < 0 {
                 continue;
             } 
+
             if x >= screen_width {
                 break;
             }
-            
-            // todo check priority here
+            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
 
+            if self.obj_buffer[obj_buffer_index].1 <= priority {
+                continue;
+            }
+            
             let mut sprite_y = current_scanline - obj_y;
             let mut sprite_x = x - obj_x;
 
@@ -1214,14 +1240,10 @@ impl GPU {
             };
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
-            self.obj_buffer[obj_buffer_index] = color;
+            if !color.is_transparent() {
+                self.obj_buffer[obj_buffer_index] = (color, priority);
+            }
         }
-
-    }
-    fn render_semi_transp_obj(&mut self, sprite_num: usize, mem_map: &mut MemoryMap) {
-
-    }
-    fn render_obj_window(&mut self, sprite_num: usize, mem_map: &mut MemoryMap) {
 
     }
 
@@ -1344,28 +1366,91 @@ impl GPU {
 
     }
 
+    fn get_window_type(&self, x: u32, y: u32) -> Option<WindowTypes>{
+        if self.display_control.using_windows() {
+            if self.display_control.get_window_0_display_flag() != 0 && self.windows[0].inside(x, y) {
+                return Some(WindowTypes::Window0);
+            }
+
+            if self.display_control.get_window_1_display_flag() != 0 && self.windows[1].inside(x, y){
+                return Some(WindowTypes::Window1);
+            }
+
+            // TODO object window
+
+            Some(WindowTypes::WindowOutside) 
+        } else {
+            None
+        }
+    }
+
+    fn get_window_flags(&self, window_type: &WindowTypes) -> (bool, bool, [bool; 4]) {
+        match window_type {
+            WindowTypes::Window0 | WindowTypes::Window1 => {
+                return (self.control_window_inside.should_display_sfx(window_type), 
+                        self.control_window_inside.should_display_obj(window_type), 
+                        self.control_window_inside.bgs_to_display(window_type));
+            },
+            WindowTypes::WindowObject | WindowTypes::WindowOutside => {
+                return (self.control_window_outside.should_display_sfx(window_type), 
+                        self.control_window_outside.should_display_obj(window_type), 
+                        self.control_window_outside.bgs_to_display(window_type));
+
+            },
+        };
+    }
+
     pub fn composite_background(&mut self) {
         let current_scanline = self.vertical_count.get_current_scanline() as u32;
 
+        let mut temp: Vec<(usize, u8)> = Vec::new();
+
+        for priority in 0..4 {
+            for i in 0..4 {
+                let bg_priority = self.backgrounds[i].control.get_bg_priority();
+                if !temp.contains(&(self.backgrounds[i].id, bg_priority)) && 
+                    self.display_control.should_display(i as u8) &&
+                    bg_priority == priority {
+                        temp.push((i, bg_priority));
+                }
+            }
+        }
+
         for x in 0..DISPLAY_WIDTH {
-            let mut top_layer_index = 3;
-            for i in (0..4).rev() {
-                if self.display_control.should_display(i as u8) && !self.backgrounds[i].scan_line[x as usize].is_transparent() {
-                    top_layer_index = i;
+            let mut color = Rgb15::new(0x8000);
+            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
+            let (obj_color, obj_priority) = self.obj_buffer[obj_buffer_index];
+            let window_type = self.get_window_type(x, current_scanline);
+
+            for priority in 0..4 {
+                if !color.is_transparent() {
+                    break;
+                }
+
+                let (disp_sfx, disp_obj, bgs_to_disp) = match &window_type {
+                    Some(val) => self.get_window_flags(&val),
+                    None => (true, true, [true, true, true, true])
+                };
+
+                if disp_sfx {}
+
+                if obj_priority == priority && disp_obj {
+                    color = obj_color;
+                } else {
+                    for i in 0..4 {
+                        let bg_priority = self.backgrounds[i].control.get_bg_priority();
+                        if self.display_control.should_display(i as u8) && 
+                           bgs_to_disp[i] &&
+                           color.is_transparent() && 
+                           bg_priority == priority {
+                            color = self.backgrounds[i].scan_line[x as usize];
+                        }
+                    }
                 }
             }
 
-            let mut color = self.backgrounds[top_layer_index].scan_line[x as usize].to_0rgb();
-
-            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
-            
-            if !self.obj_buffer[obj_buffer_index].is_transparent() {
-                color = self.obj_buffer[obj_buffer_index].to_0rgb();
-                // log::info!("We are drawing a sprite pixel: {:?}", self.obj_buffer[obj_buffer_index]);
-            }
-
             let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
-            self.frame_buffer[frame_buffer_index] = color;
+            self.frame_buffer[frame_buffer_index] = color.to_0rgb();
         }
     }
 }

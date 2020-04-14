@@ -2,14 +2,12 @@ use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::gpu::{gpu::GPU, gpu::DISPLAY_WIDTH, gpu::DISPLAY_HEIGHT};
 use crate::gpu::rgb15::Rgb15;
 use crate::memory::{key_input_registers::*};
-use crate::memory::{memory_bus::MemoryBus, memory_bus::BackupType};
-use crate::memory::memory_bus::HaltState;
+use crate::memory::{memory_bus::MemoryBus, memory_bus::HaltState};
 use crate::interrupts::interrupts::Interrupts;
 use crate::dma::DMAController;
 use crate::timers::timer::TimerHandler;
+use crate::{gamepak::GamePack, gamepak::BackupType};
 
-
-pub const MEM_STRINGS: [&str; 5] = ["SRAM", "EEPROM", "FLASH_", "FLASH512_", "FLASH1M_"];
 
 pub struct GBA {
     pub cpu: CPU,
@@ -24,42 +22,25 @@ pub struct GBA {
 
 impl Default for GBA {
     fn default() -> Self {
-        return GBA::new(0x08000000, &Vec::new(), &Vec::new());
+        let temp = GamePack::default();
+        return GBA::new(0x08000000, &temp);
     }
 }
 
 impl GBA {
 
-    fn detect_backup_type(&mut self, rom: &Vec<u8>) {
-        for i in 0..5 {
-            let mem_string_bytes = MEM_STRINGS[i].as_bytes();
-            let result = rom.windows(mem_string_bytes.len()).position(|window| window == mem_string_bytes);
-            match result {
-                Some(_) => {
-                    // string exists
-                    log::info!("Found backup type: {}", MEM_STRINGS[i]);
-                },
-                None => {
-                    // string doesn't exist
-                }
-            }
-        }
-    }
-
-    pub fn new(pc_address: u32, bios: &Vec<u8>, rom: &Vec<u8>) -> GBA {
+    pub fn new(pc_address: u32, game_pack: &GamePack) -> GBA {
 
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-            memory_bus: MemoryBus::new(),
+            memory_bus: MemoryBus::new(game_pack.backup_type),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
             interrupt_handler: Interrupts::new(),
             timer_handler: TimerHandler::new(),
             dma_control: DMAController::new()
         };
-
-        temp.detect_backup_type(rom);
 
         temp.gpu.register(&temp.memory_bus.mem_map.memory);
         temp.key_status.register(&temp.memory_bus.mem_map.memory);
@@ -107,8 +88,13 @@ impl GBA {
 
         // setup the memory
         // General INternal Memory
-        temp.load_bios(bios);
-        temp.load_rom(rom);
+        temp.load_bios(&game_pack.bios);
+        temp.load_rom(&game_pack.rom);
+
+        if game_pack.save_data.len() != 0 {
+            temp.load_save_file(&game_pack.save_data);
+        }
+
         return temp;
     }
 
@@ -120,6 +106,15 @@ impl GBA {
         self.memory_bus.mem_map.write_block(0x08000000, rom)
     }
 
+    pub fn load_save_file(&mut self, save_data: &Vec<u8>) {
+        match self.memory_bus.backup_type {
+            BackupType::Sram => {
+                self.memory_bus.mem_map.write_block(0x0E000000, save_data);
+            },
+            _ => {log::info!("Save data for this type is not implemented")} 
+        }
+    }
+
     pub fn frame(&mut self) {
         while !self.gpu.frame_ready {
             // self.key_status.set_register(0x3FF);
@@ -127,7 +122,7 @@ impl GBA {
         }
 
         self.gpu.frame_ready = false;
-        self.gpu.obj_buffer = vec![Rgb15::new(0x8000); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize];
+        self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4)});
     }
 
     pub fn single_step(&mut self) {

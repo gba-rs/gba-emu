@@ -17,3 +17,5 @@ wasm-pack.log
 
 roms/games
 .BIOS
+
+.vs/

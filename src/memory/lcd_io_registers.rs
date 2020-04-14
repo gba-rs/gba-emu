@@ -38,6 +38,12 @@ impl DisplayControl {
                bg_num == 2 && self.get_screen_display_bg2() == 1 ||
                bg_num == 3 && self.get_screen_display_bg3() == 1;
     }
+
+    pub fn using_windows(&self) -> bool {
+        return self.get_window_0_display_flag() != 0 || 
+               self.get_window_1_display_flag() != 0 || 
+               self.get_obj_window_display_flag() != 0;
+    }
 }
 
 io_register! (
@@ -548,7 +554,7 @@ io_register! (
     ],
     character_name: 0, 10,
     priority_rel_to_bg: 10, 2,
-    palette_number: 12, 3,
+    palette_number: 12, 4,
 );
 
 
@@ -564,6 +570,14 @@ io_register! (
     Y1: 8, 8,
 );
 
+#[derive(Debug, PartialEq)]
+pub enum WindowTypes {
+    Window0,
+    Window1,
+    WindowOutside,
+    WindowObject,
+}
+
 io_register! (
     ControlWindowInside => 2, 0x4000048,
     window0_bg_enable_bits: 0, 4,
@@ -573,6 +587,43 @@ io_register! (
     window1_obj_enable_bits: 12, 1,
     window1_color_special_effect: 13, 1,
 );
+
+impl ControlWindowInside {
+    pub fn bgs_to_display(&self, window_type: &WindowTypes) -> [bool; 4] {
+        let bits = match window_type {
+            WindowTypes::Window0 => self.get_window0_bg_enable_bits(),
+            WindowTypes::Window1 => self.get_window1_bg_enable_bits(),
+            _ => panic!("Trying to get an invalid window type for ControlWindowInside: {:?}", window_type)
+        };
+
+        return [
+            ((bits >> 0) & 0x1) != 0,
+            ((bits >> 1) & 0x1) != 0,
+            ((bits >> 2) & 0x1) != 0,
+            ((bits >> 3) & 0x1) != 0
+        ];
+    }
+
+    pub fn should_display_obj(&self, window_type: &WindowTypes) -> bool {
+        let bit = match window_type {
+            WindowTypes::Window0 => self.get_window0_obj_enable_bits(),
+            WindowTypes::Window1 => self.get_window1_obj_enable_bits(),
+            _ => panic!("Trying to get an invalid window type for ControlWindowInside: {:?}", window_type)
+        };
+
+        return bit != 0;
+    }
+
+    pub fn should_display_sfx(&self, window_type: &WindowTypes) -> bool {
+        let bit = match window_type {
+            WindowTypes::Window0 => self.get_window0_color_special_effect(),
+            WindowTypes::Window1 => self.get_window1_color_special_effect(),
+            _ => panic!("Trying to get an invalid window type for ControlWindowOutside: {:?}", window_type)
+        };
+
+        return bit != 0;
+    }
+}
 
 io_register! (
     ControlWindowOutside => 2, 0x400004A,
@@ -584,6 +635,43 @@ io_register! (
     obj_window_color_special_effect: 13, 1,
 );
 
+impl ControlWindowOutside {
+    pub fn bgs_to_display(&self, window_type: &WindowTypes) -> [bool; 4] {
+        let bits = match window_type {
+            WindowTypes::WindowOutside => self.get_outside_bg_enable_bits(),
+            WindowTypes::WindowObject => self.get_obj_window_bg_enable_bits(),
+            _ => panic!("Trying to get an invalid window type for ControlWindowOutside: {:?}", window_type)
+        };
+
+        return [
+            ((bits >> 0) & 0x1) != 0,
+            ((bits >> 1) & 0x1) != 0,
+            ((bits >> 2) & 0x1) != 0,
+            ((bits >> 3) & 0x1) != 0
+        ];
+    }
+
+    pub fn should_display_obj(&self, window_type: &WindowTypes) -> bool {
+        let bit = match window_type {
+            WindowTypes::WindowOutside => self.get_outside_obj_enable_bits(),
+            WindowTypes::WindowObject => self.get_obj_window_obj_enable_bits(),
+            _ => panic!("Trying to get an invalid window type for ControlWindowOutside: {:?}", window_type)
+        };
+
+        return bit != 0;
+    }
+
+    pub fn should_display_sfx(&self, window_type: &WindowTypes) -> bool {
+        let bit = match window_type {
+            WindowTypes::WindowOutside => self.get_outside_color_special_effect(),
+            WindowTypes::WindowObject => self.get_obj_window_color_special_effect(),
+            _ => panic!("Trying to get an invalid window type for ControlWindowOutside: {:?}", window_type)
+        };
+
+        return bit != 0;
+    }
+}
+
 io_register! (
     MosaicSize => 4, 0x400004C,
     bg_mosaic_hsize: 0, 4,
@@ -591,6 +679,26 @@ io_register! (
     obj_mosaic_hsize: 8, 4,
     obj_mosaic_vsize: 12, 4,
 );
+
+
+pub enum BlendMode {
+    Off,
+    Alpha,
+    White,
+    Black
+}
+
+impl From<u8> for BlendMode {
+    fn from(value: u8) -> Self {
+        return match value {
+            0b00 => BlendMode::Off,
+            0b01 => BlendMode::Alpha,
+            0b10 => BlendMode::White,
+            0b11 => BlendMode::Black,
+            _ => panic!("Invalid BlendMode: {:b}", value)
+        };
+    }
+}
 
 io_register! (
     ColorSpecialEffectsSelection => 2, 0x4000050,
@@ -608,6 +716,12 @@ io_register! (
     obj_2nd_target_pixel: 12, 1,
     bd_2nd_target_pixel: 13, 1
 );
+
+impl ColorSpecialEffectsSelection {
+    pub fn get_blendmode(&self) -> BlendMode {
+        return BlendMode::from(self.get_color_special_effect());
+    }
+}
 
 io_register! (
     AlphaBlendingCoefficients => 2, 0x4000052,

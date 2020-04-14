@@ -16,6 +16,7 @@ impl MemoryMap {
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
         if address > 0x0FFF_FFFF { return }
+        
         if address <= 0x03007FFF && address >= 0x03007F00 {
             // mirror memory
             self.memory.borrow_mut()[((address & 0xFF) + 0x03FFFF00) as usize] = value;
