@@ -106,9 +106,9 @@ impl fmt::Debug for HalfwordImmediateOffset {
 impl fmt::Debug for HalfwordRegisterOffset {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.halfword_common.load {
-            write!(f, "LDR{:?}", self.halfword_common.condition)?;
+            write!(f, "LDR")?;
         } else {
-            write!(f, "STR{:?}", self.halfword_common.condition)?;
+            write!(f, "STR")?;
         }
 
         if self.halfword_common.is_signed {
@@ -124,6 +124,8 @@ impl fmt::Debug for HalfwordRegisterOffset {
             },
             _ => {}
         }
+
+        write!(f, "{:?}", self.halfword_common.condition)?;
 
         write!(f, " r{}, [r{}", self.halfword_common.destination, self.halfword_common.base_register)?;
 

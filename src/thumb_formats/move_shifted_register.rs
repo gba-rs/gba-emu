@@ -56,6 +56,7 @@ impl Instruction for MoveShifted {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gamepak::BackupType;
 
     #[test]
     fn test_execute_op0() {
@@ -66,7 +67,7 @@ mod tests {
         let value = 0x10;
 
         let mut cpu = CPU::new();
-        let mut mem_bus = MemoryBus::new();
+        let mut mem_bus = MemoryBus::new(BackupType::Error);
         cpu.set_register(rs, value);
 
         instruction.execute(&mut cpu, &mut mem_bus);
@@ -87,7 +88,7 @@ mod tests {
         let value = 0x10;
 
         let mut cpu = CPU::new();
-        let mut mem_bus = MemoryBus::new();
+        let mut mem_bus = MemoryBus::new(BackupType::Error);
         cpu.set_register(rs, value);
 
         instruction.execute(&mut cpu, &mut mem_bus);
@@ -108,7 +109,7 @@ mod tests {
         let value = 0x100;
 
         let mut cpu = CPU::new();
-        let mut mem_bus = MemoryBus::new();
+        let mut mem_bus = MemoryBus::new(BackupType::Error);
         cpu.set_register(rs, value);
 
         instruction.execute(&mut cpu, &mut mem_bus);

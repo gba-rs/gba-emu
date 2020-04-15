@@ -45,13 +45,13 @@ pub const REG_MAP: [[[usize; 16]; 7]; 2] = [
     ],
     // thumb
     [
-        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 11, 12, 13, 14, 15],        // System
-        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 11, 12, 13, 14, 15],        // User
-        [0, 1, 2, 3, 4, 5, 6, 7, 21, 22, 15, 11, 12, 13, 14, 15],        // FIQ
-        [0, 1, 2, 3, 4, 5, 6, 7, 23, 24, 15, 11, 12, 13, 14, 15],        // Supervisor
-        [0, 1, 2, 3, 4, 5, 6, 7, 25, 26, 15, 11, 12, 13, 14, 15],        // Abort
-        [0, 1, 2, 3, 4, 5, 6, 7, 27, 28, 15, 11, 12, 13, 14, 15],        // IRQ
-        [0, 1, 2, 3, 4, 5, 6, 7, 29, 30, 15, 11, 12, 13, 14, 15]         // Undefiend
+        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 40, 40, 40, 40, 40],        // System
+        [0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 40, 40, 40, 40, 40],        // User
+        [0, 1, 2, 3, 4, 5, 6, 7, 21, 22, 15, 40, 40, 40, 40, 40],        // FIQ
+        [0, 1, 2, 3, 4, 5, 6, 7, 23, 24, 15, 40, 40, 40, 40, 40],        // Supervisor
+        [0, 1, 2, 3, 4, 5, 6, 7, 25, 26, 15, 40, 40, 40, 40, 40],        // Abort
+        [0, 1, 2, 3, 4, 5, 6, 7, 27, 28, 15, 40, 40, 40, 40, 40],        // IRQ
+        [0, 1, 2, 3, 4, 5, 6, 7, 29, 30, 15, 40, 40, 40, 40, 40]         // Undefiend
     ]
 ];
 
@@ -126,7 +126,6 @@ pub struct CPU {
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
     pub last_instruction: String,
-    pub cycle_count: usize,
 }
 
 impl CPU {
@@ -136,7 +135,6 @@ impl CPU {
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b011111),
             last_instruction: "".to_string(),
-            cycle_count: 0
         };
     }
 
@@ -268,7 +266,7 @@ impl CPU {
         }
     }
 
-    pub fn fetch(&mut self, bus: &mut MemoryBus) {
+    pub fn fetch(&mut self, bus: &mut MemoryBus) -> usize {
         let current_pc = if self.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
         // log::debug!("PC: {:X}", pc_contents);
@@ -285,17 +283,41 @@ impl CPU {
         let check_condition = if self.get_instruction_set() == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
 
         let decode_result = self.decode(instruction);
-        match decode_result {
+        let cycles: usize = match decode_result {
             Ok(mut instr) => {
+                // info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
+                // info!("r0={:X} r1={:X} r2={:X} r3={:X} r4={:X} r5={:X} r6={:X} r7={:X} r8={:X} r9={:X} r10={:X} r11={:X} r12={:X} r13={:X} r14={:X} r15={:X}", 
+                //         self.get_register_unsafe(0), 
+                //         self.get_register_unsafe(1), 
+                //         self.get_register_unsafe(2), 
+                //         self.get_register_unsafe(3), 
+                //         self.get_register_unsafe(4), 
+                //         self.get_register_unsafe(5), 
+                //         self.get_register_unsafe(6), 
+                //         self.get_register_unsafe(7), 
+                //         self.get_register_unsafe(8), 
+                //         self.get_register_unsafe(9), 
+                //         self.get_register_unsafe(10), 
+                //         self.get_register_unsafe(11), 
+                //         self.get_register_unsafe(12), 
+                //         self.get_register_unsafe(13), 
+                //         self.get_register_unsafe(14), 
+                //         self.get_register_unsafe(15));
+
+
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    self.cycle_count += ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize;
+                    ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize
+                } else {
+                    0usize
                 }
             },
             Err(e) => {
                 panic!("{:?}", e);
             }
-        }
+        };
+
+        return cycles;
     }
 
     pub fn get_instruction_set(&self) -> InstructionSet {
@@ -432,7 +454,7 @@ mod tests {
     #[test]
     fn test_decode_unimplemented(){
         let cpu = CPU::new();
-//        let bus = MemoryBus::new();
+//        let bus = MemoryBus::new_stub();
 
         let result = cpu.decode(0x00F0F0F0);
         match result {
@@ -448,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_decode(){
-//        let mut bus = MemoryBus::new();
+//        let mut bus = MemoryBus::new_stub();
 //        let cpu = CPU::new();
         // cpu.decode(&mut map, 0xE0812001);
     }
@@ -457,7 +479,7 @@ mod tests {
     fn test_fetch(){
         let mut cpu = CPU::new();
         cpu.set_register(15, 0x02000000);
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         bus.write_u32(0x02000000, 0x012081E0);
         bus.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut bus);
@@ -490,7 +512,7 @@ mod tests {
     // fn test_branch_exchange(){
     //     let mut cpu = CPU::new();
     //     cpu.set_register(15, 0x02000000);
-    //     let mut map = MemoryBus::new();
+    //     let mut map = MemoryBus::new_stub();
     //     map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
     //     map.write_u32(0x02000000, 0x11FF2FE1u32.to_be());
     //     cpu.fetch(&mut map);

@@ -19,7 +19,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(1,1);
         cpu.set_register(2,2);
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.get_register(2), 1 & 2);
     }
@@ -29,7 +29,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(1,1);
         cpu.set_register(2,2);
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.get_register(2), 1 ^ 2);
     }
@@ -39,7 +39,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(1,2);
         cpu.set_register(2,2);
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.get_register(2), 2 - 2);
         cpu.set_register(2,1);
@@ -58,7 +58,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(1,2);
         cpu.set_register(2,2);
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.get_register(2), 2 - 2);
         cpu.set_register(2,1);
@@ -72,7 +72,7 @@ mod tests {
         cpu.set_register(1,2);
         cpu.set_register(2,2);
 //        [0,2,2]
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.get_register(2), 2 + 2);
     }
@@ -83,7 +83,7 @@ mod tests {
         cpu.set_register(1,2);
         cpu.set_register(2,2);
 //        [0,2,2]
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.get_register(2), 2 + 2);
     }
@@ -94,7 +94,7 @@ mod tests {
         cpu.set_register(1,2);
         cpu.set_register(2,2);
 //        [0,2,2]
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu,&mut bus);
         assert_eq!(cpu.get_register(2), 0u32.wrapping_sub(1));
     }
@@ -105,7 +105,7 @@ mod tests {
             cpu.set_register(1,1);
             cpu.set_register(2,2);
     //        [0,1,2]
-            let mut bus = MemoryBus::new();
+            let mut bus = MemoryBus::new_stub();
             a.execute(&mut cpu,&mut bus);
             assert_eq!(cpu.get_register(2), 2-1-1);
         }
@@ -117,7 +117,7 @@ mod tests {
             cpu.set_register(1,1);
             cpu.set_register(2,2);
     //        [0,1,2]
-            let mut bus = MemoryBus::new();
+            let mut bus = MemoryBus::new_stub();
             a.execute(&mut cpu,&mut bus);
             assert_eq!(cpu.get_register(2), cpu.get_register(1)); //moving 2 into 1 and checking that 1 is now equal to 2
         }
@@ -128,7 +128,7 @@ mod tests {
             let mut cpu = CPU::new();
             cpu.set_register(1,1);
             cpu.set_register(2,2);
-            let mut bus = MemoryBus::new();
+            let mut bus = MemoryBus::new_stub();
             a.execute(&mut cpu,&mut bus);
             assert_eq!(cpu.get_register(2), 1 & !2);
         }
@@ -139,7 +139,7 @@ mod tests {
             let mut cpu = CPU::new();
             cpu.set_register(1,1);
             cpu.set_register(2,2);
-            let mut bus = MemoryBus::new();
+            let mut bus = MemoryBus::new_stub();
             a.execute(&mut cpu,&mut bus);
             assert_eq!(cpu.get_register(2), !2);
         }

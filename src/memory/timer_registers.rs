@@ -5,13 +5,29 @@ use super::GbaMem;
 
 io_register! (
     TimerDataRegister => 2, [0x4000100, 0x4000104, 0x4000108, 0x400010C],
-    data: 0, 15
+    data: 0, 16
 );
 
 io_register! (
     TimerControlRegister => 2, [0x4000102, 0x4000106, 0x400010A, 0x400010E],
     pre_scalar_selection: 0,2,
-    count_up_enable: 2,1,
-    timer_irq_enable: 6,1,
-    timer_start_stop: 7,1,
+    cascade: 2,1,
+    irq_enable: 6,1,
+    enable: 7,1,
 );
+
+impl TimerDataRegister {
+    pub fn get_reload(&self) -> u16 {
+        let mem_ref = self.memory.borrow();
+        let address = 0x1000_0000 + (self.index * 2); 
+        return (mem_ref[address] as u32 | ((mem_ref[address + 1] as u32) << 8)) as u16;
+    }
+
+    pub fn write_reload(&mut self, value: u16) {
+        let mut mem_ref = self.memory.borrow_mut();
+        let address = 0x1000_0000 + (self.index * 2); 
+
+        mem_ref[address] = (value & 0xFF) as u8;
+        mem_ref[address + 1] = ((value & 0xFF00) >> 8) as u8;
+    }
+}

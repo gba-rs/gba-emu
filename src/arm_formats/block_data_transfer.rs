@@ -109,6 +109,8 @@ impl BlockDataTransfer {
             } else {
                 // bank transfer
                 current_operating_mode = OperatingMode::User;
+
+                // todo: should this set writeback = false
             }
         }
 
@@ -125,6 +127,10 @@ impl BlockDataTransfer {
                 current_address += 4;
             }
 
+            // if write_back && ((self.register_list.len() == 1 && self.register_list[0] == self.base_register) ||  (self.register_list[self.register_list.len() - 1] != self.base_register)){
+            //     cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
+            // }
+
             if write_back && !self.register_list.contains(&self.base_register) {
                 cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address) as u32);
             }
@@ -134,6 +140,7 @@ impl BlockDataTransfer {
     fn save_data(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) {
         let mut current_address: i64 = cpu.get_register(self.base_register) as i64;
         current_address = self.get_start_address(current_address);
+        let new_base_for_dumb_things = self.get_end_address(current_address + (4 * self.register_list.len()) as i64) as u32; 
         let mut current_operating_mode = cpu.get_operating_mode();
         let mut write_back = self.write_back;
 
@@ -170,18 +177,22 @@ impl BlockDataTransfer {
                 write_back = false;
             }
 
-
-            if self.register_list.contains(&self.base_register) && self.base_register != self.register_list[0] {
-                cpu.set_register_override_opmode(self.base_register, current_operating_mode, self.get_end_address(current_address + (4 * self.register_list.len()) as i64) as u32);
-            }
-
             for reg_num in self.register_list.iter() {
                 // todo figure out write back with base in reg list
 
                 if *reg_num == 15 {
                     mem_bus.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode) + 8);
                 } else {
-                    mem_bus.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
+                    if *reg_num == self.base_register {
+                        if *reg_num == self.register_list[0] {
+                            // old base
+                            mem_bus.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
+                        } else {
+                            mem_bus.write_u32(current_address as u32, new_base_for_dumb_things);
+                        }
+                    } else {
+                        mem_bus.write_u32(current_address as u32, cpu.get_register_override_opmode(*reg_num, current_operating_mode));
+                    }
                 }
 
                 current_address += 4;

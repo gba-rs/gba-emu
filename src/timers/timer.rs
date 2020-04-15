@@ -15,6 +15,7 @@ impl Timer {
         self.timer.register(mem);
         self.controller.register(mem);
     }
+
     fn frequency(&self) -> usize {
         match self.controller.get_pre_scalar_selection() {
             0 => 1,
@@ -24,14 +25,19 @@ impl Timer {
             _ => panic!("Error in processing frequency")
         }
     }
+
     pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> u32 {
         self.cycles += current_cycles;
         let mut overflows = 0;
         let freq = self.frequency();
+        let mut timer_data = self.timer.get_data();
+        let timer_reload = self.timer.get_reload();
+
         while self.cycles >= freq {
             self.cycles -= freq;
-            self.timer.set_data(self.timer.get_data().wrapping_add(1));
-            if self.timer.get_data() == 0 {
+            // self.timer.set_data(self.timer.get_data().wrapping_add(1));
+            timer_data = timer_data.wrapping_add(1);
+            if timer_data == 0 {
                 match self.timer.index {
                     0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
                     1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
@@ -39,14 +45,13 @@ impl Timer {
                     3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
                     _ => panic!("Error in processing timer")
                 }
-                self.timer.set_data(self.initial_value);
+                // self.timer.set_data(self.timer.get_reload());
+                timer_data = timer_reload;
                 overflows+=1;
             }
         }
+        self.timer.set_data(timer_data);
         overflows
-    }
-    pub fn write(&mut self, updated_value: u16){
-        self.initial_value = updated_value;
     }
 }
 
@@ -96,38 +101,15 @@ impl TimerHandler {
         }
     }
 
-    pub fn set_irq_enable(&mut self, timer_number: usize, enable: u8){
-        self.timers[timer_number].controller.set_timer_irq_enable(enable);
-    }
-    pub fn set_count_up_timing(&mut self, timer_number: usize, enable: u8){
-        self.timers[timer_number].controller.set_count_up_enable(enable);
-    }
-
-    pub fn write_to_control(&mut self, id: usize, value: u16){
-        self.timers[id].controller.set_register(value as u32);
-        let new_enabled = self.timers[id].controller.get_timer_start_stop() == 1;
-        let cascade = self.timers[id].controller.get_count_up_enable() == 1;
-        if new_enabled && !cascade {
-            self.running_timers |= 1 << id;
-        } else {
-            self.running_timers &= !(1 << id);
-        }
-        
-    }
-
-    pub fn read_timer(&mut self, _id: usize) -> u16{
-        self.timers[_id].timer.get_data()
-    }
-
     pub fn update(&mut self, cycles: usize, irq_ctrl: &mut Interrupts){
         for id in 0..4 {
-            if self.timers[id].controller.get_count_up_enable() == 1 {
+            if self.timers[id].controller.get_enable() == 1 && self.timers[id].controller.get_cascade() == 0 {
                 let timer = &mut self.timers[id];
                 let overflows = timer.update(cycles, irq_ctrl);
                 if overflows > 0 {
                     if id != 3 {
                         let cascade_timer = &mut self.timers[id+1];
-                        if cascade_timer.controller.get_count_up_enable() == 1{
+                        if cascade_timer.controller.get_cascade() == 1{
                             cascade_timer.update(overflows as usize, irq_ctrl);
                         }
                     }

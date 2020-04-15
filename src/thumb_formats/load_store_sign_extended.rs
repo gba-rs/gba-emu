@@ -92,7 +92,7 @@ mod tests {
         let mut gba = GBA::default();
 
         gba.cpu.set_register(2, 0x02);
-        gba.cpu.set_register(4, 0x06);
+        gba.cpu.set_register(4, 0x08000006);
         gba.cpu.set_register(6, 0xF2F1);
 
         format.execute(&mut gba.cpu, &mut gba.memory_bus);
@@ -101,7 +101,7 @@ mod tests {
         assert_eq!(format.offset_register, 2);
         assert_eq!(format.base_register, 4);
         assert_eq!(format.destination_register, 6);
-        assert_eq!(gba.memory_bus.read_u16(0x02 + 0x06), 0xF2F1);
+        assert_eq!(gba.memory_bus.read_u16(0x02 + 0x08000006), 0xF2F1);
     }
 
     #[test]
@@ -110,8 +110,8 @@ mod tests {
         let mut gba = GBA::default();
 
         gba.cpu.set_register(2, 0x4);
-        gba.cpu.set_register(4, 0x8);
-        gba.memory_bus.write_u32(0x8 + 0x4, 0xF1A1);
+        gba.cpu.set_register(4, 0x08000008);
+        gba.memory_bus.write_u32(0x08000008 + 0x4, 0xF1A1);
 
         format.execute(&mut gba.cpu, &mut gba.memory_bus);
 
@@ -129,8 +129,8 @@ mod tests {
         let mut gba = GBA::default();
 
         gba.cpu.set_register(2, 0x4);
-        gba.cpu.set_register(4, 0x8);
-        gba.memory_bus.write_u32(0x8 + 0x4, 0xA1);
+        gba.cpu.set_register(4, 0x08000008);
+        gba.memory_bus.write_u32(0x08000008 + 0x4, 0xA1);
 
         format.execute(&mut gba.cpu, &mut gba.memory_bus);
 
@@ -148,8 +148,8 @@ mod tests {
         let mut gba = GBA::default();
 
         gba.cpu.set_register(2, 0x4);
-        gba.cpu.set_register(4, 0x8);
-        gba.memory_bus.write_u32(0x8 + 0x4, 0xFF01);
+        gba.cpu.set_register(4, 0x08000008);
+        gba.memory_bus.write_u32(0x08000008 + 0x4, 0xFF01);
 
         format.execute(&mut gba.cpu, &mut gba.memory_bus);
 
@@ -167,8 +167,8 @@ mod tests {
         let mut gba = GBA::default();
 
         gba.cpu.set_register(2, 0x4);
-        gba.cpu.set_register(4, 0x8);
-        gba.memory_bus.write_u32(0x8 + 0x4, 0x1F01);
+        gba.cpu.set_register(4, 0x08000008);
+        gba.memory_bus.write_u32(0x08000008 + 0x4, 0x1F01);
 
         format.execute(&mut gba.cpu, &mut gba.memory_bus);
 

@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn pc_set() {
         let mut cpu = CPU::new();
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         let b: LoadAddress = LoadAddress::from(0xA000);
         b.execute(&mut cpu, &mut bus);
         assert_eq!(cpu.get_register(0), 0);     // 2 here because we are skipping the fetch
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn sp_set() {
         let mut cpu = CPU::new();
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         cpu.set_register(0, 100);
         let b: LoadAddress = LoadAddress::from(0xA800);
         b.execute(&mut cpu, &mut bus);
@@ -90,7 +90,7 @@ mod tests {
     #[test]
     fn immidiete_test() {
         let mut cpu = CPU::new();
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         cpu.set_register(0, 100);       // Set register to something else
         cpu.set_register(THUMB_SP, 10);
 
