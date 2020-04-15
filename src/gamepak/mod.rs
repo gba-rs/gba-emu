@@ -91,6 +91,19 @@ impl GamePack {
         };
     }
 
+    pub fn read_title(&mut self) {
+        let mut title = "";
+        match std::str::from_utf8(&self.rom[0xA0..0xAC]) {
+            Ok(val) => {
+                title = val; 
+            },
+            Err(_) => {
+                log::info!("Title could not be parsed");
+            }
+        }
+        self.title = String::from(title);
+    }
+
     pub fn default() -> GamePack {
         return GamePack {
             rom: Vec::new(),
@@ -121,7 +134,7 @@ impl GamePack {
         self.save_data = save_data_bytes;
     }
 
-    fn detect_backup_type(rom: &Vec<u8>) -> BackupType {
+    pub fn detect_backup_type(rom: &Vec<u8>) -> BackupType {
         for i in 0..5 {
             let mem_string_bytes = MEM_STRINGS[i].as_bytes();
             let result = rom.windows(mem_string_bytes.len()).position(|window| window == mem_string_bytes);

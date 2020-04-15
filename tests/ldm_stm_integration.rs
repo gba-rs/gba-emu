@@ -17,7 +17,7 @@ mod tests {
         cpu.set_register(4, 0x4);
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00 + 4), 0x1);
@@ -36,7 +36,7 @@ mod tests {
         cpu.set_register(4, 0x4);
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00), 0x1);
@@ -55,7 +55,7 @@ mod tests {
         cpu.set_register(4, 0x7);
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00 - 4), 0x7);
@@ -74,7 +74,7 @@ mod tests {
         cpu.set_register(4, 0x7);
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
         assert_eq!(bus.read_u32(0xFF00), 0x7);
@@ -90,7 +90,7 @@ mod tests {
 
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
 
         bus.write_u32(0xFF04, 1);
         bus.write_u32(0xFF08, 2);
@@ -112,7 +112,7 @@ mod tests {
 
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
 
         bus.write_u32(0xFF00, 1);
         bus.write_u32(0xFF04, 2);
@@ -134,7 +134,7 @@ mod tests {
 
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
 
         bus.write_u32(0xFEF0, 1);
         bus.write_u32(0xFEF4, 2);
@@ -156,7 +156,7 @@ mod tests {
 
         cpu.set_register(13, 0xFF00);
 
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
 
         bus.write_u32(0xFEF0, 1);
         bus.write_u32(0xFEF4, 2);

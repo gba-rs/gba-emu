@@ -285,7 +285,26 @@ impl CPU {
         let decode_result = self.decode(instruction);
         let cycles: usize = match decode_result {
             Ok(mut instr) => {
-                // log::info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
+                // info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
+                // info!("r0={:X} r1={:X} r2={:X} r3={:X} r4={:X} r5={:X} r6={:X} r7={:X} r8={:X} r9={:X} r10={:X} r11={:X} r12={:X} r13={:X} r14={:X} r15={:X}", 
+                //         self.get_register_unsafe(0), 
+                //         self.get_register_unsafe(1), 
+                //         self.get_register_unsafe(2), 
+                //         self.get_register_unsafe(3), 
+                //         self.get_register_unsafe(4), 
+                //         self.get_register_unsafe(5), 
+                //         self.get_register_unsafe(6), 
+                //         self.get_register_unsafe(7), 
+                //         self.get_register_unsafe(8), 
+                //         self.get_register_unsafe(9), 
+                //         self.get_register_unsafe(10), 
+                //         self.get_register_unsafe(11), 
+                //         self.get_register_unsafe(12), 
+                //         self.get_register_unsafe(13), 
+                //         self.get_register_unsafe(14), 
+                //         self.get_register_unsafe(15));
+
+
                 if check_condition {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
                     ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize
@@ -435,7 +454,7 @@ mod tests {
     #[test]
     fn test_decode_unimplemented(){
         let cpu = CPU::new();
-//        let bus = MemoryBus::new();
+//        let bus = MemoryBus::new_stub();
 
         let result = cpu.decode(0x00F0F0F0);
         match result {
@@ -451,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_decode(){
-//        let mut bus = MemoryBus::new();
+//        let mut bus = MemoryBus::new_stub();
 //        let cpu = CPU::new();
         // cpu.decode(&mut map, 0xE0812001);
     }
@@ -460,7 +479,7 @@ mod tests {
     fn test_fetch(){
         let mut cpu = CPU::new();
         cpu.set_register(15, 0x02000000);
-        let mut bus = MemoryBus::new();
+        let mut bus = MemoryBus::new_stub();
         bus.write_u32(0x02000000, 0x012081E0);
         bus.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut bus);
@@ -493,7 +512,7 @@ mod tests {
     // fn test_branch_exchange(){
     //     let mut cpu = CPU::new();
     //     cpu.set_register(15, 0x02000000);
-    //     let mut map = MemoryBus::new();
+    //     let mut map = MemoryBus::new_stub();
     //     map.register_memory(0x02000000, 0x0203FFFF, &cpu.wram.memory);
     //     map.write_u32(0x02000000, 0x11FF2FE1u32.to_be());
     //     cpu.fetch(&mut map);

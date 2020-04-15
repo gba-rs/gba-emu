@@ -146,6 +146,7 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gba::GBA;
 
     #[test]
     fn test_apply_offset() {
@@ -192,22 +193,24 @@ mod tests {
 
     #[test]
     fn test_store_halfword() {
-        let memory_address = 0x04;
+        let memory_address = 0x08000000;
         let value_to_store = 0x8080;
-        let mut mem_map = store_set_up();
-        store(DataType::Halfword, value_to_store, memory_address, &mut mem_map);
+        let mut gba = GBA::default();
 
-        assert_eq!(0x8080, mem_map.read_u16(memory_address));
+        store(DataType::Halfword, value_to_store, memory_address, &mut gba.memory_bus);
+
+        assert_eq!(0x8080, gba.memory_bus.read_u16(memory_address));
     }
 
     #[test]
     fn test_store_byte() {
-        let memory_address = 0x04;
+        let memory_address = 0x08000000;
         let value_to_store = 0x80;
-        let mut mem_map = store_set_up();
-        store(DataType::Byte, value_to_store, memory_address, &mut mem_map);
+        let mut gba = GBA::default();
 
-        assert_eq!(0x80, mem_map.read_u8(memory_address));
+        store(DataType::Byte, value_to_store, memory_address, &mut gba.memory_bus);
+
+        assert_eq!(0x80, gba.memory_bus.read_u8(memory_address));
     }
 
     #[test]
@@ -224,7 +227,7 @@ mod tests {
     }
 
     fn store_set_up() -> MemoryBus {
-        let mut mem_bus = MemoryBus::new();
+        let mut mem_bus = MemoryBus::new_stub();
         return mem_bus;
     }
 }

@@ -28,6 +28,10 @@ impl MemoryBus {
         };
     }
 
+    pub fn new_stub() -> MemoryBus {
+        return MemoryBus::new(BackupType::Error);
+    }
+
     pub fn read_u8(&mut self, address: u32) -> u8 {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem8);
 
@@ -68,7 +72,7 @@ impl MemoryBus {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem8);
 
         if address < 0x00003FFF {
-            log::error!("Writing to bios: {:X}", address);
+            // panic!("Writing to bios: {:X}", address);
             return;
         }
 
@@ -89,7 +93,7 @@ impl MemoryBus {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem16);
 
         if address < 0x00003FFF {
-            log::error!("Writing to bios: {:X}", address);
+            // panic!("Writing to bios: {:X}", address);
             return;
         }
 
@@ -101,7 +105,7 @@ impl MemoryBus {
 
         if address < 0x00003FFF {
             // panic!("Writing to bios");
-            log::error!("Writing to bios: {:X}", address);
+            // panic!("Writing to bios: {:X}", address);
             return;
         }
 

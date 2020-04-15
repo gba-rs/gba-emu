@@ -89,8 +89,8 @@ mod tests {
 
         let expected_offset = 32;
 
-        gba.cpu.set_register(2, 0x0008);
-        gba.memory_bus.write_u16(0x0008 + expected_offset, 22);
+        gba.cpu.set_register(2, 0x08000000);
+        gba.memory_bus.write_u16(0x08000000 + expected_offset, 22);
 
         load_store_halfword.execute(&mut gba.cpu, &mut gba.memory_bus);
 
@@ -109,7 +109,7 @@ mod tests {
 
         let expected_offset = 32;
 
-        gba.cpu.set_register(2, 0x0008);
+        gba.cpu.set_register(2, 0x08000000);
         gba.cpu.set_register(4, 22);
 
         load_store_halfword.execute(&mut gba.cpu, &mut gba.memory_bus);
@@ -119,6 +119,6 @@ mod tests {
         assert_eq!(load_store_halfword.rb, 2);
         assert_eq!(load_store_halfword.rd, 4);
 
-        assert_eq!(gba.memory_bus.read_u16(0x0008 + expected_offset), 22);
+        assert_eq!(gba.memory_bus.read_u16(0x08000000 + expected_offset), 22);
     }
 }

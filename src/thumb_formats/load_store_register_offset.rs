@@ -117,7 +117,7 @@ mod tests {
         let format = LoadStoreRegisterOffset::from(0x58B3);
         let mut gba = GBA::default();
         let offset_amount = 4;
-        let memory_address = 0x04;
+        let memory_address = 0x08000000;
         let value_to_load = 0xF0F;
 
         gba.cpu.set_register(2, offset_amount); // set up offset
@@ -133,7 +133,7 @@ mod tests {
         let format = LoadStoreRegisterOffset::from(0x5CB3);
         let mut gba = GBA::default();
         let offset_amount = 6;
-        let memory_address = 0x04;
+        let memory_address = 0x08000000;
         let value_to_load = 0xF0F;
 
         gba.cpu.set_register(2, offset_amount); // set up offset
@@ -150,7 +150,7 @@ mod tests {
         let mut gba = GBA::default();
 
         let offset_amount = 6;
-        let memory_address = 0x04;
+        let memory_address = 0x08000000;
         let value_to_store = 0xFF1;
 
         gba.cpu.set_register(2, offset_amount); // set up offset
@@ -168,7 +168,7 @@ mod tests {
         let mut gba = GBA::default();
 
         let offset_amount = 4;
-        let memory_address = 0x04;
+        let memory_address = 0x08000000;
         let value_to_store = 0xFF1;
 
         gba.cpu.set_register(2, offset_amount); // set up offset

@@ -133,8 +133,8 @@ mod tests {
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.set_instruction_set(InstructionSet::Thumb);
-        gba.cpu.set_register(format.rb, 0);
-        gba.cpu.set_register(format.rd, 2);
+        gba.cpu.set_register(format.rb, 0x08000000);
+        gba.cpu.set_register(format.rd, 0x08000002);
 
         let decode_result = gba.cpu.decode(0x613B);
         match decode_result {
@@ -147,7 +147,7 @@ mod tests {
         }
 
         let target_address: u32 = (gba.cpu.get_register(format.rb) + (format.offset) as u32) as u32;
-        assert_eq!(2, gba.memory_bus.mem_map.read_u32(target_address));
+        assert_eq!(0x08000002, gba.memory_bus.mem_map.read_u32(target_address));
     }
 
         #[test]
@@ -160,8 +160,8 @@ mod tests {
         assert_eq!(format.rd, 3);
         let mut gba: GBA = GBA::default();
         gba.cpu.set_instruction_set(InstructionSet::Thumb);
-        gba.cpu.set_register(format.rb,0);
-        gba.cpu.set_register(format.rd,2);
+        gba.cpu.set_register(format.rb, 0x08000000);
+        gba.cpu.set_register(format.rd, 0x08000002);
 
         //let mem address = 3
         let decode_result = gba.cpu.decode(0x613B); //str
@@ -187,7 +187,7 @@ mod tests {
 
         // target_address = 23.
         // Taken from 7(rb) + 4(offset) left shifted to 16 --> 23
-        assert_eq!(2, gba.cpu.get_register(3));
+        assert_eq!(0x08000002, gba.cpu.get_register(3));
     }
     #[test]
     fn test_strb() {
@@ -227,8 +227,8 @@ mod tests {
         let mut gba: GBA = GBA::default();
         gba.cpu.set_instruction_set(InstructionSet::Thumb);
         //let mem address = 3
-        gba.cpu.set_register(format.rb,1);
-        gba.cpu.set_register(format.rd,2); //value we want to get
+        gba.cpu.set_register(format.rb,0x08000001);
+        gba.cpu.set_register(format.rd,0x08000002); //value we want to get
         let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
             Ok(mut instr) => {
