@@ -11,7 +11,8 @@ pub struct DMAChannel {
     pub internal_source_address: u32,
     pub internal_destination_address: u32,
     pub internal_word_count: u32,
-    pub id: usize
+    pub id: usize,
+    pub previously_disabled: bool
 }
 
 impl DMAChannel {
@@ -25,7 +26,8 @@ impl DMAChannel {
             internal_source_address: 0,
             internal_destination_address: 0,
             internal_word_count: 0,
-            id: channel
+            id: channel,
+            previously_disabled: true,
         }
     }
 
@@ -67,14 +69,25 @@ impl DMAChannel {
         }
     }
 
-    pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {        
+    fn reload_data(&mut self) {
         self.internal_source_address = self.source_address.get_address();
         self.internal_destination_address = self.destination_address.get_address();
-        self.internal_word_count = self.word_count.get_word_count();
+        self.reload_wordcount();
+    }
 
-        // log::info!("DMA Transfer: s {:X}, d {:X}, wc {:X}", self.internal_source_address, self.internal_destination_address, self.internal_word_count);
+    fn reload_wordcount(&mut self) {
+        self.internal_word_count = if self.id != 3 {
+            self.word_count.get_word_count() & 0x7FFF
+        } else {
+            self.word_count.get_word_count()
+        } as u32;
 
+        if self.internal_word_count == 0 {
+            self.internal_word_count = if self.id != 3 { 0x4000 } else { 0x10000 };    
+        }
+    }
 
+    pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {        
         match self.control.get_dma_transfer_type() {
             0 => {  // 16
                 for _ in 0..self.internal_word_count {
@@ -103,11 +116,14 @@ impl DMAChannel {
         // if we aren't repeating reset the enable bit
         if self.control.get_dma_repeat() == 0 {
             self.control.set_dma_enable(0);
+            self.previously_disabled = true;
         } else {
             if self.control.get_destination_address_control() == 3 {
                 // reload
                 self.internal_destination_address = self.destination_address.get_address();
             }
+
+            self.reload_wordcount();
         }
     }
 }
@@ -128,21 +144,27 @@ impl DMAController {
     pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
         for i in 0..4 {
             if self.dma_channels[i].control.get_dma_enable() == 1 {
+                if self.dma_channels[i].previously_disabled {
+                    self.dma_channels[i].reload_data();
+                    self.dma_channels[i].previously_disabled = false;
+                }
                 match self.dma_channels[i].control.get_dma_start_timing() {
                     0 => {
-                        // start immedietly 
+                        // start immedietly
                         self.dma_channels[i].transfer(mem_map, irq_ctl);
                     },
                     1 => {
                         // start at vblank
                         if self.vblanking {
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
+                            self.vblanking = false;
                         }
                     },
                     2 => {
                         // start at hblank
                         if self.hblanking {
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
+                            self.hblanking = false;
                         }
                     },
                     3 => {
@@ -154,6 +176,8 @@ impl DMAController {
                         panic!("DMA Update fucked up")
                     }
                 }
+            } else if !self.dma_channels[i].previously_disabled {
+                self.dma_channels[i].previously_disabled = true;
             }
         }
     }

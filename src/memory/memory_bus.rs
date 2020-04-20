@@ -40,18 +40,16 @@ impl MemoryBus {
             // This should really be from the end of rom space to the top of memory
             match self.backup_type {
                 BackupType::Sram => {/* don't need to do anything here */},
-                BackupType::Eeprom => log::error!("Backup to EEPROM not implemented"),
-                BackupType::Flash64K => log::error!("Backup to FLASH64K not implemented"),
+                BackupType::Eeprom => {},
+                BackupType::Flash64K => {},
                 BackupType::Flash128K => {
                     if address == 0x0E000000 {
-                        log::info!("Reading FLASH128_ stub");
                         return 0x62;
                     } else if address == 0x0E000001 {
-                        log::info!("Reading FLASH128_ stub");
                         return 0x13;
                     }
                 },
-                BackupType::Error => log::error!("Backup to unknown"),
+                BackupType::Error => {},
             }
         }
 
@@ -73,6 +71,7 @@ impl MemoryBus {
 
         if address < 0x00003FFF {
             // panic!("Writing to bios: {:X}", address);
+            log::info!("Writing to bios");
             return;
         }
 

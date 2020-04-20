@@ -944,8 +944,6 @@ impl GPU {
                 current_scanline += 1;
                 self.display_status.set_hblank_flag(0);
 
-                dma_ctl.hblanking = false;
-
                 if current_scanline < DISPLAY_HEIGHT {
                     // render scanline
                     let current_mode = self.display_control.get_bg_mode();
@@ -1030,8 +1028,6 @@ impl GPU {
                     self.cycles_to_next_state = SCANLINE_CYCLES;
                 } else {
                     self.display_status.set_vblank_flag(0);
-
-                    dma_ctl.vblanking = false;
 
                     self.update_vcount(0, irq_ctl);
                     current_scanline = 0;
@@ -1125,17 +1121,17 @@ impl GPU {
             };
         }
     }
-/**
- * Parse out individual attributes
- * Parse pixel data
- * And pixel data for the line
- */
+
     fn render_normal_obj(&mut self, sprite_num: usize, mem_map: &mut MemoryMap) {
         let mut sprite = &mut self.objects[sprite_num];
         let current_scanline = self.vertical_count.get_current_scanline() as i32;
         let mut obj_x = sprite.attr1.get_x_coordinate() as i16 as i32;
         let mut obj_y = sprite.attr0.get_y_coordinate() as i16 as i32;
         let priority = sprite.attr2.get_priority_rel_to_bg();
+
+        if sprite.attr0.get_gfx_mode() == 0b10 {
+            return;
+        }
 
         if obj_y >= (DISPLAY_HEIGHT as i32) {
             obj_y -= 1 << 8;
@@ -1403,18 +1399,23 @@ impl GPU {
     pub fn composite_background(&mut self) {
         let current_scanline = self.vertical_count.get_current_scanline() as u32;
 
-        let mut temp: Vec<(usize, u8)> = Vec::new();
+        let mut bg_list: [u8; 4] = [0; 4];
+        let mut bg_count: usize = 0;
 
-        for priority in 0..4 {
-            for i in 0..4 {
-                let bg_priority = self.backgrounds[i].control.get_bg_priority();
-                if !temp.contains(&(self.backgrounds[i].id, bg_priority)) && 
-                    self.display_control.should_display(i as u8) &&
-                    bg_priority == priority {
-                        temp.push((i, bg_priority));
+        for priority in (0..4).rev() {
+            for bg in (0..4).rev() {
+                if self.display_control.should_display(bg) && 
+                   self.backgrounds[bg as usize].control.get_bg_priority() == priority {
+
+                    bg_list[bg_count] = bg;
+                    bg_count += 1;
                 }
             }
         }
+
+        let pixel: (u16, u16) = (0, 0);
+        let layer: (u8, u8) = (0, 0);
+
 
         for x in 0..DISPLAY_WIDTH {
             let mut color = Rgb15::new(0x8000);

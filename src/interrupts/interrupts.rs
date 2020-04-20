@@ -2,7 +2,6 @@ use crate::memory::interrupt_registers::*;
 use crate::memory::memory_bus::{MemoryBus, HaltState};
 use crate::cpu::cpu;
 use crate::cpu::cpu::{OperatingMode, InstructionSet, ARM_LR, THUMB_LR, ARM_PC, THUMB_PC};
-use std::collections::VecDeque;
 
 //use crate::cpu::InstructionSet;
 
