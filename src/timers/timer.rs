@@ -7,7 +7,8 @@ pub struct Timer {
     pub timer: TimerDataRegister,
     pub controller: TimerControlRegister,
     pub initial_value: u16,
-    pub cycles: usize
+    pub cycles: usize,
+    pub previously_disabled: bool
 }
 
 impl Timer {
@@ -26,12 +27,15 @@ impl Timer {
         }
     }
 
+    fn reload_data(&mut self) {
+        self.initial_value = self.timer.get_reload();
+    }
+
     pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> u32 {
         self.cycles += current_cycles;
         let mut overflows = 0;
         let freq = self.frequency();
         let mut timer_data = self.timer.get_data();
-        let timer_reload = self.timer.get_reload();
 
         while self.cycles >= freq {
             self.cycles -= freq;
@@ -46,7 +50,7 @@ impl Timer {
                     _ => panic!("Error in processing timer")
                 }
                 // self.timer.set_data(self.timer.get_reload());
-                timer_data = timer_reload;
+                timer_data = self.initial_value;
                 overflows+=1;
             }
         }
@@ -68,26 +72,29 @@ impl TimerHandler {
                     timer: TimerDataRegister::new(0),
                     controller: TimerControlRegister::new(0),
                     initial_value: 0,
-                    cycles: 0
+                    cycles: 0,
+                    previously_disabled: true
                 },
                 Timer {
                     timer: TimerDataRegister::new(1),
                     controller: TimerControlRegister::new(1),
                     initial_value: 0,
-                    cycles: 0
-
+                    cycles: 0,
+                    previously_disabled: true
                 },
                 Timer {
                     timer: TimerDataRegister::new(2),
                     controller: TimerControlRegister::new(2),
                     initial_value: 0,
-                    cycles: 0
+                    cycles: 0,
+                    previously_disabled: true
                 },
                 Timer {
                     timer: TimerDataRegister::new(3),
                     controller: TimerControlRegister::new(3),
                     initial_value: 0,
-                    cycles: 0
+                    cycles: 0,
+                    previously_disabled: true
                 },
             ],
             running_timers: 0
@@ -104,16 +111,22 @@ impl TimerHandler {
     pub fn update(&mut self, cycles: usize, irq_ctrl: &mut Interrupts){
         for id in 0..4 {
             if self.timers[id].controller.get_enable() == 1 && self.timers[id].controller.get_cascade() == 0 {
+                if self.timers[id].previously_disabled {
+                    self.timers[id].reload_data();
+                    self.timers[id].previously_disabled = false;
+                }
                 let timer = &mut self.timers[id];
                 let overflows = timer.update(cycles, irq_ctrl);
                 if overflows > 0 {
                     if id != 3 {
                         let cascade_timer = &mut self.timers[id+1];
-                        if cascade_timer.controller.get_cascade() == 1{
+                        if cascade_timer.controller.get_enable() == 1 && cascade_timer.controller.get_cascade() == 1{
                             cascade_timer.update(overflows as usize, irq_ctrl);
                         }
                     }
                 }
+            } else if !self.timers[id].previously_disabled {
+                self.timers[id].previously_disabled = true;
             }
         }
     }

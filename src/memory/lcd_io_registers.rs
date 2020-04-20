@@ -33,10 +33,7 @@ io_register! (
 
 impl DisplayControl {
     pub fn should_display(&self, bg_num: u8) -> bool {
-        return bg_num == 0 && self.get_screen_display_bg0() == 1 ||
-               bg_num == 1 && self.get_screen_display_bg1() == 1 ||
-               bg_num == 2 && self.get_screen_display_bg2() == 1 ||
-               bg_num == 3 && self.get_screen_display_bg3() == 1;
+        return ((self.get_register() >> (bg_num + 8)) & 0x1) != 0;
     }
 
     pub fn using_windows(&self) -> bool {
@@ -680,7 +677,7 @@ io_register! (
     obj_mosaic_vsize: 12, 4,
 );
 
-
+#[derive(PartialEq)]
 pub enum BlendMode {
     Off,
     Alpha,
@@ -720,6 +717,14 @@ io_register! (
 impl ColorSpecialEffectsSelection {
     pub fn get_blendmode(&self) -> BlendMode {
         return BlendMode::from(self.get_color_special_effect());
+    }
+
+    pub fn has_destination(&self, index: u8) -> bool {
+        return ((self.get_register() >> index) & 0x1) != 0;
+    }
+
+    pub fn has_source(&self, index: u8) -> bool {
+        return ((self.get_register() >> (index + 8)) & 0x1) != 0;
     }
 }
 

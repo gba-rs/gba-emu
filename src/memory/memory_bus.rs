@@ -35,7 +35,6 @@ impl MemoryBus {
     pub fn read_u8(&mut self, address: u32) -> u8 {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem8);
 
-
         if address >= 0x08000000 && address < 0x10000000 {
             // This should really be from the end of rom space to the top of memory
             match self.backup_type {

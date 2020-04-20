@@ -144,10 +144,12 @@ impl DMAController {
     pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
         for i in 0..4 {
             if self.dma_channels[i].control.get_dma_enable() == 1 {
-                if self.dma_channels[i].previously_disabled {
-                    self.dma_channels[i].reload_data();
-                    self.dma_channels[i].previously_disabled = false;
-                }
+                // if self.dma_channels[i].previously_disabled {
+                //     self.dma_channels[i].reload_data();
+                //     self.dma_channels[i].previously_disabled = false;
+                // }
+
+                self.dma_channels[i].reload_data();
                 match self.dma_channels[i].control.get_dma_start_timing() {
                     0 => {
                         // start immedietly

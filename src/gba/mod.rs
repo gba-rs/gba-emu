@@ -122,7 +122,7 @@ impl GBA {
         }
 
         self.gpu.frame_ready = false;
-        self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4)});
+        self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4, 0)});
     }
 
     pub fn single_step(&mut self) {
@@ -131,6 +131,7 @@ impl GBA {
             self.cpu.fetch(&mut self.memory_bus)
         } else {
             self.gpu.cycles_to_next_state as usize
+            // 1
         };
 
         self.gpu.step(cycles, &mut self.memory_bus.mem_map, &mut self.interrupt_handler, &mut self.dma_control);

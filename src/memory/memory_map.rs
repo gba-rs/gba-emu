@@ -57,7 +57,10 @@ impl MemoryMap {
             0x07 => self.memory.borrow_mut()[((address & OBJECT_ATTRIBUTES_SIZE) + OBJECT_ATTRIBUTES_START) as usize] = value,
             0x08..=0xD => self.memory.borrow_mut()[((address & ROM_SIZE) + ROM_START) as usize] = value,
             0x0E | 0x0F => self.memory.borrow_mut()[((address & SRAM_SIZE) + SRAM_START) as usize] = value,
-            _ => {}
+            _ => {
+                // self.memory.borrow_mut()[address as usize] = value;
+
+            }
         }
 
 

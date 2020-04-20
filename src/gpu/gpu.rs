@@ -1,5 +1,6 @@
 use crate::memory::lcd_io_registers::*;
 use crate::memory::memory_map::MemoryMap;
+use crate::memory::memory_map::PALETTE_RAM_START;
 use crate::interrupts::interrupts::Interrupts;
 use super::{rgb15::Rgb15, tile_map_entry::TileMapEntry};
 use crate::operations::bitutils;
@@ -7,6 +8,8 @@ use crate::dma::DMAController;
 use std::cell::RefCell;
 use std::rc::Rc;
 use log::debug;
+use std::cmp;
+
 
 pub const DISPLAY_WIDTH: u32 = 240;
 pub const DISPLAY_HEIGHT: u32 = 160;
@@ -150,7 +153,7 @@ pub struct GPU {
     pub current_state: GpuState,
     pub frame_ready: bool,
     pub frame_buffer: Vec<u32>,
-    pub obj_buffer: Vec<(Rgb15, u8)>
+    pub obj_buffer: Vec<(Rgb15, u8, u8)>
 }
 
 impl GPU {
@@ -880,7 +883,7 @@ impl GPU {
             current_state: GpuState::HDraw,
             frame_ready: false,
             frame_buffer: vec![0; (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize],
-            obj_buffer: vec![(Rgb15::new(0x8000), 4); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
+            obj_buffer: vec![(Rgb15::new(0x8000), 4, 0); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
         };
     }
 
@@ -984,7 +987,7 @@ impl GPU {
                     }
 
                     // composite the backgrounds
-                    self.composite_background();
+                    self.composite_background(mem_map);
 
                     // update refrence points at end of scanline
                     for i in 0..2 {
@@ -1237,7 +1240,7 @@ impl GPU {
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
             if !color.is_transparent() {
-                self.obj_buffer[obj_buffer_index] = (color, priority);
+                self.obj_buffer[obj_buffer_index] = (color, priority, sprite.attr0.get_gfx_mode());
             }
         }
 
@@ -1354,8 +1357,12 @@ impl GPU {
             let pixel_index = mem_map.read_u8(pixel_index_address) as u32;
 
 
-            let palette_ram_index = 2 * pixel_index;
-            let color = Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32));
+            let color = if pixel_index == 0 {
+                Rgb15::new(0x8000)
+            } else {
+                let palette_ram_index = 2 * pixel_index;
+                Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+            };
 
             self.backgrounds[bg_number].scan_line[screen_x as usize] = color;
         }
@@ -1396,7 +1403,37 @@ impl GPU {
         };
     }
 
-    pub fn composite_background(&mut self) {
+    fn blend(&self, target_1: &mut Rgb15, target_2: &Rgb15, blend_mode: &BlendMode) {
+        match blend_mode {
+            BlendMode::Alpha => {
+                let eva = cmp::min(16, self.alpha_blending_coefficients.get_eva_coefficient());
+                let evb = cmp::min(16, self.alpha_blending_coefficients.get_evb_coefficient());
+                // log::info!("EVA, EVB: {}, {}", eva, evb);
+
+                target_1.red = cmp::min(31, (target_1.red * eva + target_2.red * evb) >> 4);
+                target_1.green = cmp::min(31, (target_1.green * eva + target_2.green * evb) >> 4);
+                target_1.blue = cmp::min(31, (target_1.blue * eva + target_2.blue * evb) >> 4);
+            },
+            BlendMode::Black => {
+                let evy = cmp::min(16, self.brightness_coefficient.get_evy_coefficient());
+
+                target_1.red = cmp::min(31, (target_1.red * (16 - evy) + 0 * evy) >> 4);
+                target_1.green = cmp::min(31, (target_1.green * (16 - evy) + 0 * evy) >> 4);
+                target_1.blue = cmp::min(31, (target_1.blue * (16 - evy) + 0 * evy) >> 4);
+            },
+            BlendMode::White => {
+                let evy = cmp::min(16, self.brightness_coefficient.get_evy_coefficient());
+                let other = Rgb15::new(0x7FFF);
+
+                target_1.red = cmp::min(31, (target_1.red * (16 - evy) + 31 * evy) >> 4);
+                target_1.green = cmp::min(31, (target_1.green * (16 - evy) + 31 * evy) >> 4);
+                target_1.blue = cmp::min(31, (target_1.blue * (16 - evy) + 31 * evy) >> 4);
+            },
+            BlendMode::Off => {}
+        }
+    }
+
+    pub fn composite_background(&mut self, mem_map: &mut MemoryMap) {
         let current_scanline = self.vertical_count.get_current_scanline() as u32;
 
         let mut bg_list: [u8; 4] = [0; 4];
@@ -1413,45 +1450,80 @@ impl GPU {
             }
         }
 
-        let pixel: (u16, u16) = (0, 0);
-        let layer: (u8, u8) = (0, 0);
-
+        let mut pixel: (Rgb15, Rgb15) = (Rgb15::new(0), Rgb15::new(0));
 
         for x in 0..DISPLAY_WIDTH {
-            let mut color = Rgb15::new(0x8000);
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
-            let (obj_color, obj_priority) = self.obj_buffer[obj_buffer_index];
+            let (obj_color, obj_priority, obj_gfx_mode) = self.obj_buffer[obj_buffer_index];
             let window_type = self.get_window_type(x, current_scanline);
+            let dsp_ctrl_obj = self.display_control.get_screen_display_obj() != 0;
 
-            for priority in 0..4 {
-                if !color.is_transparent() {
-                    break;
-                }
+            let (disp_sfx, disp_obj, bgs_to_disp) = match &window_type {
+                Some(val) => self.get_window_flags(&val),
+                None => (true, true, [true, true, true, true])
+            };
 
-                let (disp_sfx, disp_obj, bgs_to_disp) = match &window_type {
-                    Some(val) => self.get_window_flags(&val),
-                    None => (true, true, [true, true, true, true])
-                };
+            let mut layer: (u8, u8) = (5, 5);
+            let mut priority: (u8, u8) = (4, 4);
 
-                if disp_sfx {}
+            for i in 0..bg_count {
+                let bg = bg_list[i as usize];
 
-                if obj_priority == priority && disp_obj {
-                    color = obj_color;
-                } else {
-                    for i in 0..4 {
-                        let bg_priority = self.backgrounds[i].control.get_bg_priority();
-                        if self.display_control.should_display(i as u8) && 
-                           bgs_to_disp[i] &&
-                           color.is_transparent() && 
-                           bg_priority == priority {
-                            color = self.backgrounds[i].scan_line[x as usize];
-                        }
+                if bgs_to_disp[bg as usize] {
+                    let pixel_new = self.backgrounds[bg as usize].scan_line[x as usize];
+                    if !pixel_new.is_transparent() {
+                        layer.1 = layer.0;
+                        layer.0 = bg;
+                        priority.1 = priority.0;
+                        priority.0 = self.backgrounds[bg as usize].control.get_bg_priority();
                     }
                 }
             }
 
+            if dsp_ctrl_obj && disp_obj && !obj_color.is_transparent() {
+                if obj_priority <= priority.0 {
+                    // drop the obj in front
+                    layer.1 = layer.0;
+                    layer.0 = 4;
+                } else if obj_priority <= priority.1 {
+                    // drop the obj in between
+                    layer.1 = 4;
+                }
+            }
+
+            match layer.0 {
+                0..=3 => pixel.0 = self.backgrounds[layer.0 as usize].scan_line[x as usize],
+                4 => pixel.0 = obj_color,
+                5 => pixel.0 = Rgb15::new(mem_map.read_u16(PALETTE_RAM_START)),
+                _ => panic!("THis should never hit")
+            }
+
+            match layer.1 {
+                0..=3 => pixel.1 = self.backgrounds[layer.1 as usize].scan_line[x as usize],
+                4 => pixel.1 = obj_color,
+                5 => pixel.1 = Rgb15::new(mem_map.read_u16(PALETTE_RAM_START)),
+                _ => panic!("THis should never hit")
+            }
+
+            let is_alpha_obj = layer.0 == 4 && obj_gfx_mode == 0b01;
+
+            if disp_sfx || is_alpha_obj {
+                let mut blend_mode = self.color_special_effects_selection.get_blendmode();
+                let have_destination = self.color_special_effects_selection.has_destination(layer.0) | is_alpha_obj;
+                let have_source = self.color_special_effects_selection.has_source(layer.1);
+
+                if is_alpha_obj && have_source {
+                    blend_mode = BlendMode::Alpha;
+                }
+
+                if blend_mode != BlendMode::Off && have_destination && (have_source || blend_mode != BlendMode::Alpha) {
+                    // blend
+                    self.blend(&mut pixel.0, &pixel.1, &blend_mode);
+                }
+            }
+
             let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
-            self.frame_buffer[frame_buffer_index] = color.to_0rgb();
+            self.frame_buffer[frame_buffer_index] = pixel.0.to_0rgb();
         }
     }
 }
