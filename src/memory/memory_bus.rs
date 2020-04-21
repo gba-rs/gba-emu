@@ -2,29 +2,16 @@ use crate::memory::memory_map::MemoryMap;
 use crate::operations::timing::{CycleClock, MemAccessSize};
 use crate::gamepak::BackupType;
 
-#[derive(Debug, PartialEq)]
-pub enum HaltState {
-    Running,
-    Halt,
-    Stop
-}
-
 pub struct MemoryBus {
     pub mem_map: MemoryMap,
     pub cycle_clock: CycleClock,
-    pub halt_state: HaltState,
-    pub backup_type: BackupType,
-    pub backed_up: bool
 }
 
 impl MemoryBus {
     pub fn new(backup_type: BackupType) -> MemoryBus {
         return MemoryBus {
-            mem_map: MemoryMap::new(),
+            mem_map: MemoryMap::new(backup_type),
             cycle_clock: CycleClock::new(),
-            halt_state: HaltState::Running,
-            backup_type: backup_type,
-            backed_up: false
         };
     }
 
@@ -34,24 +21,6 @@ impl MemoryBus {
 
     pub fn read_u8(&mut self, address: u32) -> u8 {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem8);
-
-        if address >= 0x08000000 && address < 0x10000000 {
-            // This should really be from the end of rom space to the top of memory
-            match self.backup_type {
-                BackupType::Sram => {/* don't need to do anything here */},
-                BackupType::Eeprom => {},
-                BackupType::Flash64K => {},
-                BackupType::Flash128K => {
-                    if address == 0x0E000000 {
-                        return 0x62;
-                    } else if address == 0x0E000001 {
-                        return 0x13;
-                    }
-                },
-                BackupType::Error => {},
-            }
-        }
-
         self.mem_map.read_u8(address)
     }
 
@@ -67,33 +36,16 @@ impl MemoryBus {
 
     pub fn write_u8(&mut self, address: u32, value: u8) {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem8);
-
-        if address < 0x00003FFF {
-            // panic!("Writing to bios: {:X}", address);
-            log::info!("Writing to bios");
-            return;
-        }
-
-        if address == 0x4000301 {
-            if value == 0 {
-                self.halt_state = HaltState::Halt;
-            } else {
-                self.halt_state = HaltState::Stop
-            }
-
-            return;
-        }
-
         self.mem_map.write_u8(address, value);
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem16);
 
-        if address < 0x00003FFF {
-            // panic!("Writing to bios: {:X}", address);
-            return;
-        }
+        // if address < 0x00003FFF {
+        //     // panic!("Writing to bios: {:X}", address);
+        //     return;
+        // }
 
         self.mem_map.write_u16(address, value);
     }

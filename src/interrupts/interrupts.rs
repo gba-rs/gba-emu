@@ -1,5 +1,6 @@
 use crate::memory::interrupt_registers::*;
-use crate::memory::memory_bus::{MemoryBus, HaltState};
+use crate::memory::memory_bus::MemoryBus;
+use crate::memory::memory_map::HaltState;
 use crate::cpu::cpu;
 use crate::cpu::cpu::{OperatingMode, InstructionSet, ARM_LR, THUMB_LR, ARM_PC, THUMB_PC};
 
@@ -29,9 +30,9 @@ impl Interrupts {
 
     pub fn service(&mut self, cpu: &mut cpu::CPU, mem_bus: &mut MemoryBus){
         if self.enabled() & self.should_service() {
-            if !cpu.cpsr.control_bits.irq_disable || mem_bus.halt_state == HaltState::Halt {
+            if !cpu.cpsr.control_bits.irq_disable || mem_bus.mem_map.halt_state == HaltState::Halt {
                 // log::info!("running");
-                mem_bus.halt_state = HaltState::Running;
+                mem_bus.mem_map.halt_state = HaltState::Running;
 
                 let old_cpsr = cpu.cpsr;
                 cpu.set_operating_mode(OperatingMode::Interrupt);

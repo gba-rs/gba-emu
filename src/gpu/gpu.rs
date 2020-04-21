@@ -1518,7 +1518,7 @@ impl GPU {
 
                 if blend_mode != BlendMode::Off && have_destination && (have_source || blend_mode != BlendMode::Alpha) {
                     // blend
-                    self.blend(&mut pixel.0, &pixel.1, &blend_mode);
+                    // self.blend(&mut pixel.0, &pixel.1, &blend_mode);
                 }
             }
 

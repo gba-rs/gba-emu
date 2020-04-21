@@ -1,6 +1,8 @@
 use std::io::prelude::*;
 use std::fs::File;
 
+pub mod flash;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum BackupType {
     Sram,
