@@ -66,9 +66,12 @@ impl MemoryMap {
                 } else if address == 0x4000301{
                     if value == 0 {
                         self.halt_state = HaltState::Halt;
+                        // log::info!("Setting state to halted");
                     } else {
                         self.halt_state = HaltState::Stop
                     }
+                }else if address == 0x4000130 ||  address == 0x4000131  {
+                    // read only
                 }else {
                     self.memory.borrow_mut()[address as usize] = value;
                 }

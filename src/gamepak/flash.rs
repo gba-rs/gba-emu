@@ -70,8 +70,7 @@ impl MemoryMap {
             } else {
                 return if (address & 0xFFFF) == 0 { 0xBF } else { 0xD4 };
             }
-        }
-
+        } 
         return self.memory.borrow()[self.flash.banked_address(address) as usize];
     }
 

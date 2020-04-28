@@ -978,7 +978,7 @@ impl GPU {
                         },
                         5 => {
                             self.render_mode_5(mem_map);
-                        }
+                        },
                         _ => panic!("Unimplemented mode: {}", current_mode)
                     }
 

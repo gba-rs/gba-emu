@@ -77,7 +77,7 @@ impl GBA {
 
         temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
-        temp.key_status.set_register(0x3FF);
+        temp.key_status.set_register(0xFFFF);
 
         for i in 0..2 {
             temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
@@ -130,7 +130,6 @@ impl GBA {
 
     pub fn frame(&mut self) {
         while !self.gpu.frame_ready {
-            // self.key_status.set_register(0x3FF);
             self.single_step();
         }
 

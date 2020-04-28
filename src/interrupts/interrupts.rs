@@ -29,11 +29,14 @@ impl Interrupts {
     }
 
     pub fn service(&mut self, cpu: &mut cpu::CPU, mem_bus: &mut MemoryBus){
-        if self.enabled() & self.should_service() {
-            if !cpu.cpsr.control_bits.irq_disable || mem_bus.mem_map.halt_state == HaltState::Halt {
-                // log::info!("running");
-                mem_bus.mem_map.halt_state = HaltState::Running;
+        if self.should_service() && mem_bus.mem_map.halt_state == HaltState::Halt {
+            mem_bus.mem_map.halt_state = HaltState::Running;
+            // log::info!("Setting state to running");
+        }
 
+        if self.enabled() && self.should_service() {
+            if !cpu.cpsr.control_bits.irq_disable {
+                // log::info!("Handling an interrupt: IE {:b}, IF {:b}", self.ie_interrupt.get_register(), self.if_interrupt.get_register());
                 let old_cpsr = cpu.cpsr;
                 cpu.set_operating_mode(OperatingMode::Interrupt);
                 cpu.set_instruction_set(InstructionSet::Arm);

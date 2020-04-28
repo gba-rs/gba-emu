@@ -280,6 +280,7 @@ impl Instruction for DataProcessing {
                             // status field
                             cpu.cpsr.control_bits.fiq_disable = new_psr.control_bits.fiq_disable;
                             cpu.cpsr.control_bits.irq_disable = new_psr.control_bits.irq_disable;
+                            log::info!("Setting cpsr irq disable: {}", new_psr.control_bits.irq_disable);
                             // cpu.cpsr.control_bits.state_bit = new_psr.control_bits.state_bit;
                         }
                     }
@@ -324,6 +325,8 @@ impl Instruction for DataProcessing {
                             // status field
                             psr.control_bits.fiq_disable = new_psr.control_bits.fiq_disable;
                             psr.control_bits.irq_disable = new_psr.control_bits.irq_disable;
+                            log::info!("Setting spsr irq disable: {}", new_psr.control_bits.irq_disable);
+
                             // psr.control_bits.state_bit = new_psr.control_bits.state_bit;
                         }
                     }
