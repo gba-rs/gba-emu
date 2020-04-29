@@ -309,7 +309,7 @@ impl CPU {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
                     ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize
                 } else {
-                    0usize
+                    1usize
                 }
             },
             Err(e) => {

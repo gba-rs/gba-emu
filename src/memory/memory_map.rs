@@ -64,10 +64,12 @@ impl MemoryMap {
                     let index: usize = (address & 0xF) as usize;
                     self.memory.borrow_mut()[0x1000_0000usize + index] = value;
                 } else if address == 0x4000301{
-                    if value == 0 {
+                    let bit = (value & 0x80) >> 7;
+                    if bit == 0 {
                         self.halt_state = HaltState::Halt;
-                        // log::info!("Setting state to halted");
-                    } else {
+                        // log::info!("Setting state to halted: {:X}", value);
+                    } else if bit == 1 {
+                        // log::info!("Setting state to stopped: {:X}", value);
                         self.halt_state = HaltState::Stop
                     }
                 }else if address == 0x4000130 ||  address == 0x4000131  {

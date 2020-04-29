@@ -135,13 +135,16 @@ impl GBA {
 
         self.gpu.frame_ready = false;
         self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4, 0)});
+        self.gpu.obj_window = [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)];
     }
 
     pub fn single_step(&mut self) {
-
+        // log::info!("Single stepping");
         let cycles = if self.memory_bus.mem_map.halt_state == HaltState::Running {
+            // log::info!("Stepping cpu");
             self.cpu.fetch(&mut self.memory_bus)
         } else {
+            // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
             self.gpu.cycles_to_next_state as usize
             // 1
         };

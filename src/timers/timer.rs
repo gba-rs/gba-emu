@@ -28,10 +28,10 @@ impl Timer {
     }
 
     fn reload_data(&mut self) {
-        self.initial_value = self.timer.get_reload();
+        self.timer.set_data(self.timer.get_reload());
     }
 
-    pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> u32 {
+    pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> usize {
         self.cycles += current_cycles;
         let mut overflows = 0;
         let freq = self.frequency();
@@ -39,7 +39,6 @@ impl Timer {
 
         while self.cycles >= freq {
             self.cycles -= freq;
-            // self.timer.set_data(self.timer.get_data().wrapping_add(1));
             timer_data = timer_data.wrapping_add(1);
             if timer_data == 0 {
                 match self.timer.index {
@@ -49,13 +48,37 @@ impl Timer {
                     3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
                     _ => panic!("Error in processing timer")
                 }
-                // self.timer.set_data(self.timer.get_reload());
-                timer_data = self.initial_value;
+
+                timer_data = self.timer.get_reload();
                 overflows+=1;
             }
         }
         self.timer.set_data(timer_data);
         overflows
+    }
+
+    pub fn update_overflow(&mut self, overflows: usize, irq_ctrl: &mut Interrupts) -> usize {
+        let mut timer_data = self.timer.get_data();
+        let mut new_overflows = 0;
+
+        for _ in 0..overflows {
+            timer_data = timer_data.wrapping_add(1);
+            if timer_data == 0 {
+                match self.timer.index {
+                    0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
+                    1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
+                    2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
+                    3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
+                    _ => panic!("Error in processing timer")
+                }
+
+                timer_data = self.initial_value;
+                new_overflows += 1;
+            }
+        }
+
+        self.timer.set_data(timer_data);
+        new_overflows
     }
 }
 
@@ -109,20 +132,22 @@ impl TimerHandler {
     }
 
     pub fn update(&mut self, cycles: usize, irq_ctrl: &mut Interrupts){
+        let mut overflows = 0usize;
         for id in 0..4 {
-            if self.timers[id].controller.get_enable() == 1 && self.timers[id].controller.get_cascade() == 0 {
-                if self.timers[id].previously_disabled {
-                    self.timers[id].reload_data();
-                    self.timers[id].previously_disabled = false;
+            let mut timer = &mut self.timers[id];
+            if timer.controller.get_enable() == 1 {
+                if timer.previously_disabled {
+                    timer.reload_data();
+                    timer.previously_disabled = false;
                 }
-                let timer = &mut self.timers[id];
-                let overflows = timer.update(cycles, irq_ctrl);
-                if overflows > 0 {
-                    if id != 3 {
-                        let cascade_timer = &mut self.timers[id+1];
-                        if cascade_timer.controller.get_enable() == 1 && cascade_timer.controller.get_cascade() == 1{
-                            cascade_timer.update(overflows as usize, irq_ctrl);
-                        }
+                
+                if timer.controller.get_cascade() == 0 {
+                    // if we are not a cascade timer we dont care about the previous overflows
+                    overflows = timer.update(cycles, irq_ctrl);
+                } else {
+                    // if we are a cascade timer we dont care about the cycles
+                    if overflows > 0 {
+                        overflows = timer.update_overflow(overflows, irq_ctrl);
                     }
                 }
             } else if !self.timers[id].previously_disabled {

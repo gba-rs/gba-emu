@@ -19,7 +19,7 @@ io_register! (
 impl TimerDataRegister {
     pub fn get_reload(&self) -> u16 {
         let mem_ref = self.memory.borrow();
-        let address = 0x1000_0000 + (self.index * 2); 
+        let address = 0x1000_0000 + (TimerDataRegister::SEGMENT_INDICIES[self.index] & 0xF); 
         return (mem_ref[address] as u32 | ((mem_ref[address + 1] as u32) << 8)) as u16;
     }
 
