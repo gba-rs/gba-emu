@@ -30,7 +30,23 @@ pub enum GpuState {
 pub struct Object {
     pub attr0: ObjAttribute0,
     pub attr1: ObjAttribute1,
-    pub attr2: ObjAttribute2
+    pub attr2: ObjAttribute2,
+}
+
+pub struct AffineMatrix {
+    pub pa: OBJRotScaleParam,
+    pub pb: OBJRotScaleParam,
+    pub pc: OBJRotScaleParam,
+    pub pd: OBJRotScaleParam
+}
+
+impl AffineMatrix {
+    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
+        self.pa.register(mem);
+        self.pb.register(mem);
+        self.pc.register(mem);
+        self.pd.register(mem);
+    }
 }
 
 impl Object {
@@ -140,6 +156,7 @@ pub struct GPU {
     pub windows: [Window; 2],
 
     pub objects: [Object; 128],
+    pub aff_matrices: [AffineMatrix; 32],
 
     pub control_window_inside: ControlWindowInside,
     pub control_window_outside: ControlWindowOutside,
@@ -216,107 +233,107 @@ impl GPU {
                 Object {
                     attr0: ObjAttribute0::new(0),
                     attr1: ObjAttribute1::new(0),
-                    attr2: ObjAttribute2::new(0)
+                    attr2: ObjAttribute2::new(0),
                 },
                 Object {
                     attr0: ObjAttribute0::new(1),
                     attr1: ObjAttribute1::new(1),
-                    attr2: ObjAttribute2::new(1)
+                    attr2: ObjAttribute2::new(1),
                 },
                 Object {
                     attr0: ObjAttribute0::new(2),
                     attr1: ObjAttribute1::new(2),
-                    attr2: ObjAttribute2::new(2)
+                    attr2: ObjAttribute2::new(2),
                 },
                 Object {
                     attr0: ObjAttribute0::new(3),
                     attr1: ObjAttribute1::new(3),
-                    attr2: ObjAttribute2::new(3)
+                    attr2: ObjAttribute2::new(3),
                 },
                 Object {
                     attr0: ObjAttribute0::new(4),
                     attr1: ObjAttribute1::new(4),
-                    attr2: ObjAttribute2::new(4)
+                    attr2: ObjAttribute2::new(4),
                 },
                 Object {
                     attr0: ObjAttribute0::new(5),
                     attr1: ObjAttribute1::new(5),
-                    attr2: ObjAttribute2::new(5)
+                    attr2: ObjAttribute2::new(5),
                 },
                 Object {
                     attr0: ObjAttribute0::new(6),
                     attr1: ObjAttribute1::new(6),
-                    attr2: ObjAttribute2::new(6)
+                    attr2: ObjAttribute2::new(6),
                 },
                 Object {
                     attr0: ObjAttribute0::new(7),
                     attr1: ObjAttribute1::new(7),
-                    attr2: ObjAttribute2::new(7)
+                    attr2: ObjAttribute2::new(7),
                 },
                 Object {
                     attr0: ObjAttribute0::new(8),
                     attr1: ObjAttribute1::new(8),
-                    attr2: ObjAttribute2::new(8)
+                    attr2: ObjAttribute2::new(8),
                 },
                 Object {
                     attr0: ObjAttribute0::new(9),
                     attr1: ObjAttribute1::new(9),
-                    attr2: ObjAttribute2::new(9)
+                    attr2: ObjAttribute2::new(9),
                 },
                 Object {
                     attr0: ObjAttribute0::new(10),
                     attr1: ObjAttribute1::new(10),
-                    attr2: ObjAttribute2::new(10)
+                    attr2: ObjAttribute2::new(10),
                 },
                 Object {
                     attr0: ObjAttribute0::new(11),
                     attr1: ObjAttribute1::new(11),
-                    attr2: ObjAttribute2::new(11)
+                    attr2: ObjAttribute2::new(11),
                 },
                 Object {
                     attr0: ObjAttribute0::new(12),
                     attr1: ObjAttribute1::new(12),
-                    attr2: ObjAttribute2::new(12)
+                    attr2: ObjAttribute2::new(12),
                 },
                 Object {
                     attr0: ObjAttribute0::new(13),
                     attr1: ObjAttribute1::new(13),
-                    attr2: ObjAttribute2::new(13)
+                    attr2: ObjAttribute2::new(13),
                 },
                 Object {
                     attr0: ObjAttribute0::new(14),
                     attr1: ObjAttribute1::new(14),
-                    attr2: ObjAttribute2::new(14)
+                    attr2: ObjAttribute2::new(14),
                 },
                 Object {
                     attr0: ObjAttribute0::new(15),
                     attr1: ObjAttribute1::new(15),
-                    attr2: ObjAttribute2::new(15)
+                    attr2: ObjAttribute2::new(15),
                 },
                 Object {
                     attr0: ObjAttribute0::new(16),
                     attr1: ObjAttribute1::new(16),
-                    attr2: ObjAttribute2::new(16)
+                    attr2: ObjAttribute2::new(16),
                 },
                 Object {
                     attr0: ObjAttribute0::new(17),
                     attr1: ObjAttribute1::new(17),
-                    attr2: ObjAttribute2::new(17)
+                    attr2: ObjAttribute2::new(17),
                 },
                 Object {
                     attr0: ObjAttribute0::new(18),
                     attr1: ObjAttribute1::new(18),
-                    attr2: ObjAttribute2::new(18)
+                    attr2: ObjAttribute2::new(18),
                 },
                 Object {
                     attr0: ObjAttribute0::new(19),
                     attr1: ObjAttribute1::new(19),
-                    attr2: ObjAttribute2::new(19)
+                    attr2: ObjAttribute2::new(19),
                 },
                 Object {
                     attr0: ObjAttribute0::new(20),
                     attr1: ObjAttribute1::new(20),
-                    attr2: ObjAttribute2::new(20)
+                    attr2: ObjAttribute2::new(20),
                 },
                 Object {
                     attr0: ObjAttribute0::new(21),
@@ -854,6 +871,200 @@ impl GPU {
                     attr2: ObjAttribute2::new(127)
                 }
             ],
+            aff_matrices: [
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(0),
+                    pb: OBJRotScaleParam::new(1),
+                    pc: OBJRotScaleParam::new(2),
+                    pd: OBJRotScaleParam::new(3)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(4),
+                    pb: OBJRotScaleParam::new(5),
+                    pc: OBJRotScaleParam::new(6),
+                    pd: OBJRotScaleParam::new(7)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(8),
+                    pb: OBJRotScaleParam::new(9),
+                    pc: OBJRotScaleParam::new(10),
+                    pd: OBJRotScaleParam::new(11)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(12),
+                    pb: OBJRotScaleParam::new(13),
+                    pc: OBJRotScaleParam::new(14),
+                    pd: OBJRotScaleParam::new(15)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(16),
+                    pb: OBJRotScaleParam::new(17),
+                    pc: OBJRotScaleParam::new(18),
+                    pd: OBJRotScaleParam::new(19)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(20),
+                    pb: OBJRotScaleParam::new(21),
+                    pc: OBJRotScaleParam::new(22),
+                    pd: OBJRotScaleParam::new(23)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(24),
+                    pb: OBJRotScaleParam::new(25),
+                    pc: OBJRotScaleParam::new(26),
+                    pd: OBJRotScaleParam::new(27)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(28),
+                    pb: OBJRotScaleParam::new(29),
+                    pc: OBJRotScaleParam::new(30),
+                    pd: OBJRotScaleParam::new(31)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(32),
+                    pb: OBJRotScaleParam::new(33),
+                    pc: OBJRotScaleParam::new(34),
+                    pd: OBJRotScaleParam::new(35)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(36),
+                    pb: OBJRotScaleParam::new(37),
+                    pc: OBJRotScaleParam::new(38),
+                    pd: OBJRotScaleParam::new(39)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(40),
+                    pb: OBJRotScaleParam::new(41),
+                    pc: OBJRotScaleParam::new(42),
+                    pd: OBJRotScaleParam::new(43)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(44),
+                    pb: OBJRotScaleParam::new(45),
+                    pc: OBJRotScaleParam::new(46),
+                    pd: OBJRotScaleParam::new(47)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(48),
+                    pb: OBJRotScaleParam::new(49),
+                    pc: OBJRotScaleParam::new(50),
+                    pd: OBJRotScaleParam::new(51)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(52),
+                    pb: OBJRotScaleParam::new(53),
+                    pc: OBJRotScaleParam::new(54),
+                    pd: OBJRotScaleParam::new(55)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(56),
+                    pb: OBJRotScaleParam::new(57),
+                    pc: OBJRotScaleParam::new(58),
+                    pd: OBJRotScaleParam::new(59)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(60),
+                    pb: OBJRotScaleParam::new(61),
+                    pc: OBJRotScaleParam::new(62),
+                    pd: OBJRotScaleParam::new(63)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(64),
+                    pb: OBJRotScaleParam::new(65),
+                    pc: OBJRotScaleParam::new(66),
+                    pd: OBJRotScaleParam::new(67)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(68),
+                    pb: OBJRotScaleParam::new(69),
+                    pc: OBJRotScaleParam::new(70),
+                    pd: OBJRotScaleParam::new(71)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(72),
+                    pb: OBJRotScaleParam::new(73),
+                    pc: OBJRotScaleParam::new(74),
+                    pd: OBJRotScaleParam::new(75)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(76),
+                    pb: OBJRotScaleParam::new(77),
+                    pc: OBJRotScaleParam::new(78),
+                    pd: OBJRotScaleParam::new(79)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(80),
+                    pb: OBJRotScaleParam::new(81),
+                    pc: OBJRotScaleParam::new(82),
+                    pd: OBJRotScaleParam::new(83)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(84),
+                    pb: OBJRotScaleParam::new(85),
+                    pc: OBJRotScaleParam::new(86),
+                    pd: OBJRotScaleParam::new(87)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(88),
+                    pb: OBJRotScaleParam::new(89),
+                    pc: OBJRotScaleParam::new(90),
+                    pd: OBJRotScaleParam::new(91)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(92),
+                    pb: OBJRotScaleParam::new(93),
+                    pc: OBJRotScaleParam::new(94),
+                    pd: OBJRotScaleParam::new(95)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(96),
+                    pb: OBJRotScaleParam::new(97),
+                    pc: OBJRotScaleParam::new(98),
+                    pd: OBJRotScaleParam::new(99)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(100),
+                    pb: OBJRotScaleParam::new(101),
+                    pc: OBJRotScaleParam::new(102),
+                    pd: OBJRotScaleParam::new(103)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(104),
+                    pb: OBJRotScaleParam::new(105),
+                    pc: OBJRotScaleParam::new(106),
+                    pd: OBJRotScaleParam::new(107)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(108),
+                    pb: OBJRotScaleParam::new(109),
+                    pc: OBJRotScaleParam::new(110),
+                    pd: OBJRotScaleParam::new(111)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(112),
+                    pb: OBJRotScaleParam::new(113),
+                    pc: OBJRotScaleParam::new(114),
+                    pd: OBJRotScaleParam::new(115)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(116),
+                    pb: OBJRotScaleParam::new(117),
+                    pc: OBJRotScaleParam::new(118),
+                    pd: OBJRotScaleParam::new(119)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(120),
+                    pb: OBJRotScaleParam::new(121),
+                    pc: OBJRotScaleParam::new(122),
+                    pd: OBJRotScaleParam::new(123)
+                },
+                AffineMatrix{
+                    pa: OBJRotScaleParam::new(124),
+                    pb: OBJRotScaleParam::new(125),
+                    pc: OBJRotScaleParam::new(126),
+                    pd: OBJRotScaleParam::new(127)
+                },
+            ],
             windows: [
                 Window {
                     horizontal_dimensions: WindowHorizontalDimension::new(0),
@@ -899,6 +1110,10 @@ impl GPU {
 
         for i in 0..128 {
             self.objects[i].register(mem);
+        }
+
+        for i in 0..32 {
+            self.aff_matrices[i].register(mem);
         }
 
         // Registers
@@ -1119,11 +1334,148 @@ impl GPU {
             match self.objects[i].attr0.get_obj_mode() {
                 0b10 => continue,
                 0b00 => self.render_normal_obj(i, mem_map),
-                0b01 | 0b11 => continue,
+                0b01 | 0b11 => self.render_aff_obj(i, mem_map),
                 _ => unreachable!() 
             };
         }
     }
+
+    fn render_aff_obj(&mut self, sprite_num: usize, mem_map: &mut MemoryMap){
+        let mut sprite = &mut self.objects[sprite_num];
+        let current_scanline = self.vertical_count.get_current_scanline() as i32;
+        let mut obj_x = sprite.attr1.get_x_coordinate() as i16 as i32;
+        let mut obj_y = sprite.attr0.get_y_coordinate() as i16 as i32;
+        let priority = sprite.attr2.get_priority_rel_to_bg();
+        let (obj_w, obj_h) = sprite.size();
+
+        let (bbox_w, bbox_h) = match sprite.attr0.get_obj_mode() {
+            0b11 => (2 * obj_w, 2 * obj_h),
+            _ => (obj_w, obj_h),
+        };
+        let mut ref_point_x = obj_x;
+        let mut ref_point_y = obj_y;
+        if obj_y >= (DISPLAY_HEIGHT as i32) {
+            ref_point_y -= 1 << 8;
+        }
+        if obj_x >= (DISPLAY_WIDTH as i32) {
+            ref_point_x -= 1 << 9;
+        }
+
+        if !(current_scanline >= obj_y && current_scanline < obj_y + obj_h) {
+            return;
+        }
+
+        let mode = self.display_control.get_bg_mode();
+
+        let tile_index = sprite.attr2.get_character_name();
+        let tile_base = (if mode > 2 { 0x06014000 } else { 0x06010000 }) + 0x20 * (tile_index as u32);
+
+        let pixel_format = if sprite.attr0.get_color_flag() == 0 {
+            PixelFormat::FourBit
+        } else {
+            PixelFormat::EightBit
+        };
+
+        let tile_size = if sprite.attr0.get_color_flag() == 0 {
+            0x20
+        } else {
+            0x40
+        };
+
+        let palette_bank = match pixel_format {
+            PixelFormat::FourBit => sprite.attr2.get_palette_number() as u32,
+            PixelFormat::EightBit => 0u32,
+        };
+
+        let screen_width = DISPLAY_WIDTH as i32;
+        let end_x = obj_x + obj_w;
+        let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
+            let temp = match pixel_format {
+                PixelFormat::FourBit => 32,
+                PixelFormat::EightBit => 16
+            };
+            temp
+        } else {
+            obj_w / 8
+        };
+
+        let aff_index = sprite.attr1.get_rotation_scaling_param() as u32 & 0x1f as u32;
+        let aff_matrix = &self.aff_matrices[aff_index as usize];
+
+        let end_x = obj_x + obj_w;
+        let half_width = bbox_w / 2;
+        let half_height = bbox_h /2;
+        let screen_width = DISPLAY_WIDTH as i32;
+        let iy = current_scanline - (ref_point_y + half_height);
+        let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
+            let temp = match pixel_format {
+                PixelFormat::FourBit => 32,
+                PixelFormat::EightBit => 16
+            };
+            temp
+        } else {
+            obj_w / 8
+        };
+        
+        for ix in obj_x..end_x {
+            let screen_x = ref_point_x + half_width + ix;
+            if screen_x < 0 {
+                continue;
+            } 
+            if screen_x >= screen_width {
+                return;
+            }
+
+            if ix >= screen_width {
+                return;
+            }
+            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (ix as u32)) as usize;
+
+            if self.obj_buffer[obj_buffer_index].1 <= priority {
+                continue;
+            }
+
+            let trans_x = (aff_matrix.pa.get_aff_param() as i32 * ix + aff_matrix.pb.get_aff_param() as i32 *iy);
+            let trans_y = (aff_matrix.pc.get_aff_param() as i32 * ix + aff_matrix.pd.get_aff_param() as i32 *iy);
+            let texture_x = trans_x + obj_w / 2;
+            let texture_y = trans_y + obj_h / 2;
+             if texture_x >= 0 && texture_x < obj_w && texture_y >= 0 && texture_y < obj_h {
+                let tile_x = texture_x % 8;
+                let tile_y = texture_y % 8;
+                let tile_addr = tile_base + ((tile_array_width as u32) * ((texture_y as u32) / 8) + ((texture_x as u32) / 8)) * (tile_size as u32);
+                let pixel_index = match pixel_format {
+                    PixelFormat::EightBit => {
+                        let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
+                        mem_map.read_u8(pixel_index_address)
+                    },
+                    PixelFormat::FourBit => {
+                        let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
+                        let value = mem_map.read_u8(pixel_index_address);
+                        if tile_x & 1 != 0 {
+                            (value >> 4)
+                        } else {
+                            value & 0xf
+                        }
+                    }
+                } as u32;
+
+                let color = if pixel_index == 0 || (palette_bank != 0 && pixel_index % 16 == 0) {
+                    Rgb15::new(0x8000)
+                } else {
+                    let palette_ram_index = 0x200 + 2 * pixel_index + 0x20 * palette_bank;
+                    Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+                };
+
+                let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (ix as u32)) as usize;
+                if !color.is_transparent() {
+                    self.obj_buffer[obj_buffer_index] = (color, priority, sprite.attr0.get_gfx_mode());
+                }
+            }
+
+        }
+
+    }
+
 
     fn render_normal_obj(&mut self, sprite_num: usize, mem_map: &mut MemoryMap) {
         let mut sprite = &mut self.objects[sprite_num];
