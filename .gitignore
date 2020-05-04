@@ -16,6 +16,8 @@ wasm-pack.log
 .idea/
 
 roms/games
+roms/saves
 .BIOS
 
 .vs/
+.vscode/

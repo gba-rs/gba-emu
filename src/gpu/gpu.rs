@@ -7,8 +7,6 @@ use crate::operations::bitutils;
 use crate::dma::DMAController;
 use std::cell::RefCell;
 use std::rc::Rc;
-use log::debug;
-use std::cmp;
 
 
 pub const DISPLAY_WIDTH: u32 = 240;
@@ -21,6 +19,7 @@ pub const SCANLINE_CYCLES: i64 = 1232;
 pub const VDRAW_CYCLES: i64 = 197120;
 pub const VBLANK_CYCLES: i64 = 83776;
 
+#[derive(PartialEq)]
 pub enum GpuState {
     HDraw,
     HBlank,
@@ -98,8 +97,10 @@ impl Background {
 pub struct BgAffineComponent {
     pub refrence_point_x_internal: u32,
     pub refrence_point_x_external: BGRefrencePoint,
+    pub refrence_point_x_external_hold: u32,
     pub refrence_point_y_internal: u32,
     pub refrence_point_y_external: BGRefrencePoint,
+    pub refrence_point_y_external_hold: u32,
     pub rotation_scaling_param_a: BGRotScaleParam,
     pub rotation_scaling_param_b: BGRotScaleParam,
     pub rotation_scaling_param_c: BGRotScaleParam,
@@ -154,6 +155,7 @@ pub struct GPU {
     pub backgrounds: [Background; 4],
     pub bg_affine_components: [BgAffineComponent; 2],
     pub windows: [Window; 2],
+    pub obj_window: [bool; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)],
 
     pub objects: [Object; 128],
     pub aff_matrices: [AffineMatrix; 32],
@@ -211,8 +213,10 @@ impl GPU {
                 BgAffineComponent {
                     refrence_point_x_internal: 0,
                     refrence_point_x_external: BGRefrencePoint::new(0),
+                    refrence_point_x_external_hold: 0,
                     refrence_point_y_internal: 0,
                     refrence_point_y_external: BGRefrencePoint::new(1),
+                    refrence_point_y_external_hold: 0,
                     rotation_scaling_param_a: BGRotScaleParam::new(0),
                     rotation_scaling_param_b: BGRotScaleParam::new(1),
                     rotation_scaling_param_c: BGRotScaleParam::new(2),
@@ -221,8 +225,10 @@ impl GPU {
                 BgAffineComponent {
                     refrence_point_x_internal: 0,
                     refrence_point_x_external: BGRefrencePoint::new(2),
+                    refrence_point_x_external_hold: 0,
                     refrence_point_y_internal: 0,
                     refrence_point_y_external: BGRefrencePoint::new(3),
+                    refrence_point_y_external_hold: 0,
                     rotation_scaling_param_a: BGRotScaleParam::new(4),
                     rotation_scaling_param_b: BGRotScaleParam::new(5),
                     rotation_scaling_param_c: BGRotScaleParam::new(6),
@@ -1075,6 +1081,7 @@ impl GPU {
                     vertical_dimensions: WindowVerticalDimension::new(1)
                 }
             ],
+            obj_window: [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)],
 
             // Registers
             display_control: DisplayControl::new(),
@@ -1174,7 +1181,17 @@ impl GPU {
                             }
                         },
                         1 => {
+                            if self.display_control.should_display(2) {
+                                self.render_aff_bg(mem_map, 2);
+                            }
 
+                            if self.display_control.should_display(1) {
+                                self.render_bg(mem_map, 1);
+                            }
+
+                            if self.display_control.should_display(0) {
+                                self.render_bg(mem_map, 0);
+                            }
                         },
                         2 => {
                             if self.display_control.should_display(2) {
@@ -1193,7 +1210,7 @@ impl GPU {
                         },
                         5 => {
                             self.render_mode_5(mem_map);
-                        }
+                        },
                         _ => panic!("Unimplemented mode: {}", current_mode)
                     }
 
@@ -1206,11 +1223,24 @@ impl GPU {
 
                     // update refrence points at end of scanline
                     for i in 0..2 {
-                        let internal_x = bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_x_internal, 27) as i32;
-                        let internal_y =  bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_y_internal, 27) as i32;
+                        let mut internal_x = bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_x_internal, 27) as i32;
+                        let mut internal_y =  bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_y_internal, 27) as i32;
+                        let external_x = self.bg_affine_components[i].refrence_point_x_external.get_register();
+                        let external_y = self.bg_affine_components[i].refrence_point_y_external.get_register();
+    
+                        if self.bg_affine_components[i].refrence_point_x_external_hold != external_x {
+                            internal_x = bitutils::sign_extend_u32(external_x, 27) as i32;
+                            self.bg_affine_components[i].refrence_point_x_external_hold = external_x;
+                        }
+    
+                        if self.bg_affine_components[i].refrence_point_y_external_hold != external_y {
+                            internal_y = bitutils::sign_extend_u32(external_y, 27) as i32;
+                            self.bg_affine_components[i].refrence_point_y_external_hold = external_y;
+                        }
+    
                         let pb = i32::from(&self.bg_affine_components[i].rotation_scaling_param_b);
                         let pd = i32::from(&self.bg_affine_components[i].rotation_scaling_param_d);
-
+    
                         self.bg_affine_components[i].refrence_point_x_internal = (pb + internal_x) as u32; //t_register((internal_x + pb) as u32);
                         self.bg_affine_components[i].refrence_point_y_internal = (pd + internal_y) as u32;
                     }
@@ -1219,8 +1249,10 @@ impl GPU {
                     self.cycles_to_next_state = HDRAW_CYCLES;
                 } else {                    
                     for i in 0..2 {
-                        self.bg_affine_components[i].refrence_point_x_internal = self.bg_affine_components[i].refrence_point_x_external.get_register();
-                        self.bg_affine_components[i].refrence_point_y_internal = self.bg_affine_components[i].refrence_point_y_external.get_register();
+                        self.bg_affine_components[i].refrence_point_x_internal =  self.bg_affine_components[i].refrence_point_x_external.get_register();
+                        self.bg_affine_components[i].refrence_point_y_internal =  self.bg_affine_components[i].refrence_point_y_external.get_register();
+                        self.bg_affine_components[i].refrence_point_x_external_hold = self.bg_affine_components[i].refrence_point_x_internal;
+                        self.bg_affine_components[i].refrence_point_y_external_hold = self.bg_affine_components[i].refrence_point_y_internal;
                     }
 
                     // do irq stuff
@@ -1302,7 +1334,7 @@ impl GPU {
             let bitmap_index = ((DISPLAY_WIDTH as u32) * (t.1 as u32) + (t.0 as u32)) as u32;
             let bitmap_offset = page_ofs + bitmap_index;
             let index = mem_map.read_u8(bitmap_offset) as u32;
-            let color = Rgb15::new(mem_map.read_u16((2 * index) + 0x05000000));
+            let color = Rgb15::new(mem_map.read_u16((2 * index) + PALETTE_RAM_START));
             self.backgrounds[2].scan_line[x as usize] = color;
         }
     }
@@ -1484,10 +1516,6 @@ impl GPU {
         let mut obj_y = sprite.attr0.get_y_coordinate() as i16 as i32;
         let priority = sprite.attr2.get_priority_rel_to_bg();
 
-        if sprite.attr0.get_gfx_mode() == 0b10 {
-            return;
-        }
-
         if obj_y >= (DISPLAY_HEIGHT as i32) {
             obj_y -= 1 << 8;
         }
@@ -1543,8 +1571,14 @@ impl GPU {
             if x >= screen_width {
                 break;
             }
-            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
 
+            if sprite.attr0.get_gfx_mode() == 0b10 {
+                let obj_window_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
+                self.obj_window[obj_window_index] = true;
+                continue;
+            }
+
+            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
             if self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
             }
@@ -1686,11 +1720,11 @@ impl GPU {
     pub fn render_aff_bg(&mut self, mem_map: &mut MemoryMap, bg_number: usize) {
         let texture_size = 128 << self.backgrounds[bg_number].control.get_screen_size();
 
-        let ref_point_x = self.bg_affine_components[bg_number - 2].refrence_point_x_internal as i32;
-        let ref_point_y = self.bg_affine_components[bg_number - 2].refrence_point_y_internal as i32;
+        let ref_point_x = bitutils::sign_extend_u32(self.bg_affine_components[bg_number - 2].refrence_point_x_internal, 27) as i32;
+        let ref_point_y =  bitutils::sign_extend_u32(self.bg_affine_components[bg_number - 2].refrence_point_y_internal, 27) as i32;
 
-        let pa = self.bg_affine_components[bg_number - 2].rotation_scaling_param_a.get_register() as i16 as i32;
-        let pc = self.bg_affine_components[bg_number - 2].rotation_scaling_param_c.get_register() as i16 as i32;
+        let pa = i32::from(&self.bg_affine_components[bg_number - 2].rotation_scaling_param_a);
+        let pc = i32::from(&self.bg_affine_components[bg_number - 2].rotation_scaling_param_c);
 
         let screen_block = self.backgrounds[bg_number].control.get_tilemap_location();
         let char_block = self.backgrounds[bg_number].control.get_tileset_location();
@@ -1698,8 +1732,18 @@ impl GPU {
         let wraparound = self.backgrounds[bg_number].control.get_display_area_overflow();
 
         for screen_x in 0..(DISPLAY_WIDTH as i32) {
-            let mut point_x = ((ref_point_x + screen_x * pa) >> 8);
-            let mut point_y = ((ref_point_y + screen_x * pc) >> 8);
+            let mut point_x = (ref_point_x + screen_x * pa) >> 8;
+            let mut point_y = (ref_point_y + screen_x * pc) >> 8;
+
+            if !(point_x >= 0 && point_x < texture_size && point_y >= 0 && point_y < texture_size) {
+                if wraparound != 0 {
+                    point_x = point_x.rem_euclid(texture_size);
+                    point_y = point_y.rem_euclid(texture_size);
+                } else {
+                    self.backgrounds[bg_number].scan_line[screen_x as usize] = Rgb15::new(0x8000);
+                    continue;
+                }
+            }
 
             let map_addr = screen_block + ((texture_size as u32 / 8) * (point_y as u32 / 8) + (point_x as u32 / 8));
             let tile_index = mem_map.read_u8(map_addr) as u32;
@@ -1719,163 +1763,5 @@ impl GPU {
             self.backgrounds[bg_number].scan_line[screen_x as usize] = color;
         }
 
-    }
-
-    fn get_window_type(&self, x: u32, y: u32) -> Option<WindowTypes>{
-        if self.display_control.using_windows() {
-            if self.display_control.get_window_0_display_flag() != 0 && self.windows[0].inside(x, y) {
-                return Some(WindowTypes::Window0);
-            }
-
-            if self.display_control.get_window_1_display_flag() != 0 && self.windows[1].inside(x, y){
-                return Some(WindowTypes::Window1);
-            }
-
-            // TODO object window
-
-            Some(WindowTypes::WindowOutside) 
-        } else {
-            None
-        }
-    }
-
-    fn get_window_flags(&self, window_type: &WindowTypes) -> (bool, bool, [bool; 4]) {
-        match window_type {
-            WindowTypes::Window0 | WindowTypes::Window1 => {
-                return (self.control_window_inside.should_display_sfx(window_type), 
-                        self.control_window_inside.should_display_obj(window_type), 
-                        self.control_window_inside.bgs_to_display(window_type));
-            },
-            WindowTypes::WindowObject | WindowTypes::WindowOutside => {
-                return (self.control_window_outside.should_display_sfx(window_type), 
-                        self.control_window_outside.should_display_obj(window_type), 
-                        self.control_window_outside.bgs_to_display(window_type));
-
-            },
-        };
-    }
-
-    fn blend(&self, target_1: &mut Rgb15, target_2: &Rgb15, blend_mode: &BlendMode) {
-        match blend_mode {
-            BlendMode::Alpha => {
-                let eva = cmp::min(16, self.alpha_blending_coefficients.get_eva_coefficient());
-                let evb = cmp::min(16, self.alpha_blending_coefficients.get_evb_coefficient());
-                // log::info!("EVA, EVB: {}, {}", eva, evb);
-
-                target_1.red = cmp::min(31, (target_1.red * eva + target_2.red * evb) >> 4);
-                target_1.green = cmp::min(31, (target_1.green * eva + target_2.green * evb) >> 4);
-                target_1.blue = cmp::min(31, (target_1.blue * eva + target_2.blue * evb) >> 4);
-            },
-            BlendMode::Black => {
-                let evy = cmp::min(16, self.brightness_coefficient.get_evy_coefficient());
-
-                target_1.red = cmp::min(31, (target_1.red * (16 - evy) + 0 * evy) >> 4);
-                target_1.green = cmp::min(31, (target_1.green * (16 - evy) + 0 * evy) >> 4);
-                target_1.blue = cmp::min(31, (target_1.blue * (16 - evy) + 0 * evy) >> 4);
-            },
-            BlendMode::White => {
-                let evy = cmp::min(16, self.brightness_coefficient.get_evy_coefficient());
-                let other = Rgb15::new(0x7FFF);
-
-                target_1.red = cmp::min(31, (target_1.red * (16 - evy) + 31 * evy) >> 4);
-                target_1.green = cmp::min(31, (target_1.green * (16 - evy) + 31 * evy) >> 4);
-                target_1.blue = cmp::min(31, (target_1.blue * (16 - evy) + 31 * evy) >> 4);
-            },
-            BlendMode::Off => {}
-        }
-    }
-
-    pub fn composite_background(&mut self, mem_map: &mut MemoryMap) {
-        let current_scanline = self.vertical_count.get_current_scanline() as u32;
-
-        let mut bg_list: [u8; 4] = [0; 4];
-        let mut bg_count: usize = 0;
-
-        for priority in (0..4).rev() {
-            for bg in (0..4).rev() {
-                if self.display_control.should_display(bg) && 
-                   self.backgrounds[bg as usize].control.get_bg_priority() == priority {
-
-                    bg_list[bg_count] = bg;
-                    bg_count += 1;
-                }
-            }
-        }
-
-        let mut pixel: (Rgb15, Rgb15) = (Rgb15::new(0), Rgb15::new(0));
-
-        for x in 0..DISPLAY_WIDTH {
-            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
-            let (obj_color, obj_priority, obj_gfx_mode) = self.obj_buffer[obj_buffer_index];
-            let window_type = self.get_window_type(x, current_scanline);
-            let dsp_ctrl_obj = self.display_control.get_screen_display_obj() != 0;
-
-            let (disp_sfx, disp_obj, bgs_to_disp) = match &window_type {
-                Some(val) => self.get_window_flags(&val),
-                None => (true, true, [true, true, true, true])
-            };
-
-            let mut layer: (u8, u8) = (5, 5);
-            let mut priority: (u8, u8) = (4, 4);
-
-            for i in 0..bg_count {
-                let bg = bg_list[i as usize];
-
-                if bgs_to_disp[bg as usize] {
-                    let pixel_new = self.backgrounds[bg as usize].scan_line[x as usize];
-                    if !pixel_new.is_transparent() {
-                        layer.1 = layer.0;
-                        layer.0 = bg;
-                        priority.1 = priority.0;
-                        priority.0 = self.backgrounds[bg as usize].control.get_bg_priority();
-                    }
-                }
-            }
-
-            if dsp_ctrl_obj && disp_obj && !obj_color.is_transparent() {
-                if obj_priority <= priority.0 {
-                    // drop the obj in front
-                    layer.1 = layer.0;
-                    layer.0 = 4;
-                } else if obj_priority <= priority.1 {
-                    // drop the obj in between
-                    layer.1 = 4;
-                }
-            }
-
-            match layer.0 {
-                0..=3 => pixel.0 = self.backgrounds[layer.0 as usize].scan_line[x as usize],
-                4 => pixel.0 = obj_color,
-                5 => pixel.0 = Rgb15::new(mem_map.read_u16(PALETTE_RAM_START)),
-                _ => panic!("THis should never hit")
-            }
-
-            match layer.1 {
-                0..=3 => pixel.1 = self.backgrounds[layer.1 as usize].scan_line[x as usize],
-                4 => pixel.1 = obj_color,
-                5 => pixel.1 = Rgb15::new(mem_map.read_u16(PALETTE_RAM_START)),
-                _ => panic!("THis should never hit")
-            }
-
-            let is_alpha_obj = layer.0 == 4 && obj_gfx_mode == 0b01;
-
-            if disp_sfx || is_alpha_obj {
-                let mut blend_mode = self.color_special_effects_selection.get_blendmode();
-                let have_destination = self.color_special_effects_selection.has_destination(layer.0) | is_alpha_obj;
-                let have_source = self.color_special_effects_selection.has_source(layer.1);
-
-                if is_alpha_obj && have_source {
-                    blend_mode = BlendMode::Alpha;
-                }
-
-                if blend_mode != BlendMode::Off && have_destination && (have_source || blend_mode != BlendMode::Alpha) {
-                    // blend
-                    // self.blend(&mut pixel.0, &pixel.1, &blend_mode);
-                }
-            }
-
-            let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
-            self.frame_buffer[frame_buffer_index] = pixel.0.to_0rgb();
-        }
     }
 }

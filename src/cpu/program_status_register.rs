@@ -28,8 +28,8 @@ pub struct ControlBits {
 impl From<u32> for ControlBits {
     fn from(value: u32) -> ControlBits {
         return ControlBits {
-            fiq_disable: ((value >> 7) & 0x01) != 0,
-            irq_disable: ((value >> 6) & 0x01) != 0,
+            irq_disable: ((value >> 7) & 0x01) != 0,
+            fiq_disable: ((value >> 6) & 0x01) != 0,
             state_bit: ((value >> 5) & 0x01) != 0,
             mode_bits: (value & 0x1F) as u8
         }

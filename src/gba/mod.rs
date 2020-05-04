@@ -77,7 +77,7 @@ impl GBA {
 
         temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
-        temp.key_status.set_register(0x3FF);
+        temp.key_status.set_register(0xFFFF);
 
         for i in 0..2 {
             temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
@@ -130,19 +130,21 @@ impl GBA {
 
     pub fn frame(&mut self) {
         while !self.gpu.frame_ready {
-            // self.key_status.set_register(0x3FF);
             self.single_step();
         }
 
         self.gpu.frame_ready = false;
         self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4, 0)});
+        self.gpu.obj_window = [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)];
     }
 
     pub fn single_step(&mut self) {
-
+        // log::info!("Single stepping");
         let cycles = if self.memory_bus.mem_map.halt_state == HaltState::Running {
+            // log::info!("Stepping cpu");
             self.cpu.fetch(&mut self.memory_bus)
         } else {
+            // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
             self.gpu.cycles_to_next_state as usize
             // 1
         };

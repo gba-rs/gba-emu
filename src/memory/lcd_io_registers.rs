@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use crate::operations::bitutils::*;
 use super::GbaMem;
+use crate::gpu::graphic_effects::{BlendMode, WindowTypes};
 use memory_macros::*;
 
 #[repr(u8)]
@@ -137,7 +138,7 @@ io_register! (
 
 impl From<&BGRotScaleParam> for i32 {
     fn from(value: &BGRotScaleParam) -> i32 {
-        return sign_extend_u32(value.get_register() as u32, 16) as i32;
+        return value.get_register() as i16 as i32;
     }
 }
 
@@ -701,14 +702,6 @@ io_register! (
     Y1: 8, 8,
 );
 
-#[derive(Debug, PartialEq)]
-pub enum WindowTypes {
-    Window0,
-    Window1,
-    WindowOutside,
-    WindowObject,
-}
-
 io_register! (
     ControlWindowInside => 2, 0x4000048,
     window0_bg_enable_bits: 0, 4,
@@ -810,26 +803,6 @@ io_register! (
     obj_mosaic_hsize: 8, 4,
     obj_mosaic_vsize: 12, 4,
 );
-
-#[derive(PartialEq)]
-pub enum BlendMode {
-    Off,
-    Alpha,
-    White,
-    Black
-}
-
-impl From<u8> for BlendMode {
-    fn from(value: u8) -> Self {
-        return match value {
-            0b00 => BlendMode::Off,
-            0b01 => BlendMode::Alpha,
-            0b10 => BlendMode::White,
-            0b11 => BlendMode::Black,
-            _ => panic!("Invalid BlendMode: {:b}", value)
-        };
-    }
-}
 
 io_register! (
     ColorSpecialEffectsSelection => 2, 0x4000050,

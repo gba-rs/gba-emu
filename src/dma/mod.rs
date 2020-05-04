@@ -2,6 +2,7 @@ use crate::memory::{dma_registers::*, GbaMem, memory_bus::MemoryBus};
 use crate::interrupts::interrupts::Interrupts;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::fmt;
 
 pub struct DMAChannel {
     pub source_address: DMASourceAddress,
@@ -13,6 +14,12 @@ pub struct DMAChannel {
     pub internal_word_count: u32,
     pub id: usize,
     pub previously_disabled: bool
+}
+
+impl fmt::Debug for DMAChannel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "DMA {}: {:X}, {:X}, {:X}", self.id, self.internal_source_address, self.internal_destination_address, self.internal_word_count)
+    }
 }
 
 impl DMAChannel {
@@ -111,7 +118,9 @@ impl DMAChannel {
         } 
 
         // trigger IRQ here
-        irq_ctl.if_interrupt.set_register((irq_ctl.if_interrupt.get_register() as u32) | (0x1 << (8 + self.id)));
+        if self.control.get_irq_upon_end_of_wordcount() != 0 {
+            irq_ctl.if_interrupt.set_register((irq_ctl.if_interrupt.get_register() as u32) | (0x1 << (8 + self.id)));
+        }
 
         // if we aren't repeating reset the enable bit
         if self.control.get_dma_repeat() == 0 {
@@ -144,20 +153,22 @@ impl DMAController {
     pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
         for i in 0..4 {
             if self.dma_channels[i].control.get_dma_enable() == 1 {
-                // if self.dma_channels[i].previously_disabled {
-                //     self.dma_channels[i].reload_data();
-                //     self.dma_channels[i].previously_disabled = false;
-                // }
+                if self.dma_channels[i].previously_disabled {
+                    self.dma_channels[i].reload_data();
+                    self.dma_channels[i].previously_disabled = false;
+                }
 
-                self.dma_channels[i].reload_data();
+                // self.dma_channels[i].reload_data();
                 match self.dma_channels[i].control.get_dma_start_timing() {
                     0 => {
                         // start immedietly
                         self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        // log::info!("Doing dma: {:?}", self.dma_channels[i]);
                     },
                     1 => {
                         // start at vblank
                         if self.vblanking {
+                            // log::info!("Doing vblank dma: {:?}", self.dma_channels[i]);
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
                             self.vblanking = false;
                         }
@@ -165,6 +176,7 @@ impl DMAController {
                     2 => {
                         // start at hblank
                         if self.hblanking {
+                            // log::info!("Doing hblank dma: {:?}", self.dma_channels[i]);
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
                             self.hblanking = false;
                         }
