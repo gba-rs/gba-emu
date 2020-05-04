@@ -1388,7 +1388,7 @@ impl GPU {
         };
 
         let screen_width = DISPLAY_WIDTH as i32;
-        let end_x = obj_x + obj_w;
+        let end_x = obj_x + bbox_w;
         let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
             let temp = match pixel_format {
                 PixelFormat::FourBit => 32,
@@ -1396,7 +1396,7 @@ impl GPU {
             };
             temp
         } else {
-            obj_w / 8
+            bbox_w / 8
         };
 
         let aff_index = sprite.attr1.get_rotation_scaling_param() as u32 & 0x1f as u32;
@@ -1404,7 +1404,7 @@ impl GPU {
 
         let end_x = obj_x + obj_w;
         let half_width = bbox_w / 2;
-        let half_height = bbox_h /2;
+        let half_height = bbox_h / 2;
         let screen_width = DISPLAY_WIDTH as i32;
         let iy = current_scanline - (ref_point_y + half_height);
         let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
@@ -1417,7 +1417,7 @@ impl GPU {
             obj_w / 8
         };
         
-        for ix in obj_x..end_x {
+        for ix in 0..end_x {
             let screen_x = ref_point_x + half_width + ix;
             if screen_x < 0 {
                 continue;
@@ -1435,8 +1435,8 @@ impl GPU {
                 continue;
             }
 
-            let trans_x = (aff_matrix.pa.get_aff_param() as i32 * ix + aff_matrix.pb.get_aff_param() as i32 *iy);
-            let trans_y = (aff_matrix.pc.get_aff_param() as i32 * ix + aff_matrix.pd.get_aff_param() as i32 *iy);
+            let trans_x = (aff_matrix.pa.get_aff_param() as i32 * ix + aff_matrix.pb.get_aff_param() as i32 * iy);
+            let trans_y = (aff_matrix.pc.get_aff_param() as i32 * ix + aff_matrix.pd.get_aff_param() as i32 * iy);
             let texture_x = trans_x + obj_w / 2;
             let texture_y = trans_y + obj_h / 2;
              if texture_x >= 0 && texture_x < obj_w && texture_y >= 0 && texture_y < obj_h {
