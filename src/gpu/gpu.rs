@@ -1393,7 +1393,7 @@ impl GPU {
             ref_point_x -= 1 << 9;
         }
 
-        if !(current_scanline >= obj_y && current_scanline < obj_y + obj_h) {
+        if !(current_scanline >= ref_point_y && current_scanline < ref_point_y + bbox_h) {
             return;
         }
 
@@ -1420,25 +1420,6 @@ impl GPU {
         };
 
         let screen_width = DISPLAY_WIDTH as i32;
-        let end_x = obj_x + bbox_w;
-        let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
-            let temp = match pixel_format {
-                PixelFormat::FourBit => 32,
-                PixelFormat::EightBit => 16
-            };
-            temp
-        } else {
-            bbox_w / 8
-        };
-
-        let aff_index = sprite.attr1.get_rotation_scaling_param() as u32 & 0x1f as u32;
-        let aff_matrix = &self.aff_matrices[aff_index as usize];
-
-        let end_x = obj_x + obj_w;
-        let half_width = bbox_w / 2;
-        let half_height = bbox_h / 2;
-        let screen_width = DISPLAY_WIDTH as i32;
-        let iy = current_scanline - (ref_point_y + half_height);
         let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
             let temp = match pixel_format {
                 PixelFormat::FourBit => 32,
@@ -1448,27 +1429,31 @@ impl GPU {
         } else {
             obj_w / 8
         };
+
+        let aff_index = sprite.attr1.get_rotation_scaling_param();
+        let aff_matrix = &self.aff_matrices[aff_index as usize];
+
+        let half_width = bbox_w / 2;
+        let half_height = bbox_h / 2;
+        let iy = current_scanline - (ref_point_y + half_height);
         
-        for ix in 0..end_x {
+        for ix in -half_width..half_width {
             let screen_x = ref_point_x + half_width + ix;
             if screen_x < 0 {
                 continue;
             } 
             if screen_x >= screen_width {
-                return;
+                break;
             }
 
-            if ix >= screen_width {
-                return;
-            }
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (ix as u32)) as usize;
 
             if self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
             }
 
-            let trans_x = (aff_matrix.pa.get_aff_param() as i32 * ix + aff_matrix.pb.get_aff_param() as i32 * iy);
-            let trans_y = (aff_matrix.pc.get_aff_param() as i32 * ix + aff_matrix.pd.get_aff_param() as i32 * iy);
+            let trans_x = (aff_matrix.pa.get_aff_param() as i16 as i32 * ix + aff_matrix.pb.get_aff_param() as i16 as i32 * iy) >> 8;
+            let trans_y = (aff_matrix.pc.get_aff_param() as i16 as i32 * ix + aff_matrix.pd.get_aff_param() as i16 as i32 * iy) >> 8;
             let texture_x = trans_x + obj_w / 2;
             let texture_y = trans_y + obj_h / 2;
              if texture_x >= 0 && texture_x < obj_w && texture_y >= 0 && texture_y < obj_h {
@@ -1498,7 +1483,7 @@ impl GPU {
                     Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
                 };
 
-                let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (ix as u32)) as usize;
+                let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
                 if !color.is_transparent() {
                     self.obj_buffer[obj_buffer_index] = (color, priority, sprite.attr0.get_gfx_mode());
                 }
