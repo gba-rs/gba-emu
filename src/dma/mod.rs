@@ -77,8 +77,16 @@ impl DMAChannel {
     }
 
     fn reload_data(&mut self) {
-        self.internal_source_address = self.source_address.get_address();
-        self.internal_destination_address = self.destination_address.get_address();
+        self.internal_source_address = if self.id == 0 {
+            self.source_address.get_address() & 0x7FF_FFFF
+        } else {
+            self.source_address.get_address() & 0xFFF_FFFF
+        };
+        self.internal_destination_address = if self.id == 3 {
+            self.destination_address.get_address() & 0xFFF_FFFF
+        } else {
+            self.destination_address.get_address() & 0x7FF_FFFF
+        };
         self.reload_wordcount();
     }
 
@@ -158,29 +166,25 @@ impl DMAController {
                     self.dma_channels[i].previously_disabled = false;
                 }
 
-                // self.dma_channels[i].reload_data();
                 match self.dma_channels[i].control.get_dma_start_timing() {
                     0 => {
                         // start immedietly
                         self.dma_channels[i].transfer(mem_map, irq_ctl);
-                        // log::info!("Doing dma: {:?}", self.dma_channels[i]);
                     },
                     1 => {
                         // start at vblank
                         if self.vblanking {
-                            // log::info!("Doing vblank dma: {:?}", self.dma_channels[i]);
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
                             self.vblanking = false;
                         }
                     },
                     2 => {
                         // start at hblank
-                        if self.hblanking {
-                            // log::info!("Doing hblank dma: {:?}", self.dma_channels[i]);
-                            // self.dma_channels[i].transfer(mem_map, irq_ctl);
-                            // self.hblanking = false;
-                            self.dma_channels[i].control.set_dma_enable(0);
-                        }
+                        // if self.hblanking {
+                        //     self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        //     self.hblanking = false;
+                        // }
+                        self.dma_channels[i].control.set_dma_enable(0);
                     },
                     3 => {
                         // special
