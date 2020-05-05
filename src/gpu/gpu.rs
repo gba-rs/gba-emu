@@ -1446,8 +1446,13 @@ impl GPU {
                 break;
             }
 
-            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (ix as u32)) as usize;
+            if sprite.attr0.get_gfx_mode() == 0b10 {
+                let obj_window_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
+                self.obj_window[obj_window_index] = true;
+                continue;
+            }
 
+            let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
             if self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
             }

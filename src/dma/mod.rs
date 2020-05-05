@@ -177,8 +177,9 @@ impl DMAController {
                         // start at hblank
                         if self.hblanking {
                             // log::info!("Doing hblank dma: {:?}", self.dma_channels[i]);
-                            self.dma_channels[i].transfer(mem_map, irq_ctl);
-                            self.hblanking = false;
+                            // self.dma_channels[i].transfer(mem_map, irq_ctl);
+                            // self.hblanking = false;
+                            self.dma_channels[i].control.set_dma_enable(0);
                         }
                     },
                     3 => {
