@@ -18,7 +18,7 @@ pub struct DMAChannel {
 
 impl fmt::Debug for DMAChannel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "DMA {}: {:X}, {:X}, {:X}", self.id, self.internal_source_address, self.internal_destination_address, self.internal_word_count)
+        write!(f, "DMA {}: {:X}, {:X}, {:X}, word size: {:X}, source address control: {:X}", self.id, self.internal_source_address, self.internal_destination_address, self.internal_word_count, self.control.get_dma_transfer_type(), self.control.get_source_address_control())
     }
 }
 
@@ -64,7 +64,7 @@ impl DMAChannel {
     pub fn update_destination_address(&mut self) {
         let word_size = if self.control.get_dma_transfer_type() == 0 { 2 } else { 4 };
 
-        match self.control.get_source_address_control() {
+        match self.control.get_destination_address_control() {
             0 | 3 => {
                 self.internal_destination_address += word_size;
             },
@@ -180,11 +180,11 @@ impl DMAController {
                     },
                     2 => {
                         // start at hblank
-                        // if self.hblanking {
-                        //     self.dma_channels[i].transfer(mem_map, irq_ctl);
-                        //     self.hblanking = false;
-                        // }
-                        self.dma_channels[i].control.set_dma_enable(0);
+                        if self.hblanking {
+                            self.dma_channels[i].transfer(mem_map, irq_ctl);
+                            self.hblanking = false;
+                        }
+                        // self.dma_channels[i].control.set_dma_enable(0);
                     },
                     3 => {
                         // special

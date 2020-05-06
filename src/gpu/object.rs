@@ -96,6 +96,7 @@ impl GPU {
         let priority = sprite.attr2.get_priority_rel_to_bg();
         let (obj_x, obj_y) = sprite.position();
         let (obj_w, obj_h) = sprite.size();
+        let gfx_mode = sprite.attr0.get_gfx_mode();
 
         let (bbox_w, bbox_h) = match sprite.attr0.get_obj_mode() {
             0b11 => (2 * obj_w, 2 * obj_h),
@@ -155,12 +156,6 @@ impl GPU {
                 break;
             }
 
-            if sprite.attr0.get_gfx_mode() == 0b10 {
-                let obj_window_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
-                self.obj_window[obj_window_index] = true;
-                continue;
-            }
-
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
             if self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
@@ -199,7 +194,12 @@ impl GPU {
 
                 let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
                 if !color.is_transparent() {
-                    self.obj_buffer[obj_buffer_index] = (color, priority, sprite.attr0.get_gfx_mode());
+                    if gfx_mode == 0b10 {
+                        let obj_window_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
+                        self.obj_window[obj_window_index] = true;
+                        continue;
+                    }
+                    self.obj_buffer[obj_buffer_index] = (color, priority, gfx_mode);
                 }
             }
 
@@ -212,6 +212,7 @@ impl GPU {
         let sprite = &mut self.objects[sprite_num];
         let current_scanline = self.vertical_count.get_current_scanline() as i32;
         let (mut obj_x, mut obj_y) = sprite.position();
+        let gfx_mode = sprite.attr0.get_gfx_mode();
         let priority = sprite.attr2.get_priority_rel_to_bg();
 
         if obj_y >= (DISPLAY_HEIGHT as i32) {
@@ -258,12 +259,6 @@ impl GPU {
 
             if x >= screen_width {
                 break;
-            }
-
-            if sprite.attr0.get_gfx_mode() == 0b10 {
-                let obj_window_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
-                self.obj_window[obj_window_index] = true;
-                continue;
             }
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
@@ -314,7 +309,12 @@ impl GPU {
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
             if !color.is_transparent() {
-                self.obj_buffer[obj_buffer_index] = (color, priority, sprite.attr0.get_gfx_mode());
+                if gfx_mode == 0b10 {
+                    let obj_window_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
+                    self.obj_window[obj_window_index] = true;
+                    continue;
+                }
+                self.obj_buffer[obj_buffer_index] = (color, priority, gfx_mode);
             }
         }
 
