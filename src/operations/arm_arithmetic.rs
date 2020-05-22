@@ -1,5 +1,4 @@
 use crate::{cpu::program_status_register::ConditionFlags};
-use log::debug;
 
 fn _add(op1: u32, op2: u32, carry_in: bool) -> (u32, ConditionFlags) {
     let output: u64 = (op1 as u64) + (op2 as u64) + (carry_in as u64);

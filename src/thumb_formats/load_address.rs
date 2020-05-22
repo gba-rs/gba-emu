@@ -2,7 +2,6 @@ use crate::operations::{instruction::Instruction, arm_arithmetic};
 use crate::cpu::{cpu::CPU};
 use crate::cpu::cpu::{THUMB_PC, THUMB_SP};
 use std::fmt;
-use log::debug;
 use crate::memory::memory_bus::MemoryBus;
 
 pub struct LoadAddress {

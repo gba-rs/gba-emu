@@ -1,6 +1,5 @@
 use crate::cpu::cpu::CPU;
 use crate::memory::memory_bus::MemoryBus;
-use log::{debug};
 use crate::operations::bitutils::sign_extend_u32;
 use crate::operations::arm_arithmetic;
 

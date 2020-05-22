@@ -2,7 +2,7 @@ use crate::memory::interrupt_registers::*;
 use crate::memory::memory_bus::MemoryBus;
 use crate::memory::memory_map::HaltState;
 use crate::cpu::cpu;
-use crate::cpu::cpu::{OperatingMode, InstructionSet, ARM_LR, THUMB_LR, ARM_PC, THUMB_PC};
+use crate::cpu::cpu::{OperatingMode, InstructionSet, ARM_LR, ARM_PC};
 
 //use crate::cpu::InstructionSet;
 

@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use crate::gamepak::BackupType;
 use crate::gamepak::flash::Flash;
-use log::error;
 
 pub const ON_BOARD_WRAM_START: u32 = 0x02000000;
 pub const ON_BOARD_WRAM_SIZE: u32 = 0x3FFFF;
