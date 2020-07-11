@@ -362,3 +362,67 @@ pub fn io_register(input: TokenStream) -> TokenStream {
         }
     }
 }
+
+#[proc_macro]
+pub fn gen_obj_array(_: TokenStream) -> TokenStream {
+    
+    let mut obj_array_tokens: Vec<proc_macro2::TokenStream> = Vec::new();
+    for i in 0usize..128usize {
+        let token_stream = quote!{
+            Object {
+                attr0: ObjAttribute0::new(#i),
+                attr1: ObjAttribute1::new(#i),
+                attr2: ObjAttribute2::new(#i)
+            },
+        };
+        obj_array_tokens.push(token_stream);
+    }
+
+
+    let expanded = quote!{
+        macro_rules! obj_array {
+            () => {
+                [
+                    #(#obj_array_tokens)*
+                ]
+            };
+        }
+    };
+
+    return expanded.into();
+}
+
+
+#[proc_macro]
+pub fn gen_aff_matrix_array(_: TokenStream) -> TokenStream {
+    
+    let mut aff_matrix_array_tokens: Vec<proc_macro2::TokenStream> = Vec::new();
+    for i in (0usize..128usize).step_by(4) {
+        let pa = i;
+        let pb = i+1;
+        let pc = i+2;
+        let pd = i+3;
+        let token_stream = quote!{
+            AffineMatrix{
+                pa: OBJRotScaleParam::new(#pa),
+                pb: OBJRotScaleParam::new(#pb),
+                pc: OBJRotScaleParam::new(#pc),
+                pd: OBJRotScaleParam::new(#pd)
+            },
+        };
+        aff_matrix_array_tokens.push(token_stream);
+    }
+
+
+    let expanded = quote!{
+        macro_rules! aff_matrix_array {
+            () => {
+                [
+                    #(#aff_matrix_array_tokens)*
+                ]
+            };
+        }
+    };
+
+    return expanded.into();
+}

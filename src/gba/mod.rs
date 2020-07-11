@@ -2,7 +2,7 @@ use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::gpu::{gpu::GPU, gpu::DISPLAY_WIDTH, gpu::DISPLAY_HEIGHT};
 use crate::gpu::rgb15::Rgb15;
 use crate::memory::{key_input_registers::*};
-use crate::memory::{memory_bus::MemoryBus, memory_bus::HaltState};
+use crate::memory::{memory_bus::MemoryBus, memory_map::HaltState};
 use crate::interrupts::interrupts::Interrupts;
 use crate::dma::DMAController;
 use crate::timers::timer::TimerHandler;
@@ -77,7 +77,7 @@ impl GBA {
 
         temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
-        temp.key_status.set_register(0x3FF);
+        temp.key_status.set_register(0xFFFF);
 
         for i in 0..2 {
             temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
@@ -91,10 +91,6 @@ impl GBA {
         temp.load_bios(&game_pack.bios);
         temp.load_rom(&game_pack.rom);
 
-        if game_pack.save_data.len() != 0 {
-            temp.load_save_file(&game_pack.save_data);
-        }
-
         return temp;
     }
 
@@ -107,30 +103,50 @@ impl GBA {
     }
 
     pub fn load_save_file(&mut self, save_data: &Vec<u8>) {
-        match self.memory_bus.backup_type {
-            BackupType::Sram => {
+        match self.memory_bus.mem_map.backup_type {
+            BackupType::Sram | BackupType::Flash64K | BackupType::Flash128K => {
                 self.memory_bus.mem_map.write_block(0x0E000000, save_data);
             },
             _ => {log::info!("Save data for this type is not implemented")} 
         }
     }
+                                                                                                                                                                                                                                                                                                                   
+    pub fn get_save_data(&self) -> Vec<u8> {
+        match self.memory_bus.mem_map.backup_type {
+            BackupType::Sram => {
+                return self.memory_bus.mem_map.read_block_raw(0x0E000000, 0xFFFF);
+            },
+            BackupType::Flash64K => {
+                return self.memory_bus.mem_map.read_block_raw(0x0E000000, 0xFFFF);
+            },
+            BackupType::Flash128K => {
+                return self.memory_bus.mem_map.read_block_raw(0x0E000000, 0x20000);
+            }
+            _ => {log::info!("Save data for this type is not implemented")} 
+        }
+
+        return Vec::new();
+    }
 
     pub fn frame(&mut self) {
         while !self.gpu.frame_ready {
-            // self.key_status.set_register(0x3FF);
             self.single_step();
         }
 
         self.gpu.frame_ready = false;
-        self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4)});
+        self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4, 0)});
+        self.gpu.obj_window = [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)];
     }
 
     pub fn single_step(&mut self) {
-
-        let cycles = if self.memory_bus.halt_state == HaltState::Running {
+        // log::info!("Single stepping");
+        let cycles = if self.memory_bus.mem_map.halt_state == HaltState::Running {
+            // log::info!("Stepping cpu");
             self.cpu.fetch(&mut self.memory_bus)
         } else {
+            // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
             self.gpu.cycles_to_next_state as usize
+            // 1
         };
 
         self.gpu.step(cycles, &mut self.memory_bus.mem_map, &mut self.interrupt_handler, &mut self.dma_control);

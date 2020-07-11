@@ -15,7 +15,7 @@ io_register! (
 
 io_register! (
     DMAWordCount => 2, [0x40000B8, 0x40000C4, 0x40000D0, 0x40000DC],
-    word_count: 0, 31
+    word_count: 0, 16
 );
 
 io_register! (

@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use memory_macros::*;
-use crate::operations::bitutils::*;
 use super::GbaMem;
 
 io_register! (

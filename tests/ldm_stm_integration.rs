@@ -15,15 +15,15 @@ mod tests {
         cpu.set_register(2, 0x2);
         cpu.set_register(3, 0x3);
         cpu.set_register(4, 0x4);
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x05000000);
 
         let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
-        assert_eq!(bus.read_u32(0xFF00 + 4), 0x1);
-        assert_eq!(bus.read_u32(0xFF00 + 8), 0x2);
-        assert_eq!(bus.read_u32(0xFF00 + 12), 0x3);
-        assert_eq!(bus.read_u32(0xFF00 + 16), 0x4);
+        assert_eq!(bus.read_u32(0x05000000 + 4), 0x1);
+        assert_eq!(bus.read_u32(0x05000000 + 8), 0x2);
+        assert_eq!(bus.read_u32(0x05000000 + 12), 0x3);
+        assert_eq!(bus.read_u32(0x05000000 + 16), 0x4);
     }
 
     #[test]
@@ -34,15 +34,15 @@ mod tests {
         cpu.set_register(2, 0x2);
         cpu.set_register(3, 0x3);
         cpu.set_register(4, 0x4);
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x05000000);
 
         let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
-        assert_eq!(bus.read_u32(0xFF00), 0x1);
-        assert_eq!(bus.read_u32(0xFF00 + 4), 0x2);
-        assert_eq!(bus.read_u32(0xFF00 + 8), 0x3);
-        assert_eq!(bus.read_u32(0xFF00 + 12), 0x4);
+        assert_eq!(bus.read_u32(0x05000000), 0x1);
+        assert_eq!(bus.read_u32(0x05000000 + 4), 0x2);
+        assert_eq!(bus.read_u32(0x05000000 + 8), 0x3);
+        assert_eq!(bus.read_u32(0x05000000 + 12), 0x4);
     }
 
     #[test]
@@ -53,15 +53,15 @@ mod tests {
         cpu.set_register(2, 0x5);
         cpu.set_register(3, 0x6);
         cpu.set_register(4, 0x7);
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x050000FF);
 
         let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
-        assert_eq!(bus.read_u32(0xFF00 - 4), 0x7);
-        assert_eq!(bus.read_u32(0xFF00 - 8), 0x6);
-        assert_eq!(bus.read_u32(0xFF00 - 12), 0x5);
-        assert_eq!(bus.read_u32(0xFF00 - 16), 0x4);
+        assert_eq!(bus.read_u32(0x050000FF - 4), 0x7);
+        assert_eq!(bus.read_u32(0x050000FF - 8), 0x6);
+        assert_eq!(bus.read_u32(0x050000FF - 12), 0x5);
+        assert_eq!(bus.read_u32(0x050000FF - 16), 0x4);
     }
 
     #[test]
@@ -72,15 +72,15 @@ mod tests {
         cpu.set_register(2, 0x5);
         cpu.set_register(3, 0x6);
         cpu.set_register(4, 0x7);
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x0500FF00);
 
         let mut bus = MemoryBus::new_stub();
         a.execute(&mut cpu, &mut bus);
 
-        assert_eq!(bus.read_u32(0xFF00), 0x7);
-        assert_eq!(bus.read_u32(0xFEFC), 0x6);
-        assert_eq!(bus.read_u32(0xFEF8), 0x5);
-        assert_eq!(bus.read_u32(0xFEF4), 0x4);
+        assert_eq!(bus.read_u32(0x0500FF00), 0x7);
+        assert_eq!(bus.read_u32(0x0500FEFC), 0x6);
+        assert_eq!(bus.read_u32(0x0500FEF8), 0x5);
+        assert_eq!(bus.read_u32(0x0500FEF4), 0x4);
     }
 
     #[test]
@@ -88,14 +88,14 @@ mod tests {
         let a: BlockDataTransfer = BlockDataTransfer::from(0xE99D001E);
         let mut cpu = CPU::new();
 
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x0500FF00);
 
         let mut bus = MemoryBus::new_stub();
 
-        bus.write_u32(0xFF04, 1);
-        bus.write_u32(0xFF08, 2);
-        bus.write_u32(0xFF0C, 3);
-        bus.write_u32(0xFF10, 4);
+        bus.write_u32(0x0500FF04, 1);
+        bus.write_u32(0x0500FF08, 2);
+        bus.write_u32(0x0500FF0C, 3);
+        bus.write_u32(0x0500FF10, 4);
 
         a.execute(&mut cpu, &mut bus);
 
@@ -110,14 +110,14 @@ mod tests {
         let a: BlockDataTransfer = BlockDataTransfer::from(0xE89D001E);
         let mut cpu = CPU::new();
 
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x0500FF00);
 
         let mut bus = MemoryBus::new_stub();
 
-        bus.write_u32(0xFF00, 1);
-        bus.write_u32(0xFF04, 2);
-        bus.write_u32(0xFF08, 3);
-        bus.write_u32(0xFF0C, 4);
+        bus.write_u32(0x0500FF00, 1);
+        bus.write_u32(0x0500FF04, 2);
+        bus.write_u32(0x0500FF08, 3);
+        bus.write_u32(0x0500FF0C, 4);
 
         a.execute(&mut cpu, &mut bus);
 
@@ -132,14 +132,14 @@ mod tests {
         let a: BlockDataTransfer = BlockDataTransfer::from(0xE91D001E);
         let mut cpu = CPU::new();
 
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x0500FF00);
 
         let mut bus = MemoryBus::new_stub();
 
-        bus.write_u32(0xFEF0, 1);
-        bus.write_u32(0xFEF4, 2);
-        bus.write_u32(0xFEF8, 3);
-        bus.write_u32(0xFEFC, 4);
+        bus.write_u32(0x0500FEF0, 1);
+        bus.write_u32(0x0500FEF4, 2);
+        bus.write_u32(0x0500FEF8, 3);
+        bus.write_u32(0x0500FEFC, 4);
 
         a.execute(&mut cpu, &mut bus);
 
@@ -154,14 +154,14 @@ mod tests {
         let a: BlockDataTransfer = BlockDataTransfer::from(0xE81D001E);
         let mut cpu = CPU::new();
 
-        cpu.set_register(13, 0xFF00);
+        cpu.set_register(13, 0x0500FF00);
 
         let mut bus = MemoryBus::new_stub();
 
-        bus.write_u32(0xFEF0, 1);
-        bus.write_u32(0xFEF4, 2);
-        bus.write_u32(0xFEF8, 3);
-        bus.write_u32(0xFEFC, 4);
+        bus.write_u32(0x0500FEF0, 1);
+        bus.write_u32(0x0500FEF4, 2);
+        bus.write_u32(0x0500FEF8, 3);
+        bus.write_u32(0x0500FEFC, 4);
 
         a.execute(&mut cpu, &mut bus);
 

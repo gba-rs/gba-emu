@@ -17,7 +17,6 @@ use super::{decode_error::DecodeError};
 use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::borrow::{BorrowMut};
-use log::{info};
 use crate::memory::memory_bus::MemoryBus;
 
 
@@ -279,7 +278,7 @@ impl CPU {
             self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) 
         };
 
-        let condition = if self.get_instruction_set() == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {(Condition::from(0x0))};//THUMB codes don't include conditions 
+        let condition = if self.get_instruction_set() == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {Condition::from(0x0)};//THUMB codes don't include conditions 
         let check_condition = if self.get_instruction_set() == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
 
         let decode_result = self.decode(instruction);
@@ -309,7 +308,7 @@ impl CPU {
                     let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
                     ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize
                 } else {
-                    0usize
+                    1usize
                 }
             },
             Err(e) => {

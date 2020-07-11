@@ -1,6 +1,8 @@
 use std::io::prelude::*;
 use std::fs::File;
 
+pub mod flash;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum BackupType {
     Sram,
@@ -29,7 +31,7 @@ impl GamePack {
 
         match &mut rom {
             Ok(val) => {
-                val.read_to_end(&mut rom_bytes);
+                let _ = val.read_to_end(&mut rom_bytes);
             },
             Err(_) => {
                 panic!("Error loading rom: {}", rom_file_path);
@@ -41,7 +43,7 @@ impl GamePack {
 
         match &mut bios {
             Ok(val) => {
-                val.read_to_end(&mut bios_bytes);
+                let _ = val.read_to_end(&mut bios_bytes);
             },
             Err(_) => {
                 panic!("Error loading bios: {}", bios_file_path);
@@ -122,7 +124,7 @@ impl GamePack {
 
         match &mut save_data {
             Ok(val) => {
-                val.read_to_end(&mut save_data_bytes);
+                let _ = val.read_to_end(&mut save_data_bytes);
             },
             Err(_) => {
                 panic!("Error loading bios: {}", save_data_file_path);

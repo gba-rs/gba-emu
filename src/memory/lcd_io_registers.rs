@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use crate::operations::bitutils::*;
 use super::GbaMem;
+use crate::gpu::graphic_effects::{BlendMode, WindowTypes};
 use memory_macros::*;
 
 #[repr(u8)]
@@ -33,10 +34,7 @@ io_register! (
 
 impl DisplayControl {
     pub fn should_display(&self, bg_num: u8) -> bool {
-        return bg_num == 0 && self.get_screen_display_bg0() == 1 ||
-               bg_num == 1 && self.get_screen_display_bg1() == 1 ||
-               bg_num == 2 && self.get_screen_display_bg2() == 1 ||
-               bg_num == 3 && self.get_screen_display_bg3() == 1;
+        return ((self.get_register() >> (bg_num + 8)) & 0x1) != 0;
     }
 
     pub fn using_windows(&self) -> bool {
@@ -140,9 +138,143 @@ io_register! (
 
 impl From<&BGRotScaleParam> for i32 {
     fn from(value: &BGRotScaleParam) -> i32 {
-        return sign_extend_u32(value.get_register() as u32, 16) as i32;
+        return value.get_register() as i16 as i32;
     }
 }
+
+io_register! (
+    OBJRotScaleParam => 2, [
+        0x7000006,
+        0x700000e,
+        0x7000016,
+        0x700001e,
+        0x7000026,
+        0x700002e,
+        0x7000036,
+        0x700003e,
+        0x7000046,
+        0x700004e,
+        0x7000056,
+        0x700005e,
+        0x7000066,
+        0x700006e,
+        0x7000076,
+        0x700007e,
+        0x7000086,
+        0x700008e,
+        0x7000096,
+        0x700009e,
+        0x70000a6,
+        0x70000ae,
+        0x70000b6,
+        0x70000be,
+        0x70000c6,
+        0x70000ce,
+        0x70000d6,
+        0x70000de,
+        0x70000e6,
+        0x70000ee,
+        0x70000f6,
+        0x70000fe,
+        0x7000106,
+        0x700010e,
+        0x7000116,
+        0x700011e,
+        0x7000126,
+        0x700012e,
+        0x7000136,
+        0x700013e,
+        0x7000146,
+        0x700014e,
+        0x7000156,
+        0x700015e,
+        0x7000166,
+        0x700016e,
+        0x7000176,
+        0x700017e,
+        0x7000186,
+        0x700018e,
+        0x7000196,
+        0x700019e,
+        0x70001a6,
+        0x70001ae,
+        0x70001b6,
+        0x70001be,
+        0x70001c6,
+        0x70001ce,
+        0x70001d6,
+        0x70001de,
+        0x70001e6,
+        0x70001ee,
+        0x70001f6,
+        0x70001fe,
+        0x7000206,
+        0x700020e,
+        0x7000216,
+        0x700021e,
+        0x7000226,
+        0x700022e,
+        0x7000236,
+        0x700023e,
+        0x7000246,
+        0x700024e,
+        0x7000256,
+        0x700025e,
+        0x7000266,
+        0x700026e,
+        0x7000276,
+        0x700027e,
+        0x7000286,
+        0x700028e,
+        0x7000296,
+        0x700029e,
+        0x70002a6,
+        0x70002ae,
+        0x70002b6,
+        0x70002be,
+        0x70002c6,
+        0x70002ce,
+        0x70002d6,
+        0x70002de,
+        0x70002e6,
+        0x70002ee,
+        0x70002f6,
+        0x70002fe,
+        0x7000306,
+        0x700030e,
+        0x7000316,
+        0x700031e,
+        0x7000326,
+        0x700032e,
+        0x7000336,
+        0x700033e,
+        0x7000346,
+        0x700034e,
+        0x7000356,
+        0x700035e,
+        0x7000366,
+        0x700036e,
+        0x7000376,
+        0x700037e,
+        0x7000386,
+        0x700038e,
+        0x7000396,
+        0x700039e,
+        0x70003a6,
+        0x70003ae,
+        0x70003b6,
+        0x70003be,
+        0x70003c6,
+        0x70003ce,
+        0x70003d6,
+        0x70003de,
+        0x70003e6,
+        0x70003ee,
+        0x70003f6,
+        0x70003fe,
+    ],
+    aff_param: 0, 16,
+);
 
 io_register! (
     ObjAttribute0 => 2, [
@@ -570,14 +702,6 @@ io_register! (
     Y1: 8, 8,
 );
 
-#[derive(Debug, PartialEq)]
-pub enum WindowTypes {
-    Window0,
-    Window1,
-    WindowOutside,
-    WindowObject,
-}
-
 io_register! (
     ControlWindowInside => 2, 0x4000048,
     window0_bg_enable_bits: 0, 4,
@@ -680,26 +804,6 @@ io_register! (
     obj_mosaic_vsize: 12, 4,
 );
 
-
-pub enum BlendMode {
-    Off,
-    Alpha,
-    White,
-    Black
-}
-
-impl From<u8> for BlendMode {
-    fn from(value: u8) -> Self {
-        return match value {
-            0b00 => BlendMode::Off,
-            0b01 => BlendMode::Alpha,
-            0b10 => BlendMode::White,
-            0b11 => BlendMode::Black,
-            _ => panic!("Invalid BlendMode: {:b}", value)
-        };
-    }
-}
-
 io_register! (
     ColorSpecialEffectsSelection => 2, 0x4000050,
     bg0_1st_target_pixel: 0, 1,
@@ -720,6 +824,14 @@ io_register! (
 impl ColorSpecialEffectsSelection {
     pub fn get_blendmode(&self) -> BlendMode {
         return BlendMode::from(self.get_color_special_effect());
+    }
+
+    pub fn has_destination(&self, index: u8) -> bool {
+        return ((self.get_register() >> index) & 0x1) != 0;
+    }
+
+    pub fn has_source(&self, index: u8) -> bool {
+        return ((self.get_register() >> (index + 8)) & 0x1) != 0;
     }
 }
 

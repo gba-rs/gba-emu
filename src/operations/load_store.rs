@@ -1,9 +1,7 @@
 use crate::cpu::cpu::CPU;
-use crate::memory::memory_map::MemoryMap;
-use log::{debug};
+use crate::memory::memory_bus::MemoryBus;
 use crate::operations::bitutils::sign_extend_u32;
 use crate::operations::arm_arithmetic;
-use crate::memory::memory_bus::MemoryBus;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataType {
@@ -27,7 +25,7 @@ impl From<u32> for DataType {
 /*
 * Extracts a byte or a halfword from a value stored in memory and put it into a CPU register
 */
-pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU, address: u32, mem_map: &mut MemoryMap) {
+pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU, address: u32, mem_map: &mut MemoryBus) {
     let value: u32;
     match data_type {
         DataType::Byte => {
@@ -121,7 +119,7 @@ pub fn data_transfer_execute(transfer_info: DataTransfer, base_address: u32, add
     }
 
     if transfer_info.load {
-        load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, &mut mem_bus.mem_map);
+        load(transfer_info.is_signed, transfer_info.data_type, transfer_info.destination, cpu, address, mem_bus);
 
         if transfer_info.destination != transfer_info.base_register {
             if !transfer_info.is_pre_indexed || transfer_info.write_back {
@@ -218,7 +216,7 @@ mod tests {
 
     fn load_set_up(_: u8, value_from_memory: u32, memory_address: u32) -> CPU {
         let mut cpu = CPU::new();
-        let mut mem_map = MemoryMap::new();
+        let mut mem_map = MemoryBus::new_stub();
         mem_map.write_u32(memory_address, value_from_memory);
 
         cpu.set_register(0x002, memory_address);
