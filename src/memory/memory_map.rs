@@ -31,7 +31,8 @@ pub struct MemoryMap {
     pub halt_state: HaltState,
     pub backup_type: BackupType,
     pub backed_up: bool,
-    pub flash: Flash
+    pub flash: Flash,
+    pub new_save_data: bool
 }
 
 impl MemoryMap {
@@ -42,7 +43,8 @@ impl MemoryMap {
             halt_state: HaltState::Running,
             backup_type: backup_type,
             backed_up: false,
-            flash: Flash::new()
+            flash: Flash::new(),
+            new_save_data: false
         }
     }
 
@@ -82,6 +84,9 @@ impl MemoryMap {
             0x06 => self.memory.borrow_mut()[address as usize] = value,
             0x07 => self.memory.borrow_mut()[((address & OBJECT_ATTRIBUTES_SIZE) + OBJECT_ATTRIBUTES_START) as usize] = value,
             0x08..=0x0F => {
+                if !self.new_save_data {
+                    self.new_save_data = true;
+                }
                 match self.backup_type {
                     BackupType::Sram => {
                         /* don't need to do anything here */
