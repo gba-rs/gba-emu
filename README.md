@@ -1,6 +1,6 @@
 # gba-emu
 
-![Rust Mascot](https://raw.githubusercontent.com/rust-lang/rust-logo/master/rust-logo-512x512.png)
+![Rust Mascot](https://www.rust-lang.org/logos/rust-logo-512x512.png)
 
 A Game Boy Advance (GBA) emulator written in Rust.
 
