@@ -41,13 +41,30 @@ To get started, you need to have Rust installed on your system. You can download
     cd gba-emu
     ```
 
-3. Build the project:
+3. Switch to the Rust nightly version:
+
+    This project requires the Rust nightly version. Follow these steps to set it up:
+
+    ```bash
+    rustup install nightly
+    rustup override set nightly
+    ```
+
+    Verify that the nightly version is active:
+
+    ```bash
+    rustc --version
+    ```
+
+    The output should indicate a nightly version, e.g., `rustc 1.x.x-nightly`.
+
+4. Build the project:
 
     ```bash
     cargo build
     ```
 
-4. Clone and set up the frontend you want to use:
+5. Clone and set up the frontend you want to use:
 
     - For the **minifb-frontend**:
 
@@ -65,23 +82,11 @@ To get started, you need to have Rust installed on your system. You can download
         cargo build
         ```
 
-5. Run the emulator with the appropriate frontend:
-
-    - For **minifb-frontend** (replace `your_rom.gba` with your ROM):
-
-        ```bash
-        cargo run --path ../gba-emu -- your_rom.gba
-        ```
-
-    - For **web-frontend** (replace `your_rom.gba` with your ROM):
-
-        ```bash
-        cargo run --path ../gba-emu -- your_rom.gba
-        ```
+6. Run the emulator with the appropriate frontend:
 
 ## Dependencies
 
-- Rust (latest stable version)
+- Rust (nightly version)
 - A GBA ROM file to test the emulator
 - A frontend (either `minifb-frontend` or `web-frontend`)
 
