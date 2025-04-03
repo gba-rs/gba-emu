@@ -3,7 +3,7 @@ use crate::operations::timing::{CycleClock, MemAccessSize};
 use crate::gamepak::BackupType;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct MemoryBus {
     pub mem_map: MemoryMap,
     pub cycle_clock: CycleClock,

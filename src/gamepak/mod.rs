@@ -1,10 +1,10 @@
 use std::io::prelude::*;
 use std::fs::File;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 pub mod flash;
 
-#[derive(Serialize, Debug, PartialEq, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 pub enum BackupType {
     Sram,
     Eeprom,
@@ -13,7 +13,7 @@ pub enum BackupType {
     Error
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GamePack {
     #[serde(skip)]
     pub rom: Vec<u8>,

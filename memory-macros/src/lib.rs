@@ -235,7 +235,7 @@ fn create_bit_field(name: Ident, segment_size: Lit, bit_fields: &IORegister) -> 
     let (_, segment_type) = parse_segment_size(&segment_size, &name.span());
 
     let expanded = quote! {
-        #[derive(Serialize)]
+        #[derive(Default, Serialize, Deserialize)]
         pub struct #name {
             #[serde(skip)]
             pub memory: Option<Rc<RefCell<GbaMem>>>,
@@ -307,7 +307,7 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, bit_fields: &Multip
     };
 
     let expanded = quote! {
-        #[derive(Serialize)]
+        #[derive(Default, Serialize, Deserialize)]
         pub struct #name {
             #[serde(skip)]
             pub memory: Option<Rc<RefCell<GbaMem>>>,

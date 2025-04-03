@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::fmt;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DMAChannel {
     pub source_address: DMASourceAddress,
     pub destination_address: DMADestinationAddress,
@@ -147,7 +147,7 @@ impl DMAChannel {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DMAController {
     pub dma_channels: [DMAChannel; 4],
     pub hblanking: bool,

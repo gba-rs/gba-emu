@@ -121,7 +121,7 @@ pub enum ThumbInstructionFormat {
     Undefined
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CPU {   
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
@@ -265,6 +265,12 @@ impl CPU {
                 opcode: opcode
             })
         }
+    }
+
+    pub fn get_pc(&self) -> u32 {
+        let current_pc = if self.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let pc_contents = self.get_register(current_pc);
+        return pc_contents;
     }
 
     pub fn fetch(&mut self, bus: &mut MemoryBus) -> usize {

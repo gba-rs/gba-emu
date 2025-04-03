@@ -3,11 +3,11 @@ use crate::memory::memory_bus::MemoryBus;
 use crate::memory::memory_map::HaltState;
 use crate::cpu::cpu;
 use crate::cpu::cpu::{OperatingMode, InstructionSet, ARM_LR, ARM_PC};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 //use crate::cpu::InstructionSet;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Interrupts {
     pub ime_interrupt: InterruptMasterEnableRegister,
     pub ie_interrupt: InterruptEnableRegister,

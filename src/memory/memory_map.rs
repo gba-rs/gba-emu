@@ -2,8 +2,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use crate::gamepak::BackupType;
 use crate::gamepak::flash::Flash;
-use serde::{Serialize, Deserialize};
-use serde_with::serde_as;
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::ser::SerializeStruct;
+use serde::de::{self, Visitor, MapAccess, SeqAccess};
+use std::fmt;
+use std::marker::PhantomData;
 
 pub const ON_BOARD_WRAM_START: u32 = 0x02000000;
 pub const ON_BOARD_WRAM_SIZE: u32 = 0x3FFFF;
@@ -21,16 +24,14 @@ pub const ROM_SIZE: u32 = 0x1FF_FFFF;
 pub const SRAM_START: u32 = 0x0E000000;
 pub const SRAM_SIZE: u32 = 0xFFFF;
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum HaltState {
     Running,
     Halt,
     Stop
 }
 
-#[derive(Serialize)]
 pub struct MemoryMap {
-    #[serde(skip)]
     pub memory: Rc<RefCell<Vec<u8>>>,
     pub halt_state: HaltState,
     pub backup_type: BackupType,
@@ -220,5 +221,155 @@ impl MemoryMap {
                 return self.memory.borrow()[address as usize]; 
             }
         }
+    }
+}
+
+// Custom serialization implementation
+impl Serialize for MemoryMap {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Determine how many fields we're serializing
+        let mut state = serializer.serialize_struct("MemoryMap", 5)?;
+        
+        // Serialize memory by borrowing the RefCell and using the underlying Vec<u8>
+        state.serialize_field("memory", &*self.memory.borrow())?;
+        
+        // Serialize the rest of the fields normally
+        state.serialize_field("halt_state", &self.halt_state)?;
+        state.serialize_field("backup_type", &self.backup_type)?;
+        state.serialize_field("backed_up", &self.backed_up)?;
+        state.serialize_field("flash", &self.flash)?;
+        
+        state.end()
+    }
+}
+
+// Custom deserialization implementation
+impl<'de> Deserialize<'de> for MemoryMap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Define the fields we expect
+        enum Field { Memory, HaltState, BackupType, BackedUp, Flash }
+        
+        // Implement a deserializer for the field names
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`memory`, `halt_state`, `backup_type`, `backed_up`, or `flash`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "memory" => Ok(Field::Memory),
+                            "halt_state" => Ok(Field::HaltState),
+                            "backup_type" => Ok(Field::BackupType),
+                            "backed_up" => Ok(Field::BackedUp),
+                            "flash" => Ok(Field::Flash),
+                            _ => Err(de::Error::unknown_field(value, &["memory", "halt_state", "backup_type", "backed_up", "flash"])),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        // Visitor for the entire struct
+        struct MemoryMapVisitor;
+
+        impl<'de> Visitor<'de> for MemoryMapVisitor {
+            type Value = MemoryMap;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct MemoryMap")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<MemoryMap, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut memory = None;
+                let mut halt_state = None;
+                let mut backup_type = None;
+                let mut backed_up = None;
+                let mut flash = None;
+
+                // Extract each field from the map
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Memory => {
+                            if memory.is_some() {
+                                return Err(de::Error::duplicate_field("memory"));
+                            }
+                            // Deserialize directly into a Vec<u8>
+                            let mem_vec: Vec<u8> = map.next_value()?;
+                            memory = Some(Rc::new(RefCell::new(mem_vec)));
+                        }
+                        Field::HaltState => {
+                            if halt_state.is_some() {
+                                return Err(de::Error::duplicate_field("halt_state"));
+                            }
+                            halt_state = Some(map.next_value()?);
+                        }
+                        Field::BackupType => {
+                            if backup_type.is_some() {
+                                return Err(de::Error::duplicate_field("backup_type"));
+                            }
+                            backup_type = Some(map.next_value()?);
+                        }
+                        Field::BackedUp => {
+                            if backed_up.is_some() {
+                                return Err(de::Error::duplicate_field("backed_up"));
+                            }
+                            backed_up = Some(map.next_value()?);
+                        }
+                        Field::Flash => {
+                            if flash.is_some() {
+                                return Err(de::Error::duplicate_field("flash"));
+                            }
+                            flash = Some(map.next_value()?);
+                        }
+                    }
+                }
+
+                // Ensure all fields were provided
+                let memory = memory.ok_or_else(|| de::Error::missing_field("memory"))?;
+                let halt_state = halt_state.ok_or_else(|| de::Error::missing_field("halt_state"))?;
+                let backup_type = backup_type.ok_or_else(|| de::Error::missing_field("backup_type"))?;
+                let backed_up = backed_up.ok_or_else(|| de::Error::missing_field("backed_up"))?;
+                let flash = flash.ok_or_else(|| de::Error::missing_field("flash"))?;
+
+                // Return the constructed struct
+                Ok(MemoryMap {
+                    memory,
+                    halt_state,
+                    backup_type,
+                    backed_up,
+                    flash,
+                })
+            }
+        }
+
+        // Start the deserialization process
+        deserializer.deserialize_struct(
+            "MemoryMap",
+            &["memory", "halt_state", "backup_type", "backed_up", "flash"],
+            MemoryMapVisitor
+        )
     }
 }

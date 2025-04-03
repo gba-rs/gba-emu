@@ -41,7 +41,7 @@ pub enum GpuState {
     VBlank
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Background {
     pub control: BG_Control,
     pub horizontal_offset: BGOffset,
@@ -62,7 +62,7 @@ impl Background {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct BgAffineComponent {
     pub refrence_point_x_internal: u32,
     pub refrence_point_x_external: BGRefrencePoint,
@@ -87,7 +87,7 @@ impl BgAffineComponent {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Window {
     pub horizontal_dimensions: WindowHorizontalDimension,
     pub vertical_dimensions: WindowVerticalDimension
@@ -117,7 +117,7 @@ impl Window {
 }
 
 #[serde_as]
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GPU {
     pub display_control: DisplayControl,
     pub green_swap: GreenSwap,

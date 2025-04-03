@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CycleClock {
     pub prev_address: u32,
     pub cycles: u32,
@@ -25,14 +25,14 @@ pub const GAMEPAK_WS1_HI: u32 = 0x0B00_0000;
 pub const GAMEPAK_WS2_START: u32 = 0x0C00_0000;
 pub const GAMEPAK_WS2_HI: u32 = 0x0D00_0000;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum MemAccessSize {
     Mem8,
     Mem16,
     Mem32,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum CycleType {
     N,
     S,
