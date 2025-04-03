@@ -21,6 +21,13 @@ pub struct GBA {
     pub dma_control: DMAController
 }
 
+impl Default for GBA {
+    fn default() -> Self {
+        let temp = GamePack::default();
+        return GBA::new(0x08000000, &temp);
+    }
+}
+
 impl GBA {
 
     pub fn new(pc_address: u32, game_pack: &GamePack) -> GBA {
