@@ -299,6 +299,25 @@ impl<'de> Deserialize<'de> for MemoryMap {
                 formatter.write_str("struct MemoryMap")
             }
 
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+                where
+                    A: SeqAccess<'de>, {
+                let mem_vec = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let halt_state = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let backup_type = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let backed_up = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let flash = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+
+                let memory = Rc::new(RefCell::new(mem_vec));
+                Ok(MemoryMap {
+                    memory,
+                    halt_state,
+                    backup_type,
+                    backed_up,
+                    flash,
+                })
+            }
+
             fn visit_map<V>(self, mut map: V) -> Result<MemoryMap, V::Error>
             where
                 V: MapAccess<'de>,

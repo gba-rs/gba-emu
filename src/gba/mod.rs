@@ -21,13 +21,6 @@ pub struct GBA {
     pub dma_control: DMAController
 }
 
-impl Default for GBA {
-    fn default() -> Self {
-        let temp = GamePack::default();
-        return GBA::new(0x08000000, &temp);
-    }
-}
-
 impl GBA {
 
     pub fn new(pc_address: u32, game_pack: &GamePack) -> GBA {
@@ -43,7 +36,41 @@ impl GBA {
             dma_control: DMAController::new()
         };
 
-        temp.register_memory(pc_address);
+        temp.register_memory();
+
+        // setup the PC
+        temp.cpu.set_register(ARM_PC, pc_address);
+        temp.cpu.set_register(ARM_SP, 0x03007F00);
+
+        // setup the SPs'
+        temp.cpu.set_operating_mode(OperatingMode::Interrupt);
+        temp.cpu.set_register(ARM_SP, 0x03007FA0);
+
+        temp.cpu.set_operating_mode(OperatingMode::FastInterrupt);
+        temp.cpu.set_register(ARM_SP, 0x03007F00);
+
+        temp.cpu.set_operating_mode(OperatingMode::User);
+        temp.cpu.set_register(ARM_SP, 0x03007F00);
+
+        temp.cpu.set_operating_mode(OperatingMode::Supervisor);
+        temp.cpu.set_register(ARM_SP, 0x03007FE0);
+
+        temp.cpu.set_operating_mode(OperatingMode::Abort);
+        temp.cpu.set_register(ARM_SP, 0x03007F00);
+
+        temp.cpu.set_operating_mode(OperatingMode::Undefined);
+        temp.cpu.set_register(ARM_SP, 0x03007F00);
+
+        temp.cpu.set_operating_mode(OperatingMode::Supervisor);
+
+        temp.key_status.set_register(0xFFFF);
+
+        for i in 0..2 {
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_b.set_register(0);
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_c.set_register(0);
+            temp.gpu.bg_affine_components[i].rotation_scaling_param_d.set_register(0x100);
+        }
 
         // setup the memory
         // General INternal Memory
@@ -53,8 +80,7 @@ impl GBA {
         return temp;
     }
 
-    pub fn register_memory(&mut self, pc_address: u32) {
-
+    pub fn register_memory(&mut self) {
         self.gpu.register(&self.memory_bus.mem_map.memory);
         self.key_status.register(&self.memory_bus.mem_map.memory);
         self.ket_interrupt_control.register(&self.memory_bus.mem_map.memory);
@@ -64,40 +90,6 @@ impl GBA {
         self.timer_handler.register(&self.memory_bus.mem_map.memory);
         self.memory_bus.cycle_clock.register(&self.memory_bus.mem_map.memory);
         self.dma_control.register(&self.memory_bus.mem_map.memory);
-
-        // setup the PC
-        self.cpu.set_register(ARM_PC, pc_address);
-        self.cpu.set_register(ARM_SP, 0x03007F00);
-
-        // setup the SPs'
-        self.cpu.set_operating_mode(OperatingMode::Interrupt);
-        self.cpu.set_register(ARM_SP, 0x03007FA0);
-
-        self.cpu.set_operating_mode(OperatingMode::FastInterrupt);
-        self.cpu.set_register(ARM_SP, 0x03007F00);
-
-        self.cpu.set_operating_mode(OperatingMode::User);
-        self.cpu.set_register(ARM_SP, 0x03007F00);
-
-        self.cpu.set_operating_mode(OperatingMode::Supervisor);
-        self.cpu.set_register(ARM_SP, 0x03007FE0);
-
-        self.cpu.set_operating_mode(OperatingMode::Abort);
-        self.cpu.set_register(ARM_SP, 0x03007F00);
-
-        self.cpu.set_operating_mode(OperatingMode::Undefined);
-        self.cpu.set_register(ARM_SP, 0x03007F00);
-
-        self.cpu.set_operating_mode(OperatingMode::Supervisor);
-
-        self.key_status.set_register(0xFFFF);
-
-        for i in 0..2 {
-            self.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
-            self.gpu.bg_affine_components[i].rotation_scaling_param_b.set_register(0);
-            self.gpu.bg_affine_components[i].rotation_scaling_param_c.set_register(0);
-            self.gpu.bg_affine_components[i].rotation_scaling_param_d.set_register(0x100);
-        }
     }
 
     pub fn load_bios(&mut self, bios: &Vec<u8>) {
