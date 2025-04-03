@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use memory_macros::*;
 use super::GbaMem;
+use serde::{Serialize, Deserialize};
 
 io_register! (
     DMASourceAddress => 4, [0x40000B0, 0x40000BC, 0x40000C8, 0x40000D4],

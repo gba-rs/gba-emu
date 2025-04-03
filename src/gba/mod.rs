@@ -7,8 +7,9 @@ use crate::interrupts::interrupts::Interrupts;
 use crate::dma::DMAController;
 use crate::timers::timer::TimerHandler;
 use crate::{gamepak::GamePack, gamepak::BackupType};
+use serde::{Serialize, Deserialize};
 
-
+#[derive(Serialize)]
 pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,

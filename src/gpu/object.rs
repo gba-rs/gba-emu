@@ -9,7 +9,9 @@ use crate::memory::{
 };
 use std::cell::RefCell;
 use std::rc::Rc;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize)]
 pub struct Object {
     pub attr0: ObjAttribute0,
     pub attr1: ObjAttribute1,
@@ -62,6 +64,7 @@ impl Object {
     }
 }
 
+#[derive(Serialize)]
 pub struct AffineMatrix {
     pub pa: OBJRotScaleParam,
     pub pb: OBJRotScaleParam,

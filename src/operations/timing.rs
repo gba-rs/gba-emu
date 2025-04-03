@@ -1,10 +1,13 @@
 use crate::memory::system_control::WaitStateControl;
 use std::cell::RefCell;
 use std::rc::Rc;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize)]
 pub struct CycleClock {
     pub prev_address: u32,
     pub cycles: u32,
+    #[serde(skip)]
     pub wait_state_control: WaitStateControl,
 }
 
@@ -144,6 +147,16 @@ impl CycleClock {
             return CycleType::S;
         }
         return CycleType::N;
+    }
+}
+
+impl Default for CycleClock {
+    fn default() -> Self {
+        CycleClock {
+            prev_address: 0,
+            cycles: 0,
+            wait_state_control: WaitStateControl::new(),
+        }
     }
 }
 

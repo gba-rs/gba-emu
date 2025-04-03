@@ -2,6 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use crate::gamepak::BackupType;
 use crate::gamepak::flash::Flash;
+use serde::{Serialize, Deserialize};
+use serde_with::serde_as;
 
 pub const ON_BOARD_WRAM_START: u32 = 0x02000000;
 pub const ON_BOARD_WRAM_SIZE: u32 = 0x3FFFF;
@@ -19,14 +21,16 @@ pub const ROM_SIZE: u32 = 0x1FF_FFFF;
 pub const SRAM_START: u32 = 0x0E000000;
 pub const SRAM_SIZE: u32 = 0xFFFF;
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum HaltState {
     Running,
     Halt,
     Stop
 }
 
+#[derive(Serialize)]
 pub struct MemoryMap {
+    #[serde(skip)]
     pub memory: Rc<RefCell<Vec<u8>>>,
     pub halt_state: HaltState,
     pub backup_type: BackupType,

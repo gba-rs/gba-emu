@@ -18,6 +18,7 @@ use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
 use std::borrow::{BorrowMut};
 use crate::memory::memory_bus::MemoryBus;
+use serde::{Serialize, Deserialize};
 
 
 pub const ARM_PC: u8 = 15;
@@ -120,6 +121,7 @@ pub enum ThumbInstructionFormat {
     Undefined
 }
 
+#[derive(Serialize)]
 pub struct CPU {   
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],

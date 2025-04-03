@@ -1,4 +1,6 @@
-#[derive(Clone, Copy, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct ConditionFlags {
     pub negative: bool,
     pub zero: bool,
@@ -17,7 +19,7 @@ impl From<u32> for ConditionFlags {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct ControlBits {
     pub fiq_disable: bool,
     pub irq_disable: bool,
@@ -36,7 +38,7 @@ impl From<u32> for ControlBits {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct ProgramStatusRegister {
     pub flags: ConditionFlags,
     pub reserved: u32,

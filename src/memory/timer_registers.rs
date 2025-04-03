@@ -2,6 +2,7 @@ use wasm_bindgen::__rt::core::cell::RefCell;
 use wasm_bindgen::__rt::std::rc::Rc;
 use memory_macros::*;
 use super::GbaMem;
+use serde::{Serialize, Deserialize};
 
 io_register! (
     TimerDataRegister => 2, [0x4000100, 0x4000104, 0x4000108, 0x400010C],

@@ -1,6 +1,8 @@
 use crate::memory::memory_map::MemoryMap;
 use crate::gamepak::BackupType;
+use serde::Serialize;
 
+#[derive(Serialize)]
 pub enum FlashCommands {
     StartID = 0x90,
     EndID = 0xF0,
@@ -26,6 +28,7 @@ impl FlashCommands {
     }
 }
 
+#[derive(Serialize)]
 enum FlashPhase {
     Phase1,
     Phase2,
@@ -33,6 +36,7 @@ enum FlashPhase {
     CommandParameter
 }
 
+#[derive(Serialize)]
 pub struct Flash {
     phase: FlashPhase,
     enable_id: bool,

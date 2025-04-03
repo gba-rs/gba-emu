@@ -2,6 +2,7 @@ use wasm_bindgen::__rt::core::cell::RefCell;
 use wasm_bindgen::__rt::std::rc::Rc;
 use memory_macros::*;
 use super::GbaMem;
+use serde::{Serialize, Deserialize};
 
 
 /* ------------ Channels 1 and 2 ------------ */

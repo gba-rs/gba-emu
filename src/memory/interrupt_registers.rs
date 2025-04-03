@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use memory_macros::*;
 use super::GbaMem;
+use serde::{Serialize, Deserialize};
 
 io_register! (
     InterruptMasterEnableRegister => 4, 0x4000208,

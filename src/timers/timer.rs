@@ -2,7 +2,9 @@ use crate::memory::timer_registers::*;
 use crate::interrupts::interrupts::Interrupts;
 use std::cell::RefCell;
 use std::rc::Rc;
+use serde::Serialize;
 
+#[derive(Serialize)]
 pub struct Timer {
     pub timer: TimerDataRegister,
     pub controller: TimerControlRegister,
@@ -82,6 +84,7 @@ impl Timer {
     }
 }
 
+#[derive(Serialize)]
 pub struct TimerHandler {
     pub timers: [Timer; 4],
     pub running_timers: u8
