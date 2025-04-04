@@ -6,9 +6,10 @@ use crate::operations::bitutils::*;
 use super::GbaMem;
 use crate::gpu::graphic_effects::{BlendMode, WindowTypes};
 use memory_macros::*;
+use serde::{Serialize, Deserialize};
 
 #[repr(u8)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PixelFormat {
     FourBit,
     EightBit

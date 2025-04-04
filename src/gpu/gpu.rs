@@ -16,6 +16,8 @@ use std::{
     cell::RefCell,
     rc::Rc
 };
+use serde::{Serialize, Deserialize};
+use serde_with::{serde_as};
 use memory_macros::{gen_aff_matrix_array, gen_obj_array};
 
 gen_obj_array!();
@@ -23,6 +25,7 @@ gen_aff_matrix_array!();
 
 pub const DISPLAY_WIDTH: u32 = 240;
 pub const DISPLAY_HEIGHT: u32 = 160;
+pub const WINDOW_SIZE: usize = (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize);
 pub const VBLANK_LENGTH: u32 = 68;
 
 pub const HDRAW_CYCLES: i64 = 960;
@@ -31,13 +34,14 @@ pub const SCANLINE_CYCLES: i64 = 1232;
 pub const VDRAW_CYCLES: i64 = 197120;
 pub const VBLANK_CYCLES: i64 = 83776;
 
-#[derive(PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub enum GpuState {
     HDraw,
     HBlank,
     VBlank
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Background {
     pub control: BG_Control,
     pub horizontal_offset: BGOffset,
@@ -58,6 +62,7 @@ impl Background {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct BgAffineComponent {
     pub refrence_point_x_internal: u32,
     pub refrence_point_x_external: BGRefrencePoint,
@@ -82,6 +87,7 @@ impl BgAffineComponent {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Window {
     pub horizontal_dimensions: WindowHorizontalDimension,
     pub vertical_dimensions: WindowVerticalDimension
@@ -110,6 +116,8 @@ impl Window {
     }
 }
 
+#[serde_as]
+#[derive(Serialize, Deserialize)]
 pub struct GPU {
     pub display_control: DisplayControl,
     pub green_swap: GreenSwap,
@@ -119,8 +127,11 @@ pub struct GPU {
     pub backgrounds: [Background; 4],
     pub bg_affine_components: [BgAffineComponent; 2],
     pub windows: [Window; 2],
+
+    #[serde_as(as = "[_; WINDOW_SIZE]")]
     pub obj_window: [bool; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)],
 
+    #[serde_as(as = "[_; 128]")]
     pub objects: [Object; 128],
     pub aff_matrices: [AffineMatrix; 32],
 

@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use memory_macros::*;
 use super::GbaMem;
+use serde::{Serialize, Deserialize};
 
 io_register! (
     KeyStatus => 2, 0x4000130,

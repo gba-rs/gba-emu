@@ -3,7 +3,9 @@ use crate::interrupts::interrupts::Interrupts;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct DMAChannel {
     pub source_address: DMASourceAddress,
     pub destination_address: DMADestinationAddress,
@@ -145,6 +147,7 @@ impl DMAChannel {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct DMAController {
     pub dma_channels: [DMAChannel; 4],
     pub hblanking: bool,

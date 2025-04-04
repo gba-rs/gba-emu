@@ -3,8 +3,9 @@ use crate::memory::memory_map::MemoryMap;
 use super::{rgb15::Rgb15, gpu::DISPLAY_WIDTH};
 use crate::memory::memory_map::PALETTE_RAM_START;
 use std::cmp;
+use serde::{Serialize, Deserialize};
 
-#[derive(PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub enum BlendMode {
     Off,
     Alpha,
@@ -24,7 +25,7 @@ impl From<u8> for BlendMode {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum WindowTypes {
     Window0,
     Window1,

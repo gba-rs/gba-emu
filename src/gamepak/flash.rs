@@ -1,6 +1,8 @@
 use crate::memory::memory_map::MemoryMap;
 use crate::gamepak::BackupType;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
 pub enum FlashCommands {
     StartID = 0x90,
     EndID = 0xF0,
@@ -26,6 +28,7 @@ impl FlashCommands {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 enum FlashPhase {
     Phase1,
     Phase2,
@@ -33,6 +36,7 @@ enum FlashPhase {
     CommandParameter
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Flash {
     phase: FlashPhase,
     enable_id: bool,
@@ -60,8 +64,6 @@ impl Flash {
 }
 
 impl MemoryMap {
-    
-
     pub fn read_flash(&self, address: u32) -> u8 {
         if self.flash.enable_id && (address & 0xFFFF) < 2 {
             if self.backup_type == BackupType::Flash128K {
@@ -94,8 +96,6 @@ impl MemoryMap {
             }
         }
     }
-
-    
 
     fn run_command(&mut self, address: u32, value: u8) {
         let flash_command = FlashCommands::from(value);

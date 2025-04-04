@@ -235,8 +235,10 @@ fn create_bit_field(name: Ident, segment_size: Lit, bit_fields: &IORegister) -> 
     let (_, segment_type) = parse_segment_size(&segment_size, &name.span());
 
     let expanded = quote! {
+        #[derive(Default, Serialize, Deserialize)]
         pub struct #name {
-            pub memory: Rc<RefCell<GbaMem>>,
+            #[serde(skip)]
+            pub memory: Option<Rc<RefCell<GbaMem>>>,
         }
 
         impl #name {
@@ -245,28 +247,36 @@ fn create_bit_field(name: Ident, segment_size: Lit, bit_fields: &IORegister) -> 
 
             pub fn new() -> #name {
                 return #name {
-                    memory: Rc::new(RefCell::new(vec![0; #segment_size]))
+                    memory: None,
                 };
             }
 
             pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
-                self.memory = mem.clone();
+                self.memory = Some(mem.clone());
             }
 
             pub fn get_register(&self) -> #segment_type {
                 let mut value: #segment_type = 0;
-                let mem_ref = self.memory.borrow();
-                for i in 0..#name::SEGMENT_SIZE {
-                    value |= (mem_ref[#name::SEGMENT_INDEX + (i as usize)] as #segment_type) <<  (i * 8);
+                if let Some(mem) = &self.memory {
+                    let mem_ref = mem.borrow();
+                    for i in 0..#name::SEGMENT_SIZE {
+                        value |= (mem_ref[#name::SEGMENT_INDEX + (i as usize)] as #segment_type) <<  (i * 8);
+                    }
+                } else {
+                    panic!("IO register was accessed without being registered");
                 }
 
                 return value;
             }
 
             pub fn set_register(&self, value: u32) {
-                let mut mem_ref = self.memory.borrow_mut();
-                for i in 0..#name::SEGMENT_SIZE {
-                    mem_ref[#name::SEGMENT_INDEX + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                if let Some(mem) = &self.memory {
+                    let mut mem_ref = mem.borrow_mut();
+                    for i in 0..#name::SEGMENT_SIZE {
+                        mem_ref[#name::SEGMENT_INDEX + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                    }
+                } else {
+                    panic!("IO register was accessed without being registered");
                 }
             }
 
@@ -297,8 +307,10 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, bit_fields: &Multip
     };
 
     let expanded = quote! {
+        #[derive(Default, Serialize, Deserialize)]
         pub struct #name {
-            pub memory: Rc<RefCell<GbaMem>>,
+            #[serde(skip)]
+            pub memory: Option<Rc<RefCell<GbaMem>>>,
             pub index: usize
         }
 
@@ -308,29 +320,33 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, bit_fields: &Multip
 
             pub fn new(index: usize) -> #name {
                 return #name {
-                    memory: Rc::new(RefCell::new(Vec::new())),
+                    memory: None,
                     index: index
                 };
             }
 
             pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
-                self.memory = mem.clone();
+                self.memory = Some(mem.clone());
             }
 
             pub fn get_register(&self) -> #segment_type {
                 let mut value: #segment_type = 0;
-                let mem_ref = self.memory.borrow();
-                for i in 0..#name::SEGMENT_SIZE {
-                    value |= (mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] as #segment_type) <<  (i * 8);
+                if let Some(mem) = &self.memory {
+                    let mem_ref = mem.borrow();
+                    for i in 0..#name::SEGMENT_SIZE {
+                        value |= (mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] as #segment_type) <<  (i * 8);
+                    }
                 }
 
                 return value;
             }
 
             pub fn set_register(&self, value: u32) {
-                let mut mem_ref = self.memory.borrow_mut();
-                for i in 0..#name::SEGMENT_SIZE {
-                    mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                if let Some(mem) = &self.memory {
+                    let mut mem_ref = mem.borrow_mut();
+                    for i in 0..#name::SEGMENT_SIZE {
+                        mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                    }
                 }
             }
 

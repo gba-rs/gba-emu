@@ -7,8 +7,9 @@ use crate::interrupts::interrupts::Interrupts;
 use crate::dma::DMAController;
 use crate::timers::timer::TimerHandler;
 use crate::{gamepak::GamePack, gamepak::BackupType};
+use serde::{Serialize, Deserialize};
 
-
+#[derive(Serialize, Deserialize)]
 pub struct GBA {
     pub cpu: CPU,
     pub gpu: GPU,
@@ -42,15 +43,7 @@ impl GBA {
             dma_control: DMAController::new()
         };
 
-        temp.gpu.register(&temp.memory_bus.mem_map.memory);
-        temp.key_status.register(&temp.memory_bus.mem_map.memory);
-        temp.ket_interrupt_control.register(&temp.memory_bus.mem_map.memory);
-        temp.interrupt_handler.ime_interrupt.register(&temp.memory_bus.mem_map.memory);
-        temp.interrupt_handler.ie_interrupt.register(&temp.memory_bus.mem_map.memory);
-        temp.interrupt_handler.if_interrupt.register(&temp.memory_bus.mem_map.memory);
-        temp.timer_handler.register(&temp.memory_bus.mem_map.memory);
-        temp.memory_bus.cycle_clock.register(&temp.memory_bus.mem_map.memory);
-        temp.dma_control.register(&temp.memory_bus.mem_map.memory);
+        temp.register_memory();
 
         // setup the PC
         temp.cpu.set_register(ARM_PC, pc_address);
@@ -92,6 +85,18 @@ impl GBA {
         temp.load_rom(&game_pack.rom);
 
         return temp;
+    }
+
+    pub fn register_memory(&mut self) {
+        self.gpu.register(&self.memory_bus.mem_map.memory);
+        self.key_status.register(&self.memory_bus.mem_map.memory);
+        self.ket_interrupt_control.register(&self.memory_bus.mem_map.memory);
+        self.interrupt_handler.ime_interrupt.register(&self.memory_bus.mem_map.memory);
+        self.interrupt_handler.ie_interrupt.register(&self.memory_bus.mem_map.memory);
+        self.interrupt_handler.if_interrupt.register(&self.memory_bus.mem_map.memory);
+        self.timer_handler.register(&self.memory_bus.mem_map.memory);
+        self.memory_bus.cycle_clock.register(&self.memory_bus.mem_map.memory);
+        self.dma_control.register(&self.memory_bus.mem_map.memory);
     }
 
     pub fn load_bios(&mut self, bios: &Vec<u8>) {
