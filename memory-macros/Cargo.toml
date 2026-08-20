@@ -11,5 +11,13 @@ proc-macro = true
 
 [dependencies]
 quote = "1"
+# `syn` is intentionally left on the 1.x line for now (current crates.io
+# latest is 3.0.3). This crate hand-writes ~400 lines of proc-macro logic
+# against syn's API directly (see src/lib.rs), and syn's 1.x -> 2.x -> 3.x
+# transitions include breaking API changes. Bumping it needs someone to
+# actually compile and run the macro-expansion tests against the new API,
+# which requires the pinned nightly toolchain (this crate uses
+# `#![feature(proc_macro_diagnostic)]`) - not something to do blind in the
+# same PR as unrelated changes. See ARCHITECTURE.md.
 syn = { version = "1", features = ["full"] }
 proc-macro2 = "1"

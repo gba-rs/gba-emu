@@ -11,12 +11,34 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install nightly toolchain
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: clippy, rustfmt
+
+    - name: Cache cargo registry and build artifacts
+      uses: Swatinem/rust-cache@v2
+
+    # These are intentionally non-blocking for now: the existing codebase
+    # predates rustfmt/clippy being run in CI, so turning them into hard
+    # gates immediately would fail on pre-existing style, not on this PR's
+    # changes. Enabling `continue-on-error: false` (and fixing the fallout)
+    # is a good, separately-scoped follow-up PR.
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+      continue-on-error: true
+
+    - name: Clippy
+      run: cargo clippy --all --all-targets --verbose
+      continue-on-error: true
+
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --all --verbose
+
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --all --verbose

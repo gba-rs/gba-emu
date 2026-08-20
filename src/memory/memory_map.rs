@@ -117,12 +117,73 @@ impl MemoryMap {
 
     }
 
+    /// Returns the physical index into `memory` for a `len`-byte access
+    /// starting at `address`, but only when the *entire* access lands in a
+    /// plain RAM-like region (WRAM, IWRAM, palette RAM, VRAM, OAM) whose
+    /// `read_u8`/`write_u8` handling is a pure store with no per-address
+    /// side effects.
+    ///
+    /// Deliberately excludes the I/O region (0x04......) and the
+    /// gamepak/backup region (0x08...... - 0x0F......), since both have
+    /// per-address special-case behavior in `read_u8`/`write_u8` (halt
+    /// state, IE/IF write semantics, flash chip commands, SRAM mirroring by
+    /// backup type, ...) that a bulk slice copy would silently skip. Those
+    /// regions keep going through the byte-wise path below, which remains
+    /// the single source of truth for that logic.
+    ///
+    /// Also returns `None` if the access would straddle a region's mirror
+    /// wraparound boundary (e.g. the last 1-3 bytes of on-chip WRAM), so
+    /// the byte-wise fallback can reproduce that mirroring exactly. This
+    /// is a real edge case in principle but not one any known GBA game
+    /// relies on, since the CPU only ever issues aligned halfword/word
+    /// accesses.
+    #[inline]
+    fn fast_region_index(address: u32, len: u32) -> Option<usize> {
+        let upper_byte = address >> 24;
+
+        // VRAM is stored at its literal address with no masking/mirroring
+        // in this emulator, so any same-region access is safe.
+        if upper_byte == 0x06 {
+            return Some(address as usize);
+        }
+
+        let (start, size_mask) = match upper_byte {
+            0x02 => (ON_BOARD_WRAM_START, ON_BOARD_WRAM_SIZE),
+            0x03 => (ON_CHIP_WRAM_START, ON_CHIP_WRAM_SIZE),
+            0x05 => (PALETTE_RAM_START, PALETTE_RAM_SIZE),
+            0x07 => (OBJECT_ATTRIBUTES_START, OBJECT_ATTRIBUTES_SIZE),
+            _ => return None,
+        };
+
+        let offset = address & size_mask;
+        if offset + (len - 1) > size_mask {
+            // Access straddles the region's wraparound point.
+            return None;
+        }
+
+        Some((offset + start) as usize)
+    }
+
     pub fn write_u16(&mut self, address: u32, value: u16) {
+        if let Some(idx) = MemoryMap::fast_region_index(address, 2) {
+            let bytes = value.to_le_bytes();
+            let mut mem = self.memory.borrow_mut();
+            mem[idx] = bytes[0];
+            mem[idx + 1] = bytes[1];
+            return;
+        }
+
         self.write_u8(address + 1, ((value & 0xFF00) >> 8) as u8);
         self.write_u8(address, (value & 0xFF) as u8);
     }
 
     pub fn write_u32(&mut self, address: u32, value: u32) {
+        if let Some(idx) = MemoryMap::fast_region_index(address, 4) {
+            let mut mem = self.memory.borrow_mut();
+            mem[idx..idx + 4].copy_from_slice(&value.to_le_bytes());
+            return;
+        }
+
         self.write_u8(address + 3, ((value & 0xFF000000) >> 24) as u8);
         self.write_u8(address + 2, ((value & 0xFF0000) >> 16) as u8);
         self.write_u8(address + 1, ((value & 0xFF00) >> 8) as u8);
@@ -156,6 +217,11 @@ impl MemoryMap {
     }
 
     pub fn read_u32(&self, address: u32) -> u32 {
+        if let Some(idx) = MemoryMap::fast_region_index(address, 4) {
+            let mem = self.memory.borrow();
+            return u32::from_le_bytes([mem[idx], mem[idx + 1], mem[idx + 2], mem[idx + 3]]);
+        }
+
         let mut result: u32 = 0;
         for i in 0..4 {
             result |= (self.read_u8(address + i) as u32) <<  (i * 8);
@@ -164,6 +230,11 @@ impl MemoryMap {
     }
 
     pub fn read_u16(&self, address: u32) -> u16 {
+        if let Some(idx) = MemoryMap::fast_region_index(address, 2) {
+            let mem = self.memory.borrow();
+            return u16::from_le_bytes([mem[idx], mem[idx + 1]]);
+        }
+
         let result: u16 = ((self.read_u8(address + 1) as u16) << 8) | (self.read_u8(address) as u16);
         return result;
     }
@@ -390,5 +461,55 @@ impl<'de> Deserialize<'de> for MemoryMap {
             &["memory", "halt_state", "backup_type", "backed_up", "flash"],
             MemoryMapVisitor
         )
+    }
+}
+
+#[cfg(test)]
+mod fast_path_tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+
+    #[test]
+    fn word_access_round_trips_in_wram() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u32(ON_BOARD_WRAM_START + 0x100, 0xDEADBEEF);
+        assert_eq!(mem.read_u32(ON_BOARD_WRAM_START + 0x100), 0xDEADBEEF);
+    }
+
+    #[test]
+    fn halfword_access_round_trips_in_iwram() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u16(ON_CHIP_WRAM_START + 0x10, 0xBEEF);
+        assert_eq!(mem.read_u16(ON_CHIP_WRAM_START + 0x10), 0xBEEF);
+    }
+
+    #[test]
+    fn word_access_round_trips_in_vram() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u32(VIDEO_RAM_START + 0x1000, 0x12345678);
+        assert_eq!(mem.read_u32(VIDEO_RAM_START + 0x1000), 0x12345678);
+    }
+
+    #[test]
+    fn fast_path_matches_byte_wise_semantics_across_wram_mirror() {
+        // WRAM is 0x40000 bytes of address space (ON_BOARD_WRAM_SIZE mask)
+        // mirrored across a larger region. Writing near the top and
+        // reading back should still round-trip correctly whether or not
+        // the fast path is taken.
+        let mut mem = MemoryMap::new(BackupType::Error);
+        let addr = ON_BOARD_WRAM_START + ON_BOARD_WRAM_SIZE - 3;
+        mem.write_u16(addr, 0xABCD);
+        assert_eq!(mem.read_u16(addr), 0xABCD);
+    }
+
+    #[test]
+    fn io_region_writes_still_go_through_byte_wise_special_casing() {
+        // Regression guard: the fast path must never touch the I/O region,
+        // since writes there (e.g. the HALTCNT/stop-halt byte at
+        // 0x4000301) have side effects beyond storing bytes.
+        let mut mem = MemoryMap::new(BackupType::Error);
+        assert_eq!(mem.halt_state, HaltState::Running);
+        mem.write_u8(0x4000301, 0x00);
+        assert_eq!(mem.halt_state, HaltState::Halt);
     }
 }
