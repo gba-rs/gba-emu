@@ -1,5 +1,6 @@
 use crate::memory::{dma_registers::*, GbaMem, memory_bus::MemoryBus};
 use crate::interrupts::interrupts::Interrupts;
+use crate::memory::sound_registers::SoundControlHigh;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::fmt;
@@ -107,6 +108,14 @@ impl DMAChannel {
     pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {        
         match self.control.get_dma_transfer_type() {
             0 => {  // 16
+                let dest_region = self.internal_destination_address >> 24;
+                let src_region = self.internal_source_address >> 24;
+                if dest_region == 0x0D {
+                    mem_map.prepare_eeprom_write(self.internal_word_count);
+                } else if src_region == 0x0D {
+                    mem_map.prepare_eeprom_read(self.internal_word_count);
+                }
+
                 for _ in 0..self.internal_word_count {
                     let value = mem_map.read_u16(self.internal_source_address & !1);
                     mem_map.write_u16(self.internal_destination_address & !1, value);
@@ -145,13 +154,37 @@ impl DMAChannel {
             self.reload_wordcount();
         }
     }
+
+    // Direct Sound FIFO refill: always a fixed 32-bit read, distinct from transfer()'s
+    // word-count/repeat/IRQ bookkeeping — real hardware ignores the transfer-type bit here.
+    pub fn refill_sound_fifo(&mut self, mem_map: &mut MemoryBus, is_fifo_a: bool) {
+        let value = mem_map.read_u32(self.internal_source_address & !3);
+        let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
+        for byte in value.to_le_bytes() {
+            if fifo.len() < 32 {
+                fifo.push_back(byte);
+            }
+        }
+
+        match self.control.get_source_address_control() {
+            0 => self.internal_source_address += 4,
+            1 => self.internal_source_address -= 4,
+            2 => {},
+            _ => panic!("Invalid source address control")
+        }
+    }
 }
+
+const FIFO_A_ADDRESS: u32 = 0x0400_00A0;
+const FIFO_B_ADDRESS: u32 = 0x0400_00A4;
 
 #[derive(Serialize, Deserialize)]
 pub struct DMAController {
     pub dma_channels: [DMAChannel; 4],
     pub hblanking: bool,
-    pub vblanking: bool
+    pub vblanking: bool,
+    // Shared view of SOUNDCNT_H (Apu owns the other registered instance).
+    sound_control_high: SoundControlHigh,
 }
 
 impl DMAController {
@@ -159,9 +192,10 @@ impl DMAController {
         for i in 0..4 {
             self.dma_channels[i].register(mem);
         }
+        self.sound_control_high.register(mem);
     }
 
-    pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
+    pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts, timer_overflows: [usize; 4]) {
         for i in 0..4 {
             if self.dma_channels[i].control.get_dma_enable() == 1 {
                 if self.dma_channels[i].previously_disabled {
@@ -190,9 +224,24 @@ impl DMAController {
                         // self.dma_channels[i].control.set_dma_enable(0);
                     },
                     3 => {
-                        // special
-                        // TODO implement this
-                        self.dma_channels[i].control.set_dma_enable(0);
+                        // special: Direct Sound FIFO refill (DMA1/2 only; DMA3 video capture unimplemented)
+                        let destination = self.dma_channels[i].destination_address.get_address();
+                        let is_fifo_a = (i == 1 || i == 2) && destination == FIFO_A_ADDRESS;
+                        let is_fifo_b = (i == 1 || i == 2) && destination == FIFO_B_ADDRESS;
+                        if is_fifo_a || is_fifo_b {
+                            let timer = if is_fifo_a {
+                                self.sound_control_high.get_dma_sound_a_timer_select() as usize
+                            } else {
+                                self.sound_control_high.get_dma_sound_b_timer_select() as usize
+                            };
+                            let fifo_len = if is_fifo_a { mem_map.mem_map.fifo_a.len() } else { mem_map.mem_map.fifo_b.len() };
+                            if timer_overflows[timer] > 0 && fifo_len <= 4 {
+                                self.dma_channels[i].refill_sound_fifo(mem_map, is_fifo_a);
+                            }
+                        }
+                        if self.dma_channels[i].control.get_dma_repeat() == 0 {
+                            self.dma_channels[i].control.set_dma_enable(0);
+                        }
                     },
                     _ => {
                         panic!("DMA Update fucked up")
@@ -213,7 +262,8 @@ impl DMAController {
                 DMAChannel::new(3),
             ],
             hblanking: false,
-            vblanking: false
+            vblanking: false,
+            sound_control_high: SoundControlHigh::new(),
         }
     }
 }

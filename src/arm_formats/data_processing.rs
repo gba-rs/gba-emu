@@ -266,7 +266,7 @@ impl Instruction for DataProcessing {
             OpCodes::TEQ => { //TEQ EOR
                 if !self.set_condition { //MSR CPSR
                     let new_psr = ProgramStatusRegister::from(op2);
-                    if cpu.get_operating_mode() != OperatingMode::User {    
+                    if cpu.get_operating_mode() != OperatingMode::User {
                         if self.spsr_field_mask & 0b0001 != 0 {
                             // control field mask
                             cpu.cpsr.control_bits = new_psr.control_bits;

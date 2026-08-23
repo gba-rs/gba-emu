@@ -548,7 +548,7 @@ io_register! (
         117441530usize
     ],
     x_coordinate: 0, 9,
-    rotation_scaling_param: 9, 4,
+    rotation_scaling_param: 9, 5,
     horizontal_flip: 12, 1,
     vertical_flip: 13, 1,
     obj_size: 14, 2

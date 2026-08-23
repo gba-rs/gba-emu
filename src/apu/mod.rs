@@ -1,0 +1,295 @@
+pub mod direct_sound;
+pub mod square_channel;
+pub mod wave_channel;
+pub mod noise_channel;
+
+use std::rc::Rc;
+use std::cell::RefCell;
+use serde::{Serialize, Deserialize};
+use crate::memory::{GbaMem, memory_bus::MemoryBus, sound_registers::*};
+use direct_sound::DirectSoundChannel;
+use square_channel::SquareChannel;
+use wave_channel::WaveChannel;
+use noise_channel::NoiseChannel;
+
+// 16777216 / 512 = 32768 Hz exactly.
+pub const OUTPUT_SAMPLE_RATE: usize = 32768;
+const CYCLES_PER_SAMPLE: usize = 512;
+const FRAME_SEQUENCER_CYCLES: i32 = 32768;
+
+// Direct Sound: two channels, each up to |i8::MIN| = 128 at 100% volume, no DC
+// centering applied (a channel's own byte IS the instantaneous DAC value).
+// PSG: 4 channels summed 0-15 each (unsigned - a truly silent mix is exactly
+// 0, never artificially offset), scaled by up to 8/8.
+// Worst case magnitude: max(256 + 60, 256 - 0) = 316 -> 316 * MIX_SCALE <= i16::MAX.
+const MIX_SCALE: i32 = 100;
+
+#[derive(Serialize, Deserialize)]
+pub struct Apu {
+    pub sound_control_low: SoundControlLow,
+    pub sound_control_high: SoundControlHigh,
+    pub sound_control_x: SoundControlX,
+    pub sound_bias: SoundBias,
+
+    pub square1: SquareChannel,
+    pub square2: SquareChannel,
+    pub wave: WaveChannel,
+    pub noise: NoiseChannel,
+
+    pub direct_sound_a: DirectSoundChannel,
+    pub direct_sound_b: DirectSoundChannel,
+
+    cycle_accumulator: usize,
+    frame_sequencer_cycles: i32,
+    frame_sequencer_step: u8,
+
+    pub sample_buffer: Vec<i16>,
+}
+
+impl Apu {
+    pub fn new() -> Apu {
+        return Apu {
+            sound_control_low: SoundControlLow::new(),
+            sound_control_high: SoundControlHigh::new(),
+            sound_control_x: SoundControlX::new(),
+            sound_bias: SoundBias::new(),
+            square1: SquareChannel::new(true, 0, 0),
+            square2: SquareChannel::new(false, 1, 1),
+            wave: WaveChannel::new(),
+            noise: NoiseChannel::new(),
+            direct_sound_a: DirectSoundChannel::new(),
+            direct_sound_b: DirectSoundChannel::new(),
+            cycle_accumulator: 0,
+            frame_sequencer_cycles: FRAME_SEQUENCER_CYCLES,
+            frame_sequencer_step: 0,
+            sample_buffer: Vec::new(),
+        };
+    }
+
+    pub fn register(&mut self, mem: &Rc<RefCell<GbaMem>>) {
+        self.sound_control_low.register(mem);
+        self.sound_control_high.register(mem);
+        self.sound_control_x.register(mem);
+        self.sound_bias.register(mem);
+        self.square1.register(mem);
+        self.square2.register(mem);
+        self.wave.register(mem);
+        self.noise.register(mem);
+    }
+
+    pub fn step(&mut self, cycles: usize, timer_periods: [usize; 4], mem_bus: &mut MemoryBus) {
+        let triggers = mem_bus.mem_map.trigger_flags;
+        mem_bus.mem_map.trigger_flags = 0;
+        if triggers & 0x1 != 0 { self.square1.on_trigger(); }
+        if triggers & 0x2 != 0 { self.square2.on_trigger(); }
+        if triggers & 0x4 != 0 { self.wave.on_trigger(); }
+        if triggers & 0x8 != 0 { self.noise.on_trigger(); }
+
+        let timer_a = self.sound_control_high.get_dma_sound_a_timer_select() as usize;
+        let timer_b = self.sound_control_high.get_dma_sound_b_timer_select() as usize;
+        let period_a = timer_periods[timer_a];
+        let period_b = timer_periods[timer_b];
+
+        if self.sound_control_high.get_dma_sound_a_reset_fifo() != 0 {
+            mem_bus.mem_map.fifo_a.clear();
+            self.direct_sound_a.current_sample = 0;
+            self.sound_control_high.set_dma_sound_a_reset_fifo(0);
+        }
+        if self.sound_control_high.get_dma_sound_b_reset_fifo() != 0 {
+            mem_bus.mem_map.fifo_b.clear();
+            self.direct_sound_b.current_sample = 0;
+            self.sound_control_high.set_dma_sound_b_reset_fifo(0);
+        }
+
+        let cycles_i32 = cycles as i32;
+        self.frame_sequencer_cycles -= cycles_i32;
+        while self.frame_sequencer_cycles <= 0 {
+            self.frame_sequencer_cycles += FRAME_SEQUENCER_CYCLES;
+            self.clock_frame_sequencer();
+        }
+
+        // PSG and Direct Sound are both stepped in CYCLES_PER_SAMPLE increments,
+        // interleaved with sample emission — otherwise a single large batch (the
+        // CPU can jump by up to a full scanline while halted) advances a
+        // high-frequency channel through many waveform toggles at once, and every
+        // sample emitted in that batch sees only the final post-batch state
+        // instead of the waveform's true instantaneous value. Low notes have a
+        // period much longer than one batch so this barely shows; high notes,
+        // whose period can be shorter than CYCLES_PER_SAMPLE itself, alias badly.
+        self.cycle_accumulator += cycles;
+        while self.cycle_accumulator >= CYCLES_PER_SAMPLE {
+            self.cycle_accumulator -= CYCLES_PER_SAMPLE;
+            let step_cycles = CYCLES_PER_SAMPLE as i32;
+            self.square1.step(step_cycles);
+            self.square2.step(step_cycles);
+            self.wave.step(step_cycles);
+            self.noise.step(step_cycles);
+            self.direct_sound_a.step(CYCLES_PER_SAMPLE, period_a, &mut mem_bus.mem_map.fifo_a);
+            self.direct_sound_b.step(CYCLES_PER_SAMPLE, period_b, &mut mem_bus.mem_map.fifo_b);
+            self.mix_and_emit_sample(mem_bus);
+        }
+    }
+
+    // 256 Hz length, 128 Hz sweep, 64 Hz envelope.
+    fn clock_frame_sequencer(&mut self) {
+        if self.frame_sequencer_step % 2 == 0 {
+            self.square1.clock_length();
+            self.square2.clock_length();
+            self.wave.clock_length();
+            self.noise.clock_length();
+        }
+        if self.frame_sequencer_step % 4 == 2 {
+            self.square1.clock_sweep();
+        }
+        if self.frame_sequencer_step == 7 {
+            self.square1.clock_envelope();
+            self.square2.clock_envelope();
+            self.noise.clock_envelope();
+        }
+        self.frame_sequencer_step = (self.frame_sequencer_step + 1) % 8;
+    }
+
+    fn mix_and_emit_sample(&mut self, mem_bus: &MemoryBus) {
+        if self.sound_control_x.get_psg_fifo_master_enable() == 0 {
+            self.sample_buffer.push(0);
+            self.sample_buffer.push(0);
+            return;
+        }
+
+        // SOUNDCNT_H: 0=50%, 1=100% of the FIFO byte, which is already full-scale.
+        let ds_a = if self.sound_control_high.get_dma_sound_a_volume() != 0 {
+            self.direct_sound_a.current_sample as i32
+        } else {
+            self.direct_sound_a.current_sample as i32 / 2
+        };
+        let ds_b = if self.sound_control_high.get_dma_sound_b_volume() != 0 {
+            self.direct_sound_b.current_sample as i32
+        } else {
+            self.direct_sound_b.current_sample as i32 / 2
+        };
+
+        let mut left: i32 = 0;
+        let mut right: i32 = 0;
+        if self.sound_control_high.get_dma_sound_a_enable_left() != 0 { left += ds_a; }
+        if self.sound_control_high.get_dma_sound_a_enable_right() != 0 { right += ds_a; }
+        if self.sound_control_high.get_dma_sound_b_enable_left() != 0 { left += ds_b; }
+        if self.sound_control_high.get_dma_sound_b_enable_right() != 0 { right += ds_b; }
+
+        let enable_right = self.sound_control_low.get_sound_enable_flags_right();
+        let enable_left = self.sound_control_low.get_sound_enable_flags_left();
+        let amplitudes = [
+            self.square1.amplitude(),
+            self.square2.amplitude(),
+            self.wave.amplitude(mem_bus),
+            self.noise.amplitude(),
+        ];
+
+        let mut psg_right_raw: i32 = 0;
+        let mut psg_left_raw: i32 = 0;
+        for (i, amplitude) in amplitudes.iter().enumerate() {
+            let bit = 1 << i;
+            if enable_right & bit != 0 { psg_right_raw += *amplitude as i32; }
+            if enable_left & bit != 0 { psg_left_raw += *amplitude as i32; }
+        }
+
+        let master_right = (self.sound_control_low.get_sound_master_volume_right() as i32) + 1;
+        let master_left = (self.sound_control_low.get_sound_master_volume_left() as i32) + 1;
+        let psg_right = psg_right_raw * master_right / 8;
+        let psg_left = psg_left_raw * master_left / 8;
+
+        left += psg_left;
+        right += psg_right;
+
+        let left_sample = (left * MIX_SCALE).clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+        let right_sample = (right * MIX_SCALE).clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+
+        self.sample_buffer.push(left_sample);
+        self.sample_buffer.push(right_sample);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gba::GBA;
+
+    #[test]
+    fn fifo_reset_also_silences_the_channel() {
+        // Regression: clearing the FIFO used to leave the channel's last
+        // latched sample untouched, so a one-shot SFX (e.g. a chime) ending
+        // and resetting its FIFO for the next sound would keep outputting
+        // its last, possibly loud, byte as a stuck constant until fresh
+        // data arrived — an audible pop right after the effect finished.
+        let mut gba = GBA::default();
+        gba.apu.direct_sound_a.current_sample = 100;
+        gba.apu.direct_sound_b.current_sample = -100;
+        gba.apu.sound_control_high.set_dma_sound_a_reset_fifo(1);
+        gba.apu.sound_control_high.set_dma_sound_b_reset_fifo(1);
+        gba.apu.step(0, [0, 0, 0, 0], &mut gba.memory_bus);
+        assert_eq!(gba.apu.direct_sound_a.current_sample, 0);
+        assert_eq!(gba.apu.direct_sound_b.current_sample, 0);
+    }
+
+    #[test]
+    fn mix_never_clips_at_worst_case_amplitude() {
+        let ds_max = 128i32;
+        let psg_max = 60 * 8 / 8;
+        let worst_case = ds_max * 2 + psg_max;
+        assert!(worst_case * MIX_SCALE <= i16::MAX as i32);
+        assert!(-worst_case * MIX_SCALE >= i16::MIN as i32);
+    }
+
+    #[test]
+    fn true_silence_produces_exactly_zero() {
+        // Regression: the PSG mix used to unconditionally subtract a flat
+        // "4 channels at half-scale" constant, so a mix with zero channels
+        // routed or triggered still produced a small nonzero value — an
+        // audible click at any enable/disable transition.
+        let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
+        gba.apu.sound_control_low.set_sound_master_volume_left(7);
+        gba.apu.sound_control_low.set_sound_master_volume_right(7);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        assert_eq!(&gba.apu.sample_buffer[..], &[0, 0]);
+    }
+
+    #[test]
+    fn direct_sound_100_percent_is_not_amplified_beyond_source() {
+        let mut gba = GBA::default();
+        gba.apu.direct_sound_a.current_sample = i8::MIN;
+        gba.apu.sound_control_high.set_dma_sound_a_volume(1);
+        gba.apu.sound_control_high.set_dma_sound_a_enable_left(1);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        let left = gba.apu.sample_buffer[0] as i32;
+        assert!(left.unsigned_abs() <= (i8::MIN.unsigned_abs() as u32) * MIX_SCALE as u32);
+    }
+
+    #[test]
+    fn master_disable_forces_silence() {
+        let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(0);
+        gba.apu.direct_sound_a.current_sample = 127;
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        assert_eq!(&gba.apu.sample_buffer[..], &[0, 0]);
+    }
+
+    #[test]
+    fn sustained_signal_does_not_decay_toward_zero() {
+        // Regression: an adaptive DC-blocking filter was previously applied
+        // to compensate for the flat "-30" bug above. Once that bug was fixed
+        // at the source, the filter itself became the problem: it can't tell
+        // a genuine sustained level (e.g. a note holding) from an artificial
+        // offset, and decays any sustained input toward zero, producing an
+        // audible click-then-fade after every real note/channel change.
+        let mut gba = GBA::default();
+        gba.apu.direct_sound_a.current_sample = 100;
+        gba.apu.sound_control_high.set_dma_sound_a_volume(1);
+        gba.apu.sound_control_high.set_dma_sound_a_enable_left(1);
+        for _ in 0..50 {
+            gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        }
+        let first = gba.apu.sample_buffer[0];
+        let last = *gba.apu.sample_buffer.iter().rev().nth(1).unwrap();
+        assert_eq!(first, last);
+    }
+}

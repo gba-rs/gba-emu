@@ -9,4 +9,5 @@ pub mod gpu;
 pub mod interrupts;
 pub mod timers;
 pub mod dma;
+pub mod apu;
 pub mod gamepak;

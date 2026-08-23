@@ -1,7 +1,7 @@
 use super::{gpu::{GPU, DISPLAY_WIDTH, DISPLAY_HEIGHT}, rgb15::Rgb15};
 use crate::memory::{
-    memory_map::MemoryMap, 
-    lcd_io_registers::PixelFormat, 
+    memory_map::{MemoryMap, PALETTE_RAM_START, PALETTE_RAM_SIZE},
+    lcd_io_registers::PixelFormat,
     lcd_io_registers::ObjAttribute0,
     lcd_io_registers::ObjAttribute1,
     lcd_io_registers::ObjAttribute2,
@@ -83,6 +83,20 @@ impl AffineMatrix {
 
 impl GPU {
     pub fn render_obj(&mut self, mem_map: &mut MemoryMap) {
+        // obj_buffer/obj_window are indexed by scanline, but persist across
+        // scanlines/frames in this struct — without clearing the current
+        // row first, a pixel a sprite no longer covers keeps showing that
+        // sprite's stale color/priority from whenever it last covered it,
+        // since the priority check below only ever allows overwriting with
+        // a strictly higher-priority sprite.
+        let current_scanline = self.vertical_count.get_current_scanline() as u32;
+        let row_start = (DISPLAY_WIDTH * current_scanline) as usize;
+        let row_end = row_start + (DISPLAY_WIDTH as usize);
+        for i in row_start..row_end {
+            self.obj_buffer[i] = (Rgb15::new(0x8000), 4, 0);
+            self.obj_window[i] = false;
+        }
+
         for i in 0..128 {
             match self.objects[i].attr0.get_obj_mode() {
                 0b10 => continue,
@@ -149,7 +163,15 @@ impl GPU {
         let half_width = bbox_w / 2;
         let half_height = bbox_h / 2;
         let iy = current_scanline - (ref_point_y + half_height);
-        
+
+        // Single borrow for the whole sprite scanline instead of one per
+        // pixel, same rationale as tile_map.rs's render_bg.
+        let mem = mem_map.memory.borrow();
+        let read_u16_at = |mem: &[u8], addr: u32| -> u16 {
+            let idx = addr as usize;
+            u16::from_le_bytes([mem[idx], mem[idx + 1]])
+        };
+
         for ix in -half_width..half_width {
             let screen_x = ref_point_x + half_width + ix;
             if screen_x < 0 {
@@ -175,11 +197,11 @@ impl GPU {
                 let pixel_index = match pixel_format {
                     PixelFormat::EightBit => {
                         let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
-                        mem_map.read_u8(pixel_index_address)
+                        mem[pixel_index_address as usize]
                     },
                     PixelFormat::FourBit => {
                         let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
-                        let value = mem_map.read_u8(pixel_index_address);
+                        let value = mem[pixel_index_address as usize];
                         if tile_x & 1 != 0 {
                             value >> 4
                         } else {
@@ -192,7 +214,9 @@ impl GPU {
                     Rgb15::new(0x8000)
                 } else {
                     let palette_ram_index = 0x200 + 2 * pixel_index + 0x20 * palette_bank;
-                    Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+                    let raw_addr = palette_ram_index + 0x500_0000u32;
+                    let masked_addr = (raw_addr & PALETTE_RAM_SIZE) + PALETTE_RAM_START;
+                    Rgb15::new(read_u16_at(&mem, masked_addr))
                 };
 
                 let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
@@ -255,10 +279,18 @@ impl GPU {
             obj_w / 8
         };
 
+        // Single borrow for the whole sprite scanline instead of one per
+        // pixel, same rationale as tile_map.rs's render_bg.
+        let mem = mem_map.memory.borrow();
+        let read_u16_at = |mem: &[u8], addr: u32| -> u16 {
+            let idx = addr as usize;
+            u16::from_le_bytes([mem[idx], mem[idx + 1]])
+        };
+
         for x in obj_x..end_x {
             if x < 0 {
                 continue;
-            } 
+            }
 
             if x >= screen_width {
                 break;
@@ -290,11 +322,11 @@ impl GPU {
             let pixel_index = match pixel_format {
                 PixelFormat::EightBit => {
                     let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
-                    mem_map.read_u8(pixel_index_address)
+                    mem[pixel_index_address as usize]
                 },
                 PixelFormat::FourBit => {
                     let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
-                    let value = mem_map.read_u8(pixel_index_address);
+                    let value = mem[pixel_index_address as usize];
                     if tile_x & 1 != 0 {
                         value >> 4
                     } else {
@@ -307,7 +339,9 @@ impl GPU {
                 Rgb15::new(0x8000)
             } else {
                 let palette_ram_index = 0x200 + 2 * pixel_index + 0x20 * palette_bank;
-                Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+                let raw_addr = palette_ram_index + 0x500_0000u32;
+                let masked_addr = (raw_addr & PALETTE_RAM_SIZE) + PALETTE_RAM_START;
+                Rgb15::new(read_u16_at(&mem, masked_addr))
             };
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;

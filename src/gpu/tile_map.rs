@@ -1,6 +1,6 @@
 use crate::{
     memory::{
-        memory_map::{MemoryMap},
+        memory_map::{MemoryMap, PALETTE_RAM_START, PALETTE_RAM_SIZE},
         lcd_io_registers::PixelFormat,
     },
     operations::bitutils
@@ -22,8 +22,8 @@ impl From<u16> for TileMapEntry {
     fn from(value: u16) -> TileMapEntry {
         return TileMapEntry {
             tile_index: (value & 0x3FF) as u16,
-            vertical_flip: ((value >> 10) & 0x1) != 0,
-            horizontal_flip: ((value >> 11) & 0x1) != 0,
+            horizontal_flip: ((value >> 10) & 0x1) != 0,
+            vertical_flip: ((value >> 11) & 0x1) != 0,
             palette_bank: (value >> 12) as u8
         };
     }
@@ -62,23 +62,35 @@ impl GPU {
         let mut start_tile_x = background_x % 8;
         let tile_py = background_y % 8;
 
+        // Single borrow for the whole scanline instead of one per pixel —
+        // tile map, tile pixel, and palette reads below all index directly
+        // into this shared byte array (every memory region here is backed
+        // by the same flat Vec<u8>), avoiding a RefCell borrow-check per
+        // pixel read (up to 2 per pixel, 240 pixels * up to 4 backgrounds
+        // * 160 scanlines * 60fps).
+        let mem = mem_map.memory.borrow();
+        let read_u16_at = |mem: &[u8], addr: u32| -> u16 {
+            let idx = addr as usize;
+            u16::from_le_bytes([mem[idx], mem[idx + 1]])
+        };
+
         loop {
             let mut map_address = tilemap_location + 0x800u32 * sbb + 2u32 * (32 * se_column + se_row);
             for _ in se_row..32 {
-                let entry_value = TileMapEntry::from(mem_map.read_u16(map_address));
+                let entry_value = TileMapEntry::from(read_u16_at(&mem, map_address));
                 let tile_address = tileset_location + (entry_value.tile_index as u32) * tile_size;
 
                 for tile_px in start_tile_x..8 {
-                    let pixel_x = if entry_value.vertical_flip { 7 - tile_px } else { tile_px };
-                    let pixel_y = if entry_value.horizontal_flip { 7 - tile_py } else { tile_py };
+                    let pixel_x = if entry_value.horizontal_flip { 7 - tile_px } else { tile_px };
+                    let pixel_y = if entry_value.vertical_flip { 7 - tile_py } else { tile_py };
                     let pixel_index = match pixel_format {
                         PixelFormat::EightBit => {
                             let pixel_index_address = tile_address + (8 * pixel_y + pixel_x);
-                            mem_map.read_u8(pixel_index_address)
+                            mem[pixel_index_address as usize]
                         },
                         PixelFormat::FourBit => {
                             let pixel_index_address = tile_address + (4 * pixel_y + (pixel_x / 2));
-                            let value = mem_map.read_u8(pixel_index_address);
+                            let value = mem[pixel_index_address as usize];
                             if pixel_x & 1 != 0 {
                                 value >> 4
                             } else {
@@ -96,7 +108,9 @@ impl GPU {
                         Rgb15::new(0x8000)
                     } else {
                         let palette_ram_index = 2 * pixel_index + 0x20 * palette_bank;
-                        Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+                        let raw_addr = palette_ram_index + 0x500_0000u32;
+                        let masked_addr = (raw_addr & PALETTE_RAM_SIZE) + PALETTE_RAM_START;
+                        Rgb15::new(read_u16_at(&mem, masked_addr))
                     };
 
                     self.backgrounds[bg_number].scan_line[x as usize] = color;

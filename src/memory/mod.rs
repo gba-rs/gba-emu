@@ -1,4 +1,5 @@
 pub mod memory_map;
+pub mod eeprom;
 pub mod lcd_io_registers;
 pub mod interrupt_registers;
 pub mod key_input_registers;

@@ -21,7 +21,6 @@ impl From<u32> for SoftwareInterrupt {
 
 impl Instruction for SoftwareInterrupt {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
-        // log::info!("{:?}", self);
         let old_cpsr = cpu.cpsr;
         let current_pc = cpu.get_register(ARM_PC);
         cpu.set_instruction_set(InstructionSet::Arm);

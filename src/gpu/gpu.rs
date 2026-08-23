@@ -355,17 +355,26 @@ impl GPU {
                 self.cycles_to_next_state = HBLANK_CYCLES;
             },
             GpuState::HBlank => {
-                self.update_vcount((current_scanline + 1) as u8, irq_ctl);
-                current_scanline += 1;
                 self.display_status.set_hblank_flag(0);
 
+                // Render THIS scanline now, before vcount advances, using
+                // register state as of the end of its own HDraw period.
+                // Rendering after the increment (as this used to) meant
+                // the very first HBlank of a frame — vcount going 0->1 —
+                // rendered row 1 and skipped row 0 entirely, leaving row 0
+                // permanently black. Every value current_scanline can have
+                // here (0..DISPLAY_HEIGHT-1) is a real visible row, since
+                // this branch is only ever reached via HDraw's transition
+                // for one of the DISPLAY_HEIGHT active scanlines.
                 if current_scanline < DISPLAY_HEIGHT {
-                    // render scanline
                     self.render_scanline(mem_map);
-
-                    // composite the backgrounds
                     self.composite_background(mem_map);
+                }
 
+                self.update_vcount((current_scanline + 1) as u8, irq_ctl);
+                current_scanline += 1;
+
+                if current_scanline < DISPLAY_HEIGHT {
                     // update refrence points at end of scanline
                     for i in 0..2 {
                         let mut internal_x = bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_x_internal, 27) as i32;
@@ -398,6 +407,60 @@ impl GPU {
                         self.bg_affine_components[i].refrence_point_y_internal =  self.bg_affine_components[i].refrence_point_y_external.get_register();
                         self.bg_affine_components[i].refrence_point_x_external_hold = self.bg_affine_components[i].refrence_point_x_internal;
                         self.bg_affine_components[i].refrence_point_y_external_hold = self.bg_affine_components[i].refrence_point_y_internal;
+                    }
+
+                    // Diagnostic: one line per frame showing BG mode, each
+                    // background's scroll offset, and the affine reference
+                    // points for BG2/BG3 — enough to see at a glance
+                    // whether a scroll/rotation register is being rewritten
+                    // to a jittering value frame-to-frame.
+                    let (bg0_v, bg0_h) = self.backgrounds[0].get_offsets();
+                    let (bg1_v, bg1_h) = self.backgrounds[1].get_offsets();
+                    let (bg2_v, bg2_h) = self.backgrounds[2].get_offsets();
+                    let (bg3_v, bg3_h) = self.backgrounds[3].get_offsets();
+                    let bg2_ref_x = bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_x_internal, 27) as i32;
+                    let bg2_ref_y = bitutils::sign_extend_u32(self.bg_affine_components[0].refrence_point_y_internal, 27) as i32;
+                    let bg3_ref_x = bitutils::sign_extend_u32(self.bg_affine_components[1].refrence_point_x_internal, 27) as i32;
+                    let bg3_ref_y = bitutils::sign_extend_u32(self.bg_affine_components[1].refrence_point_y_internal, 27) as i32;
+                    let vram_checksum = mem_map.memory.borrow()[0x06000000..0x06018000].iter().fold(0u32, |acc, &b| acc.wrapping_add(b as u32).rotate_left(1));
+                    let palette_checksum = mem_map.memory.borrow()[0x05000000..0x05000400].iter().fold(0u32, |acc, &b| acc.wrapping_add(b as u32).rotate_left(1));
+                    log::info!(
+                        "VBLANK: mode={} forced_blank={} obj_display={} bg0_en={} bg0=(h{},v{}) bg1_en={} bg1=(h{},v{}) bg2_en={} bg2=(h{},v{}) bg2_ref=({},{}) bg3_en={} bg3=(h{},v{}) bg3_ref=({},{}) vram_sum={:#010X} pal_sum={:#010X}",
+                        self.display_control.get_bg_mode(),
+                        self.display_control.get_forced_blank(),
+                        self.display_control.get_screen_display_obj(),
+                        self.display_control.should_display(0), bg0_h, bg0_v,
+                        self.display_control.should_display(1), bg1_h, bg1_v,
+                        self.display_control.should_display(2), bg2_h, bg2_v, bg2_ref_x, bg2_ref_y,
+                        self.display_control.should_display(3), bg3_h, bg3_v, bg3_ref_x, bg3_ref_y,
+                        vram_checksum, palette_checksum
+                    );
+
+                    // Diagnostic: one line per frame listing every
+                    // non-hidden sprite's decoded position/size/priority,
+                    // straight from position()/size() — the exact values
+                    // the renderer uses. `tile` (attr2 character name / VRAM
+                    // tile index) is included specifically to tell "frozen
+                    // graphics, same position" (tile never changes — a data
+                    // or animation-driver bug) apart from "not moving
+                    // because it's not supposed to move" (tile cycles
+                    // normally but x/y are static, e.g. file-select icons
+                    // that only play an idle animation in place).
+                    let mut sprite_summary = String::new();
+                    for i in 0..128 {
+                        if self.objects[i].attr0.get_obj_mode() != 0b10 {
+                            let (x, y) = self.objects[i].position();
+                            let (w, h) = self.objects[i].size();
+                            sprite_summary.push_str(&format!(
+                                "[{}:x={},y={},w={},h={},pri={},objmode={:#04b},gfxmode={:#04b},tile={:#05X}] ",
+                                i, x, y, w, h, self.objects[i].attr2.get_priority_rel_to_bg(),
+                                self.objects[i].attr0.get_obj_mode(), self.objects[i].attr0.get_gfx_mode(),
+                                self.objects[i].attr2.get_character_name()
+                            ));
+                        }
+                    }
+                    if !sprite_summary.is_empty() {
+                        log::info!("SPRITES: {}", sprite_summary);
                     }
 
                     // do irq stuff

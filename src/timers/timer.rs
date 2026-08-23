@@ -33,6 +33,16 @@ impl Timer {
         self.timer.set_data(self.timer.get_reload());
     }
 
+    // Cycles between overflows at the timer's current reload/prescaler, or 0
+    // while disabled. Used by Apu to tick Direct Sound at cycle-accurate
+    // granularity instead of a per-CPU-step overflow count.
+    pub fn period_cycles(&self) -> usize {
+        if self.controller.get_enable() == 0 {
+            return 0;
+        }
+        self.frequency() * (0x10000 - self.timer.get_reload() as usize)
+    }
+
     pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> usize {
         self.cycles += current_cycles;
         let mut overflows = 0;
@@ -134,8 +144,10 @@ impl TimerHandler {
         }
     }
 
-    pub fn update(&mut self, cycles: usize, irq_ctrl: &mut Interrupts){
+    // Per-timer overflow counts this call, indexed 0-3 (used by Apu/DMAController for Direct Sound).
+    pub fn update(&mut self, cycles: usize, irq_ctrl: &mut Interrupts) -> [usize; 4] {
         let mut overflows = 0usize;
+        let mut per_timer_overflows = [0usize; 4];
         for id in 0..4 {
             let mut timer = &mut self.timers[id];
             if timer.controller.get_enable() == 1 {
@@ -143,7 +155,7 @@ impl TimerHandler {
                     timer.reload_data();
                     timer.previously_disabled = false;
                 }
-                
+
                 if timer.controller.get_cascade() == 0 {
                     // if we are not a cascade timer we dont care about the previous overflows
                     overflows = timer.update(cycles, irq_ctrl);
@@ -151,11 +163,50 @@ impl TimerHandler {
                     // if we are a cascade timer we dont care about the cycles
                     if overflows > 0 {
                         overflows = timer.update_overflow(overflows, irq_ctrl);
+                    } else {
+                        overflows = 0;
                     }
                 }
+                per_timer_overflows[id] = overflows;
             } else if !self.timers[id].previously_disabled {
                 self.timers[id].previously_disabled = true;
             }
         }
+        per_timer_overflows
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::gba::GBA;
+
+    #[test]
+    fn period_cycles_matches_frequency_and_reload() {
+        let mut gba = GBA::default();
+        let timer = &mut gba.timer_handler.timers[0];
+        timer.controller.set_pre_scalar_selection(0);
+        timer.timer.write_reload(64472);
+        timer.controller.set_enable(1);
+        assert_eq!(gba.timer_handler.timers[0].period_cycles(), 1064);
+    }
+
+    #[test]
+    fn period_cycles_is_zero_while_disabled() {
+        let mut gba = GBA::default();
+        let timer = &mut gba.timer_handler.timers[0];
+        timer.controller.set_pre_scalar_selection(0);
+        timer.timer.write_reload(64472);
+        timer.controller.set_enable(0);
+        assert_eq!(gba.timer_handler.timers[0].period_cycles(), 0);
+    }
+
+    #[test]
+    fn period_cycles_applies_prescaler() {
+        let mut gba = GBA::default();
+        let timer = &mut gba.timer_handler.timers[0];
+        timer.controller.set_pre_scalar_selection(2);
+        timer.timer.write_reload(0xFF00);
+        timer.controller.set_enable(1);
+        assert_eq!(gba.timer_handler.timers[0].period_cycles(), 256 * 256);
     }
 }

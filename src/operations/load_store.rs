@@ -59,14 +59,34 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
 * Formats a value from a register and stores it in a given memory address
 */
 pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_bus: &mut MemoryBus) {
+    // SRAM/Flash's 8-bit-wide bus means the *unaligned* address is exactly
+    // what selects which single byte of the value actually gets written
+    // (see memory_map.rs's write_u16/write_u32) — force-aligning it away
+    // here, like every other region needs, would lose that information.
+    // Real hardware doesn't align these accesses at all since every access
+    // is effectively a byte access to them.
+    let upper_byte = memory_address >> 24;
+    let is_narrow_bus = matches!(
+        mem_bus.mem_map.backup_type,
+        crate::gamepak::BackupType::Sram | crate::gamepak::BackupType::Flash64K | crate::gamepak::BackupType::Flash128K
+    ) && (upper_byte == 0x0E || upper_byte == 0x0F);
+
     match data_type {
         DataType::Word => {
-            // Force word alignment
-            mem_bus.write_u32(memory_address - (memory_address % 4), value_to_store);
+            if is_narrow_bus {
+                mem_bus.write_u32(memory_address, value_to_store);
+            } else {
+                // Force word alignment
+                mem_bus.write_u32(memory_address - (memory_address % 4), value_to_store);
+            }
         }
         DataType::Halfword => {
-            // Force halfword alignment
-            mem_bus.write_u16(memory_address - (memory_address % 2), value_to_store as u16);
+            if is_narrow_bus {
+                mem_bus.write_u16(memory_address, value_to_store as u16);
+            } else {
+                // Force halfword alignment
+                mem_bus.write_u16(memory_address - (memory_address % 2), value_to_store as u16);
+            }
         }
         DataType::Byte => {
             mem_bus.write_u8(memory_address, value_to_store as u8);
