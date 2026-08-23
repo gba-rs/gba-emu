@@ -9,4 +9,8 @@ pub mod dma_registers;
 pub mod timer_registers;
 pub mod sound_registers;
 
-pub type GbaMem = Vec<u8>;
+// Cell<u8>, not RefCell<Vec<u8>>: every register struct and MemoryMap share
+// this buffer via Rc, and Cell gives interior mutability per-byte with none
+// of RefCell's runtime borrow-flag bookkeeping — GBA emulation is
+// single-threaded, so there's never a real aliasing hazard to check for.
+pub type GbaMem = Vec<std::cell::Cell<u8>>;

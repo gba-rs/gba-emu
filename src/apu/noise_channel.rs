@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 use serde::{Serialize, Deserialize};
 use crate::memory::{GbaMem, sound_registers::{SoundChannelControlNoiseLow, SoundChannelControlNoiseHigh}};
 
@@ -33,7 +32,7 @@ impl NoiseChannel {
         }
     }
 
-    pub fn register(&mut self, mem: &Rc<RefCell<GbaMem>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.low.register(mem);
         self.high.register(mem);
     }

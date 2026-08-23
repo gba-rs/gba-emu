@@ -1,4 +1,4 @@
-use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC, cpu::THUMB_PC, cpu::InstructionSet};
+use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
 use crate::gpu::{gpu::GPU, gpu::DISPLAY_WIDTH, gpu::DISPLAY_HEIGHT};
 use crate::gpu::rgb15::Rgb15;
 use crate::memory::{key_input_registers::*};
@@ -132,12 +132,20 @@ impl GBA {
         const BAD_LDMFD: [u8; 4] = [0x0C, 0x40, 0xBD, 0xE8];
         const GOOD_LDMFD: [u8; 4] = [0x04, 0x40, 0xBD, 0xE8];
 
-        let mut mem = self.memory_bus.mem_map.memory.borrow_mut();
-        if mem[0x88..0x8C] == BAD_STMFD {
-            mem[0x88..0x8C].copy_from_slice(&GOOD_STMFD);
+        let mem = &self.memory_bus.mem_map.memory;
+        let read4 = |start: usize| -> [u8; 4] {
+            [mem[start].get(), mem[start + 1].get(), mem[start + 2].get(), mem[start + 3].get()]
+        };
+        let write4 = |start: usize, bytes: [u8; 4]| {
+            for (i, b) in bytes.iter().enumerate() {
+                mem[start + i].set(*b);
+            }
+        };
+        if read4(0x88) == BAD_STMFD {
+            write4(0x88, GOOD_STMFD);
         }
-        if mem[0x94..0x98] == BAD_LDMFD {
-            mem[0x94..0x98].copy_from_slice(&GOOD_LDMFD);
+        if read4(0x94) == BAD_LDMFD {
+            write4(0x94, GOOD_LDMFD);
         }
     }
 
@@ -181,18 +189,6 @@ impl GBA {
         while !self.gpu.frame_ready {
             self.single_step();
         }
-
-        // Diagnostic: a cheap checksum of the fully composited frame,
-        // logged once per frame.
-        let checksum = self.gpu.frame_buffer.iter().fold(0u32, |acc, &p| acc.wrapping_add(p).rotate_left(1));
-        let pc = self.cpu.get_register(if self.cpu.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC });
-        log::info!(
-            "FRAME: checksum={:#010X} halt={:?} pc={:#010X} ime={:#X} ie={:#06X} if={:#06X}",
-            checksum, self.memory_bus.mem_map.halt_state, pc,
-            self.interrupt_handler.ime_interrupt.get_register(),
-            self.interrupt_handler.ie_interrupt.get_register(),
-            self.interrupt_handler.if_interrupt.get_register()
-        );
 
         self.gpu.frame_ready = false;
         self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4, 0)});

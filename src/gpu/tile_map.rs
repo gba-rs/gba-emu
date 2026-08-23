@@ -2,6 +2,7 @@ use crate::{
     memory::{
         memory_map::{MemoryMap, PALETTE_RAM_START, PALETTE_RAM_SIZE},
         lcd_io_registers::PixelFormat,
+        GbaMem
     },
     operations::bitutils
 };
@@ -62,16 +63,13 @@ impl GPU {
         let mut start_tile_x = background_x % 8;
         let tile_py = background_y % 8;
 
-        // Single borrow for the whole scanline instead of one per pixel —
-        // tile map, tile pixel, and palette reads below all index directly
+        // Tile map, tile pixel, and palette reads below all index directly
         // into this shared byte array (every memory region here is backed
-        // by the same flat Vec<u8>), avoiding a RefCell borrow-check per
-        // pixel read (up to 2 per pixel, 240 pixels * up to 4 backgrounds
-        // * 160 scanlines * 60fps).
-        let mem = mem_map.memory.borrow();
-        let read_u16_at = |mem: &[u8], addr: u32| -> u16 {
+        // by the same flat buffer).
+        let mem = &mem_map.memory;
+        let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
             let idx = addr as usize;
-            u16::from_le_bytes([mem[idx], mem[idx + 1]])
+            u16::from_le_bytes([mem[idx].get(), mem[idx + 1].get()])
         };
 
         loop {
@@ -86,11 +84,11 @@ impl GPU {
                     let pixel_index = match pixel_format {
                         PixelFormat::EightBit => {
                             let pixel_index_address = tile_address + (8 * pixel_y + pixel_x);
-                            mem[pixel_index_address as usize]
+                            mem[pixel_index_address as usize].get()
                         },
                         PixelFormat::FourBit => {
                             let pixel_index_address = tile_address + (4 * pixel_y + (pixel_x / 2));
-                            let value = mem[pixel_index_address as usize];
+                            let value = mem[pixel_index_address as usize].get();
                             if pixel_x & 1 != 0 {
                                 value >> 4
                             } else {

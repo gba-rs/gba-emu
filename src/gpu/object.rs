@@ -5,9 +5,9 @@ use crate::memory::{
     lcd_io_registers::ObjAttribute0,
     lcd_io_registers::ObjAttribute1,
     lcd_io_registers::ObjAttribute2,
-    lcd_io_registers::OBJRotScaleParam
+    lcd_io_registers::OBJRotScaleParam,
+    GbaMem
 };
-use std::cell::RefCell;
 use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 
@@ -19,7 +19,7 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
+    pub fn register(&mut self, mem: &Rc<GbaMem>){
         self.attr0.register(mem);
         self.attr1.register(mem);
         self.attr2.register(mem);
@@ -73,7 +73,7 @@ pub struct AffineMatrix {
 }
 
 impl AffineMatrix {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
+    pub fn register(&mut self, mem: &Rc<GbaMem>){
         self.pa.register(mem);
         self.pb.register(mem);
         self.pc.register(mem);
@@ -166,10 +166,10 @@ impl GPU {
 
         // Single borrow for the whole sprite scanline instead of one per
         // pixel, same rationale as tile_map.rs's render_bg.
-        let mem = mem_map.memory.borrow();
-        let read_u16_at = |mem: &[u8], addr: u32| -> u16 {
+        let mem = &mem_map.memory;
+        let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
             let idx = addr as usize;
-            u16::from_le_bytes([mem[idx], mem[idx + 1]])
+            u16::from_le_bytes([mem[idx].get(), mem[idx + 1].get()])
         };
 
         for ix in -half_width..half_width {
@@ -197,11 +197,11 @@ impl GPU {
                 let pixel_index = match pixel_format {
                     PixelFormat::EightBit => {
                         let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
-                        mem[pixel_index_address as usize]
+                        mem[pixel_index_address as usize].get()
                     },
                     PixelFormat::FourBit => {
                         let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
-                        let value = mem[pixel_index_address as usize];
+                        let value = mem[pixel_index_address as usize].get();
                         if tile_x & 1 != 0 {
                             value >> 4
                         } else {
@@ -281,10 +281,10 @@ impl GPU {
 
         // Single borrow for the whole sprite scanline instead of one per
         // pixel, same rationale as tile_map.rs's render_bg.
-        let mem = mem_map.memory.borrow();
-        let read_u16_at = |mem: &[u8], addr: u32| -> u16 {
+        let mem = &mem_map.memory;
+        let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
             let idx = addr as usize;
-            u16::from_le_bytes([mem[idx], mem[idx + 1]])
+            u16::from_le_bytes([mem[idx].get(), mem[idx + 1].get()])
         };
 
         for x in obj_x..end_x {
@@ -322,11 +322,11 @@ impl GPU {
             let pixel_index = match pixel_format {
                 PixelFormat::EightBit => {
                     let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
-                    mem[pixel_index_address as usize]
+                    mem[pixel_index_address as usize].get()
                 },
                 PixelFormat::FourBit => {
                     let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
-                    let value = mem[pixel_index_address as usize];
+                    let value = mem[pixel_index_address as usize].get();
                     if tile_x & 1 != 0 {
                         value >> 4
                     } else {

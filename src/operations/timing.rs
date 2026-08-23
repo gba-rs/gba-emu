@@ -1,5 +1,5 @@
 use crate::memory::system_control::WaitStateControl;
-use std::cell::RefCell;
+use crate::memory::GbaMem;
 use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 
@@ -47,7 +47,7 @@ impl CycleClock {
         };
     }
 
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.wait_state_control.register(mem);
     }
 

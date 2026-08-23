@@ -46,7 +46,6 @@ mod tests {
     use super::*;
     use crate::gba::GBA;
     use crate::cpu::{cpu::InstructionSet, cpu::THUMB_PC, cpu::ARM_PC, cpu::ARM_LR};
-    use std::borrow::{BorrowMut};
 
     #[test]
     fn swi_test() {
@@ -58,8 +57,8 @@ mod tests {
 
         let decode_result = gba.cpu.decode(0xDF00);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

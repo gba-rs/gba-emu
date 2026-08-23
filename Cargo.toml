@@ -15,7 +15,7 @@ default = ["console_error_panic_hook"]
 
 [dependencies]
 wasm-bindgen = "0.2.127"
-log = "0.4.33"
+log = "0.4.34"
 memory-macros = {path = "memory-macros"}
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "3.22.0"

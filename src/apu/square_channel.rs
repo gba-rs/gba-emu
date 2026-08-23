@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 use serde::{Serialize, Deserialize};
 use crate::memory::{GbaMem, sound_registers::{SoundChannelControlSweep, SoundChannelControlDLE, SoundChannelControlFC}};
 
@@ -51,7 +50,7 @@ impl SquareChannel {
         }
     }
 
-    pub fn register(&mut self, mem: &Rc<RefCell<GbaMem>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         if self.has_sweep {
             self.sweep.register(mem);
         }

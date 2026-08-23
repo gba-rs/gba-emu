@@ -1,7 +1,6 @@
 //4000208h - IME - Interrupt Master Enable Register (R/W)
 //4000200h - IE - Interrupt Enable Register (R/W)
 //4000202h - IF - Interrupt Request Flags / IRQ Acknowledge (R/W, see below)
-use std::cell::RefCell;
 use std::rc::Rc;
 use memory_macros::*;
 use super::GbaMem;

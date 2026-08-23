@@ -1,8 +1,9 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use crate::gamepak::BackupType;
 use crate::gamepak::flash::Flash;
 use crate::memory::eeprom::Eeprom;
+use crate::memory::GbaMem;
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::ser::SerializeStruct;
 use serde::de::{self, Visitor, MapAccess, SeqAccess};
@@ -59,7 +60,7 @@ pub enum HaltState {
 }
 
 pub struct MemoryMap {
-    pub memory: Rc<RefCell<Vec<u8>>>,
+    pub memory: Rc<GbaMem>,
     pub halt_state: HaltState,
     pub backup_type: BackupType,
     pub backed_up: bool,
@@ -76,7 +77,7 @@ pub struct MemoryMap {
 impl MemoryMap {
 
     pub fn new(backup_type: BackupType) -> MemoryMap {
-        let mut memory = vec![0u8; 0x1000_00F0];
+        let mut memory: GbaMem = vec![Cell::new(0u8); 0x1000_00F0];
         // Real SRAM/Flash chips read as 0xFF (all bits set) until something
         // is actually written — that's the electrically "erased" state, not
         // 0x00. Confirmed by jsmolka/gba-tests' save/*.gba suite, whose very
@@ -86,10 +87,10 @@ impl MemoryMap {
         // zero-init there is fine.
         let backup_start = SRAM_START as usize;
         let backup_end = backup_start + 0x20000; // covers SRAM/Flash64K/Flash128K
-        memory[backup_start..backup_end].fill(0xFF);
+        memory[backup_start..backup_end].fill(Cell::new(0xFF));
 
         return MemoryMap {
-            memory: Rc::new(RefCell::new(memory)),
+            memory: Rc::new(memory),
             halt_state: HaltState::Running,
             backup_type: backup_type,
             backed_up: false,
@@ -124,18 +125,18 @@ impl MemoryMap {
         let upper_byte = address >> 24;
 
         match upper_byte {
-            0x02 => self.memory.borrow_mut()[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize] = value,
-            0x03 => self.memory.borrow_mut()[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize] = value,
+            0x02 => self.memory[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize].set(value),
+            0x03 => self.memory[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize].set(value),
             0x04 => {
                 if address == 0x4000202 || address == 0x4000203 {
                     let new_val = self.read_u8(address) & !value;
-                    self.memory.borrow_mut()[address as usize] = new_val;
+                    self.memory[address as usize].set(new_val);
                 }else if address == 0x4000100 || address == 0x4000101 ||
                    address == 0x4000104 || address == 0x4000105 ||
                    address == 0x4000108 || address == 0x4000109 ||
                    address == 0x400010C || address == 0x400010D {
                     let index: usize = (address & 0xF) as usize;
-                    self.memory.borrow_mut()[0x1000_0000usize + index] = value;
+                    self.memory[0x1000_0000usize + index].set(value);
                 } else if address == 0x4000301{
                     let bit = (value & 0x80) >> 7;
                     if bit == 0 {
@@ -158,19 +159,19 @@ impl MemoryMap {
                         };
                         self.trigger_flags |= channel_bit;
                     }
-                    self.memory.borrow_mut()[address as usize] = value;
+                    self.memory[address as usize].set(value);
                 }else if (0x4000_00A0..=0x4000_00A3).contains(&address) {
                     if self.fifo_a.len() < 32 {
                         self.fifo_a.push_back(value);
                     }
-                    self.memory.borrow_mut()[address as usize] = value;
+                    self.memory[address as usize].set(value);
                 }else if (0x4000_00A4..=0x4000_00A7).contains(&address) {
                     if self.fifo_b.len() < 32 {
                         self.fifo_b.push_back(value);
                     }
-                    self.memory.borrow_mut()[address as usize] = value;
+                    self.memory[address as usize].set(value);
                 }else {
-                    self.memory.borrow_mut()[address as usize] = value;
+                    self.memory[address as usize].set(value);
                 }
 
             },
@@ -182,9 +183,8 @@ impl MemoryMap {
             // jsmolka/gba-tests' memory/video_strb.asm.
             0x05 => {
                 let halfword_addr = ((address & PALETTE_RAM_SIZE) + PALETTE_RAM_START) & !1;
-                let mut mem = self.memory.borrow_mut();
-                mem[halfword_addr as usize] = value;
-                mem[(halfword_addr + 1) as usize] = value;
+                self.memory[halfword_addr as usize].set(value);
+                self.memory[(halfword_addr + 1) as usize].set(value);
             },
             0x06 => {
                 let mirrored = Self::vram_mirrored_address(address);
@@ -193,9 +193,8 @@ impl MemoryMap {
                     // ignored, same as OAM.
                 } else {
                     let halfword_addr = mirrored & !1;
-                    let mut mem = self.memory.borrow_mut();
-                    mem[halfword_addr as usize] = value;
-                    mem[(halfword_addr + 1) as usize] = value;
+                    self.memory[halfword_addr as usize].set(value);
+                    self.memory[(halfword_addr + 1) as usize].set(value);
                 }
             },
             0x07 => {
@@ -208,9 +207,9 @@ impl MemoryMap {
                         // mirrors throughout the whole 0x0E/0x0F window,
                         // not just at the base address.
                         if upper_byte == 0x0E || upper_byte == 0x0F {
-                            self.memory.borrow_mut()[((address & SRAM_SIZE) + SRAM_START) as usize] = value;
+                            self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].set(value);
                         } else {
-                            self.memory.borrow_mut()[Self::rom_mirrored_address(address) as usize] = value;
+                            self.memory[Self::rom_mirrored_address(address) as usize].set(value);
                         }
                     },
                     BackupType::Eeprom => {
@@ -221,21 +220,21 @@ impl MemoryMap {
                         if upper_byte == 0x0D {
                             self.eeprom.borrow_mut().write_bit(value as u16);
                         } else {
-                            self.memory.borrow_mut()[address as usize] = value;
+                            self.memory[address as usize].set(value);
                         }
                     },
                     BackupType::Flash64K | BackupType::Flash128K => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             self.write_flash(address, value);
                         } else {
-                            self.memory.borrow_mut()[address as usize] = value;
+                            self.memory[address as usize].set(value);
                         }
                     },
                     // BackupType::Flash128K => {
-                    //     self.memory.borrow_mut()[address as usize] = value;
+                    //     self.memory[address as usize].set(value);
                     // },
                     BackupType::Error => {
-                        self.memory.borrow_mut()[address as usize] = value;
+                        self.memory[address as usize].set(value);
                     },
                 }
             },
@@ -330,7 +329,7 @@ impl MemoryMap {
     /// avoid needing a GPU reference just for this one field.
     #[inline]
     fn vram_obj_boundary(&self) -> u32 {
-        let bg_mode = self.memory.borrow()[0x04000000] & 0x7;
+        let bg_mode = self.memory[0x04000000].get() & 0x7;
         if bg_mode >= 3 { 0x14000 } else { 0x10000 }
     }
 
@@ -344,9 +343,8 @@ impl MemoryMap {
     pub fn write_u16(&mut self, address: u32, value: u16) {
         if let Some(idx) = MemoryMap::fast_region_index(address, 2) {
             let bytes = value.to_le_bytes();
-            let mut mem = self.memory.borrow_mut();
-            mem[idx] = bytes[0];
-            mem[idx + 1] = bytes[1];
+            self.memory[idx].set(bytes[0]);
+            self.memory[idx + 1].set(bytes[1]);
             return;
         }
 
@@ -375,8 +373,10 @@ impl MemoryMap {
 
     pub fn write_u32(&mut self, address: u32, value: u32) {
         if let Some(idx) = MemoryMap::fast_region_index(address, 4) {
-            let mut mem = self.memory.borrow_mut();
-            mem[idx..idx + 4].copy_from_slice(&value.to_le_bytes());
+            let bytes = value.to_le_bytes();
+            for i in 0..4 {
+                self.memory[idx + i].set(bytes[i]);
+            }
             return;
         }
 
@@ -396,10 +396,9 @@ impl MemoryMap {
 
     pub fn write_block(&mut self, address: u32, block: &Vec<u8>) {
         let mut offset: u32 = 0;
-        let mut mem = self.memory.borrow_mut();
 
         for byte in block {
-            mem[(address + offset) as usize] = *byte;
+            self.memory[(address + offset) as usize].set(*byte);
             offset += 1;
         }
     }
@@ -415,16 +414,17 @@ impl MemoryMap {
     pub fn read_block_raw(&self, address: u32, bytes: u32) -> Vec<u8> {
         let mut temp: Vec<u8> = vec![];
         for i in address..(address + bytes) {
-            temp.push(self.memory.borrow()[i as usize]);
+            temp.push(self.memory[i as usize].get());
         }
         return temp;
     }
 
     pub fn read_u32(&self, address: u32) -> u32 {
         if let Some(idx) = MemoryMap::fast_region_index(address, 4) {
-            let mem = self.memory.borrow();
-            let result = u32::from_le_bytes([mem[idx], mem[idx + 1], mem[idx + 2], mem[idx + 3]]);
-            drop(mem);
+            let result = u32::from_le_bytes([
+                self.memory[idx].get(), self.memory[idx + 1].get(),
+                self.memory[idx + 2].get(), self.memory[idx + 3].get(),
+            ]);
             return result;
         }
 
@@ -449,9 +449,7 @@ impl MemoryMap {
 
     pub fn read_u16(&self, address: u32) -> u16 {
         if let Some(idx) = MemoryMap::fast_region_index(address, 2) {
-            let mem = self.memory.borrow();
-            let result = u16::from_le_bytes([mem[idx], mem[idx + 1]]);
-            drop(mem);
+            let result = u16::from_le_bytes([self.memory[idx].get(), self.memory[idx + 1].get()]);
             return result;
         }
 
@@ -474,33 +472,33 @@ impl MemoryMap {
         let upper_byte = address >> 24;
 
         match upper_byte {
-            0x02 => return self.memory.borrow()[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize],
-            0x03 => return self.memory.borrow()[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize],
-            0x04 => return self.memory.borrow()[address as usize],
-            0x05 => return self.memory.borrow()[((address & PALETTE_RAM_SIZE) + PALETTE_RAM_START) as usize],
-            0x06 => return self.memory.borrow()[Self::vram_mirrored_address(address) as usize],
-            0x07 => return self.memory.borrow()[((address & OBJECT_ATTRIBUTES_SIZE) + OBJECT_ATTRIBUTES_START) as usize],
+            0x02 => return self.memory[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize].get(),
+            0x03 => return self.memory[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize].get(),
+            0x04 => return self.memory[address as usize].get(),
+            0x05 => return self.memory[((address & PALETTE_RAM_SIZE) + PALETTE_RAM_START) as usize].get(),
+            0x06 => return self.memory[Self::vram_mirrored_address(address) as usize].get(),
+            0x07 => return self.memory[((address & OBJECT_ATTRIBUTES_SIZE) + OBJECT_ATTRIBUTES_START) as usize].get(),
             0x08..=0x0F => {
                 match self.backup_type {
                     BackupType::Sram => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
-                            return self.memory.borrow()[((address & SRAM_SIZE) + SRAM_START) as usize]
+                            return self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].get()
                         } else {
-                            return self.memory.borrow()[Self::rom_mirrored_address(address) as usize];
+                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Eeprom => {
                         if upper_byte == 0x0D {
                             return self.eeprom.borrow_mut().read_bit() as u8;
                         } else {
-                            return self.memory.borrow()[Self::rom_mirrored_address(address) as usize];
+                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Flash64K | BackupType::Flash128K => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             return self.read_flash(address);
                         } else {
-                            return self.memory.borrow()[Self::rom_mirrored_address(address) as usize];
+                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
                         }
                     },
                     // BackupType::Flash128K => {
@@ -509,7 +507,7 @@ impl MemoryMap {
                     //     } else if address == 0x0E000001 {
                     //         return 0x13;
                     //     }
-                    //     return self.memory.borrow()[address as usize];
+                    //     return self.memory[address as usize].get();
 
                     // },
                     BackupType::Error => {
@@ -524,9 +522,9 @@ impl MemoryMap {
                             // jsmolka/gba-tests' save/none.asm, which
                             // expects the same 0xFF "erased" reading as a
                             // real backup chip would give.
-                            return self.memory.borrow()[((address & SRAM_SIZE) + SRAM_START) as usize];
+                            return self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].get();
                         } else {
-                            return self.memory.borrow()[Self::rom_mirrored_address(address) as usize];
+                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
                         }
                     },
                 }
@@ -544,7 +542,7 @@ impl MemoryMap {
                 if current_pc < BIOS_SIZE {
                     // PC is actually executing from inside the BIOS, so
                     // this read is allowed to see the real byte content.
-                    return self.memory.borrow()[address as usize];
+                    return self.memory[address as usize].get();
                 }
                 // BIOS memory is protected from being read by anything
                 // outside the BIOS itself: real hardware returns whatever
@@ -600,8 +598,10 @@ impl Serialize for MemoryMap {
         // Determine how many fields we're serializing
         let mut state = serializer.serialize_struct("MemoryMap", 9)?;
 
-        // Serialize memory by borrowing the RefCell and using the underlying Vec<u8>
-        state.serialize_field("memory", &*self.memory.borrow())?;
+        // Serialize the shared Vec<Cell<u8>> directly — serde has a built-in
+        // Serialize impl for Cell<T: Copy + Serialize>, so this needs no
+        // borrowing at all (unlike the old Rc<RefCell<Vec<u8>>>).
+        state.serialize_field("memory", &*self.memory)?;
 
         // Serialize the rest of the fields normally
         state.serialize_field("halt_state", &self.halt_state)?;
@@ -677,7 +677,7 @@ impl<'de> Deserialize<'de> for MemoryMap {
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
                 where
                     A: SeqAccess<'de>, {
-                let mem_vec = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let mem_vec: GbaMem = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let halt_state = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let backup_type = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let backed_up = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
@@ -687,7 +687,7 @@ impl<'de> Deserialize<'de> for MemoryMap {
                 let fifo_b = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let trigger_flags = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
 
-                let memory = Rc::new(RefCell::new(mem_vec));
+                let memory = Rc::new(mem_vec);
                 Ok(MemoryMap {
                     memory,
                     halt_state,
@@ -722,9 +722,8 @@ impl<'de> Deserialize<'de> for MemoryMap {
                             if memory.is_some() {
                                 return Err(de::Error::duplicate_field("memory"));
                             }
-                            // Deserialize directly into a Vec<u8>
-                            let mem_vec: Vec<u8> = map.next_value()?;
-                            memory = Some(Rc::new(RefCell::new(mem_vec)));
+                            let mem_vec: GbaMem = map.next_value()?;
+                            memory = Some(Rc::new(mem_vec));
                         }
                         Field::HaltState => {
                             if halt_state.is_some() {
@@ -870,13 +869,13 @@ mod fast_path_tests {
         // protocol instead of returning the real ROM bytes previously
         // broke booting entirely for every EEPROM-backed game.
         let mut mem = MemoryMap::new(BackupType::Eeprom);
-        mem.memory.borrow_mut()[0x0800_0100] = 0x12;
-        mem.memory.borrow_mut()[0x0800_0101] = 0x34;
+        mem.memory[0x0800_0100].set(0x12);
+        mem.memory[0x0800_0101].set(0x34);
         assert_eq!(mem.read_u8(0x0800_0100), 0x12);
         assert_eq!(mem.read_u16(0x0800_0100), 0x3412);
 
         mem.write_u8(0x0800_0200, 0x56);
-        assert_eq!(mem.memory.borrow()[0x0800_0200], 0x56);
+        assert_eq!(mem.memory[0x0800_0200].get(), 0x56);
     }
 
     #[test]
@@ -894,6 +893,6 @@ mod fast_path_tests {
         }
         // A byte written to the EEPROM window must not land in flat memory
         // at that literal address the way an ordinary ROM/mirror write would.
-        assert_eq!(mem.memory.borrow()[0x0D00_0000], 0);
+        assert_eq!(mem.memory[0x0D00_0000].get(), 0);
     }
 }

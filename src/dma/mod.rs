@@ -1,7 +1,6 @@
 use crate::memory::{dma_registers::*, GbaMem, memory_bus::MemoryBus};
 use crate::interrupts::interrupts::Interrupts;
 use crate::memory::sound_registers::SoundControlHigh;
-use std::cell::RefCell;
 use std::rc::Rc;
 use std::fmt;
 use serde::{Serialize, Deserialize};
@@ -41,7 +40,7 @@ impl DMAChannel {
         }
     }
 
-    pub fn register(&mut self, mem: &Rc<RefCell<GbaMem>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.source_address.register(mem);
         self.destination_address.register(mem);
         self.word_count.register(mem);
@@ -188,7 +187,7 @@ pub struct DMAController {
 }
 
 impl DMAController {
-    pub fn register(&mut self, mem: &Rc<RefCell<GbaMem>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         for i in 0..4 {
             self.dma_channels[i].register(mem);
         }

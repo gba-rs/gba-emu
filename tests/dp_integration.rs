@@ -8,8 +8,6 @@ mod tests {
     use gba_emulator::arm_formats::data_processing::DataProcessing;
     use gba_emulator::operations::instruction::Instruction;
     use gba_emulator::gba::GBA;
-    use std::borrow::BorrowMut;
-    use std::borrow::Borrow;
     use gba_emulator::memory::memory_bus::MemoryBus;
 
 
@@ -152,9 +150,9 @@ mod tests {
 
             let decode_result = gba.cpu.decode(0xE10F0000);
             match decode_result {
-                Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
-                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                Ok(instr) => {
+                    instr.execute(&mut gba.cpu, &mut gba.memory_bus);
+                    println!("{:?}", instr.asm());
                 },
                 Err(e) => {
                     panic!("{:?}", e);
@@ -172,9 +170,9 @@ mod tests {
 
             let decode_result = gba.cpu.decode(0xE14F1000);
             match decode_result {
-                Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
-                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                Ok(instr) => {
+                    instr.execute(&mut gba.cpu, &mut gba.memory_bus);
+                    println!("{:?}", instr.asm());
                 },
                 Err(e) => {
                     panic!("{:?}", e);
@@ -189,9 +187,9 @@ mod tests {
 
             let decode_result = gba.cpu.decode(0xE329F011);
             match decode_result {
-                Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
-                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                Ok(instr) => {
+                    instr.execute(&mut gba.cpu, &mut gba.memory_bus);
+                    println!("{:?}", instr.asm());
                 },
                 Err(e) => {
                     panic!("{:?}", e);
@@ -206,9 +204,9 @@ mod tests {
 
             let decode_result = gba.cpu.decode(0xE329F011);
             match decode_result {
-                Ok(mut instr) => {
-                    (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
-                    println!("{:?}", (instr.borrow() as &dyn Instruction).asm());
+                Ok(instr) => {
+                    instr.execute(&mut gba.cpu, &mut gba.memory_bus);
+                    println!("{:?}", instr.asm());
                 },
                 Err(e) => {
                     panic!("{:?}", e);

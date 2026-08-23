@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 use serde::{Serialize, Deserialize};
 use crate::memory::{GbaMem, memory_bus::MemoryBus, sound_registers::{SoundChannelControlWaveLow, SoundChannelControlWaveHigh, SoundChannelControlWaveX}};
 
@@ -31,7 +30,7 @@ impl WaveChannel {
         }
     }
 
-    pub fn register(&mut self, mem: &Rc<RefCell<GbaMem>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.low.register(mem);
         self.high.register(mem);
         self.x.register(mem);
@@ -85,7 +84,7 @@ impl WaveChannel {
             return 0;
         }
         let byte_offset = (self.sample_position / 2) as u32;
-        let byte = mem_bus.mem_map.memory.borrow()[(0x0400_0090 + byte_offset) as usize];
+        let byte = mem_bus.mem_map.memory[(0x0400_0090 + byte_offset) as usize].get();
         let raw = if self.sample_position % 2 == 0 { byte >> 4 } else { byte & 0xF };
 
         if self.high.get_force_volume() != 0 {
@@ -119,7 +118,7 @@ mod tests {
     #[test]
     fn amplitude_reads_nibble_from_wave_ram() {
         let mut gba = GBA::default();
-        gba.memory_bus.mem_map.memory.borrow_mut()[0x0400_0090] = 0xA5;
+        gba.memory_bus.mem_map.memory[0x0400_0090].set(0xA5);
         let ch = &mut gba.apu.wave;
         ch.low.set_sound_channel_3_off(1);
         ch.high.set_sound_volume(1);

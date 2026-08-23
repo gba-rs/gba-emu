@@ -80,7 +80,7 @@ impl MemoryMap {
                 return if (address & 0xFFFF) == 0 { 0xBF } else { 0xD4 };
             }
         } 
-        return self.memory.borrow()[self.flash.banked_address(address) as usize];
+        return self.memory[self.flash.banked_address(address) as usize].get();
     }
 
     pub fn write_flash(&mut self, address: u32, value: u8) {
@@ -125,14 +125,12 @@ impl MemoryMap {
                 FlashCommands::EraseChip => {
                     if self.flash.enable_erase {
                         if self.backup_type == BackupType::Flash128K {
-                            let mut mem = self.memory.borrow_mut();
                             for i in 0..0x2_0000 {
-                                mem[(0x0E000000 + i) as usize] = 0xFF;
+                                self.memory[(0x0E000000 + i) as usize].set(0xFF);
                             }
                         } else {
-                            let mut mem = self.memory.borrow_mut();
                             for i in 0..0x1_0000 {
-                                mem[(0x0E000000 + i) as usize] = 0xFF;
+                                self.memory[(0x0E000000 + i) as usize].set(0xFF);
                             }
                         }
                     }
@@ -153,9 +151,8 @@ impl MemoryMap {
                 },
                 FlashCommands::EraseSector => {
                     if self.flash.enable_erase && (address & !0xF000) == 0x0E000000 {
-                        let mut mem = self.memory.borrow_mut();
                         for i in 0..0x1000 {
-                            mem[self.flash.banked_address(address + i) as usize] = 0xFF;
+                            self.memory[self.flash.banked_address(address + i) as usize].set(0xFF);
                         }
 
                         self.flash.enable_erase = false;
@@ -168,7 +165,7 @@ impl MemoryMap {
 
     fn run_command_parameter(&mut self, address: u32, value: u8) {
         if self.flash.enable_write {
-            self.memory.borrow_mut()[self.flash.banked_address(address) as usize] = value;
+            self.memory[self.flash.banked_address(address) as usize].set(value);
             self.flash.enable_write = false;
         } else if self.flash.enable_bank_select && address == 0x0E000000 {
             self.flash.bank = value & 1;

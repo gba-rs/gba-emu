@@ -1,6 +1,6 @@
 use crate::memory::timer_registers::*;
 use crate::interrupts::interrupts::Interrupts;
-use std::cell::RefCell;
+use crate::memory::GbaMem;
 use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 
@@ -14,7 +14,7 @@ pub struct Timer {
 }
 
 impl Timer {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.timer.register(mem);
         self.controller.register(mem);
     }
@@ -138,7 +138,7 @@ impl TimerHandler {
     }
 
 
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
+    pub fn register(&mut self, mem: &Rc<GbaMem>){
         for i in 0..4 {
             self.timers[i].register(mem);
         }

@@ -4,7 +4,6 @@ pub mod wave_channel;
 pub mod noise_channel;
 
 use std::rc::Rc;
-use std::cell::RefCell;
 use serde::{Serialize, Deserialize};
 use crate::memory::{GbaMem, memory_bus::MemoryBus, sound_registers::*};
 use direct_sound::DirectSoundChannel;
@@ -66,7 +65,7 @@ impl Apu {
         };
     }
 
-    pub fn register(&mut self, mem: &Rc<RefCell<GbaMem>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.sound_control_low.register(mem);
         self.sound_control_high.register(mem);
         self.sound_control_x.register(mem);
