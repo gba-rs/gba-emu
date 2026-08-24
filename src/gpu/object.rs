@@ -164,8 +164,6 @@ impl GPU {
         let half_height = bbox_h / 2;
         let iy = current_scanline - (ref_point_y + half_height);
 
-        // Single borrow for the whole sprite scanline instead of one per
-        // pixel, same rationale as tile_map.rs's render_bg.
         let mem = &mem_map.memory;
         let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
             let idx = addr as usize;
@@ -182,7 +180,7 @@ impl GPU {
             }
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
-            if self.obj_buffer[obj_buffer_index].1 <= priority {
+            if gfx_mode != 0b10 && self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
             }
 
@@ -279,8 +277,6 @@ impl GPU {
             obj_w / 8
         };
 
-        // Single borrow for the whole sprite scanline instead of one per
-        // pixel, same rationale as tile_map.rs's render_bg.
         let mem = &mem_map.memory;
         let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
             let idx = addr as usize;
@@ -297,10 +293,10 @@ impl GPU {
             }
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
-            if self.obj_buffer[obj_buffer_index].1 <= priority {
+            if gfx_mode != 0b10 && self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
             }
-            
+
             let mut sprite_y = current_scanline - obj_y;
             let mut sprite_x = x - obj_x;
 
@@ -355,5 +351,46 @@ impl GPU {
             }
         }
 
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+    use crate::memory::memory_map::MemoryMap;
+
+    fn setup() -> (GPU, MemoryMap) {
+        let mem_map = MemoryMap::new(BackupType::Sram);
+        let mut gpu = GPU::new();
+        gpu.register(&mem_map.memory);
+        (gpu, mem_map)
+    }
+
+    fn configure_sprite(sprite: &mut Object, gfx_mode: u8, priority: u8) {
+        sprite.attr0.set_y_coordinate(0);
+        sprite.attr0.set_obj_mode(0b00);
+        sprite.attr0.set_gfx_mode(gfx_mode);
+        sprite.attr0.set_obj_shape(0);
+        sprite.attr1.set_x_coordinate(0);
+        sprite.attr1.set_obj_size(0);
+        sprite.attr2.set_character_name(0);
+        sprite.attr2.set_priority_rel_to_bg(priority);
+    }
+
+    #[test]
+    fn window_mode_sprite_is_not_occluded_by_a_same_priority_normal_sprite() {
+        let (mut gpu, mut mem_map) = setup();
+        mem_map.memory[0x06010000].set(0x01);
+        mem_map.memory[0x05000202].set(0xff);
+        mem_map.memory[0x05000203].set(0x7f);
+        gpu.vertical_count.set_current_scanline(0);
+
+        configure_sprite(&mut gpu.objects[0], 0b00, 2);
+        configure_sprite(&mut gpu.objects[1], 0b10, 2);
+
+        gpu.render_obj(&mut mem_map);
+
+        assert!(gpu.obj_window[0]);
     }
 }
