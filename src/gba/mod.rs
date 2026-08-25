@@ -202,8 +202,7 @@ impl GBA {
             self.cpu.fetch(&mut self.memory_bus)
         } else {
             // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
-            self.gpu.cycles_to_next_state as usize
-            // 1
+            self.gpu.cycles_to_next_state.max(0) as usize
         };
 
         self.gpu.step(cycles, &mut self.memory_bus.mem_map, &mut self.interrupt_handler, &mut self.dma_control);
@@ -309,5 +308,22 @@ mod keypad_interrupt_tests {
         let key_cnt = IRQ_ENABLE | BUTTON_A; // only A selected, OR mode
         let only_start_pressed = ALL_RELEASED & !BUTTON_START;
         assert!(!keypad_interrupt_condition_met(only_start_pressed, key_cnt));
+    }
+}
+
+#[cfg(test)]
+mod single_step_tests {
+    use super::GBA;
+    use crate::memory::memory_map::HaltState;
+
+    #[test]
+    fn halted_with_negative_cycles_to_next_state_does_not_stall() {
+        let mut gba = GBA::default();
+        gba.memory_bus.mem_map.halt_state = HaltState::Halt;
+        gba.gpu.cycles_to_next_state = -100;
+
+        gba.single_step();
+
+        assert!(gba.gpu.cycles_to_next_state.abs() < 1_000_000);
     }
 }

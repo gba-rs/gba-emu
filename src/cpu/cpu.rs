@@ -478,9 +478,11 @@ impl CPU {
 
                 if check_condition {
                     let temp_cycles = instr.execute(self, bus);
-                    (instr.cycles() + temp_cycles) as usize
+                    let unclaimed_cycles = bus.cycle_clock.get_cycles();
+                    (instr.cycles() + temp_cycles + unclaimed_cycles) as usize
                 } else {
-                    1usize
+                    let unclaimed_cycles = bus.cycle_clock.get_cycles();
+                    1usize + unclaimed_cycles as usize
                 }
             },
             Err(e) => {
@@ -681,6 +683,16 @@ mod tests {
         bus.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut bus);
         cpu.fetch(&mut bus);
+    }
+
+    #[test]
+    fn fetch_claims_all_pending_cycle_clock_cost_for_non_memory_instructions() {
+        let mut cpu = CPU::new();
+        cpu.set_register(15, 0x02000000);
+        let mut bus = MemoryBus::new_stub();
+        bus.write_u32(0x02000000, 0xE1A00000);
+        cpu.fetch(&mut bus);
+        assert_eq!(bus.cycle_clock.get_cycles(), 0);
     }
 
     #[test]
