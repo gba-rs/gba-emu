@@ -91,7 +91,6 @@ mod tests {
     use super::*;
     use crate::gba::GBA;
     use crate::cpu::{cpu::InstructionSet};
-    use std::borrow::{BorrowMut};
 
     #[test]
     fn test_creation_0s() {
@@ -138,8 +137,8 @@ mod tests {
 
         let decode_result = gba.cpu.decode(0x613B);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -166,8 +165,8 @@ mod tests {
         //let mem address = 3
         let decode_result = gba.cpu.decode(0x613B); //str
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -177,8 +176,8 @@ mod tests {
 
         let decode_result = gba.cpu.decode(0x693B); //ldr
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -204,8 +203,8 @@ mod tests {
         //let mem address = 3
         let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -231,8 +230,8 @@ mod tests {
         gba.cpu.set_register(format.rd,0x08000002); //value we want to get
         let decode_result = gba.cpu.decode(0x713B); //strb
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -243,8 +242,8 @@ mod tests {
         //set address at 3 = 3
         let decode_result = gba.cpu.decode(0x793B); //ldrb
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

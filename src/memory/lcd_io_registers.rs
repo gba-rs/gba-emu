@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
-use std::cell::RefCell;
 use std::rc::Rc;
 use crate::operations::bitutils::*;
 use super::GbaMem;
@@ -548,7 +547,7 @@ io_register! (
         117441530usize
     ],
     x_coordinate: 0, 9,
-    rotation_scaling_param: 9, 4,
+    rotation_scaling_param: 9, 5,
     horizontal_flip: 12, 1,
     vertical_flip: 13, 1,
     obj_size: 14, 2

@@ -6,6 +6,7 @@ use crate::memory::{memory_bus::MemoryBus, memory_map::HaltState};
 use crate::interrupts::interrupts::Interrupts;
 use crate::dma::DMAController;
 use crate::timers::timer::TimerHandler;
+use crate::apu::Apu;
 use crate::{gamepak::GamePack, gamepak::BackupType};
 use serde::{Serialize, Deserialize};
 
@@ -18,7 +19,8 @@ pub struct GBA {
     pub ket_interrupt_control: KeyInterruptControl,
     pub interrupt_handler: Interrupts,
     pub timer_handler: TimerHandler,
-    pub dma_control: DMAController
+    pub dma_control: DMAController,
+    pub apu: Apu
 }
 
 impl Default for GBA {
@@ -40,7 +42,8 @@ impl GBA {
             ket_interrupt_control: KeyInterruptControl::new(),
             interrupt_handler: Interrupts::new(),
             timer_handler: TimerHandler::new(),
-            dma_control: DMAController::new()
+            dma_control: DMAController::new(),
+            apu: Apu::new()
         };
 
         temp.register_memory();
@@ -97,10 +100,35 @@ impl GBA {
         self.timer_handler.register(&self.memory_bus.mem_map.memory);
         self.memory_bus.cycle_clock.register(&self.memory_bus.mem_map.memory);
         self.dma_control.register(&self.memory_bus.mem_map.memory);
+        self.apu.register(&self.memory_bus.mem_map.memory);
     }
 
     pub fn load_bios(&mut self, bios: &Vec<u8>) {
-        self.memory_bus.mem_map.write_block(0, bios)
+        self.memory_bus.mem_map.write_block(0, bios);
+        self.patch_known_bad_bios_swi_dispatcher();
+    }
+
+    fn patch_known_bad_bios_swi_dispatcher(&mut self) {
+        const BAD_STMFD: [u8; 4] = [0x0C, 0x40, 0x2D, 0xE9];
+        const GOOD_STMFD: [u8; 4] = [0x04, 0x40, 0x2D, 0xE9];
+        const BAD_LDMFD: [u8; 4] = [0x0C, 0x40, 0xBD, 0xE8];
+        const GOOD_LDMFD: [u8; 4] = [0x04, 0x40, 0xBD, 0xE8];
+
+        let mem = &self.memory_bus.mem_map.memory;
+        let read4 = |start: usize| -> [u8; 4] {
+            [mem[start].get(), mem[start + 1].get(), mem[start + 2].get(), mem[start + 3].get()]
+        };
+        let write4 = |start: usize, bytes: [u8; 4]| {
+            for (i, b) in bytes.iter().enumerate() {
+                mem[start + i].set(*b);
+            }
+        };
+        if read4(0x88) == BAD_STMFD {
+            write4(0x88, GOOD_STMFD);
+        }
+        if read4(0x94) == BAD_LDMFD {
+            write4(0x94, GOOD_LDMFD);
+        }
     }
 
     pub fn load_rom(&mut self, rom: &Vec<u8>) {
@@ -112,7 +140,10 @@ impl GBA {
             BackupType::Sram | BackupType::Flash64K | BackupType::Flash128K => {
                 self.memory_bus.mem_map.write_block(0x0E000000, save_data);
             },
-            _ => {log::info!("Save data for this type is not implemented")} 
+            BackupType::Eeprom => {
+                self.memory_bus.mem_map.eeprom.borrow_mut().import_bytes(save_data);
+            },
+            _ => {log::info!("Save data for this type is not implemented")}
         }
     }
                                                                                                                                                                                                                                                                                                                    
@@ -127,7 +158,10 @@ impl GBA {
             BackupType::Flash128K => {
                 return self.memory_bus.mem_map.read_block_raw(0x0E000000, 0x20000);
             }
-            _ => {log::info!("Save data for this type is not implemented")} 
+            BackupType::Eeprom => {
+                return self.memory_bus.mem_map.eeprom.borrow().export_bytes();
+            },
+            _ => {log::info!("Save data for this type is not implemented")}
         }
 
         return Vec::new();
@@ -150,13 +184,115 @@ impl GBA {
             self.cpu.fetch(&mut self.memory_bus)
         } else {
             // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
-            self.gpu.cycles_to_next_state as usize
-            // 1
+            self.gpu.cycles_to_next_state.max(0) as usize
         };
 
         self.gpu.step(cycles, &mut self.memory_bus.mem_map, &mut self.interrupt_handler, &mut self.dma_control);
-        self.timer_handler.update(cycles, &mut self.interrupt_handler);
-        self.dma_control.update(&mut self.memory_bus, &mut self.interrupt_handler);
+        let timer_overflows = self.timer_handler.update(cycles, &mut self.interrupt_handler);
+        self.dma_control.update(&mut self.memory_bus, &mut self.interrupt_handler, timer_overflows);
+        let timer_periods = [
+            self.timer_handler.timers[0].period_cycles(),
+            self.timer_handler.timers[1].period_cycles(),
+            self.timer_handler.timers[2].period_cycles(),
+            self.timer_handler.timers[3].period_cycles(),
+        ];
+        self.apu.step(cycles, timer_periods, &mut self.memory_bus);
+
+        if keypad_interrupt_condition_met(self.key_status.get_register(), self.ket_interrupt_control.get_register()) {
+            self.interrupt_handler.if_interrupt.set_keypad(1);
+        }
+
         self.interrupt_handler.service(&mut self.cpu, &mut self.memory_bus);
+    }
+}
+
+fn keypad_interrupt_condition_met(key_status_raw: u16, key_cnt_raw: u16) -> bool {
+    let irq_enabled = (key_cnt_raw >> 14) & 1 == 1;
+    if !irq_enabled {
+        return false;
+    }
+
+    let selected = key_cnt_raw & 0x3FF;
+    if selected == 0 {
+        return false;
+    }
+
+    let pressed = (!key_status_raw) & 0x3FF;
+    let and_mode = (key_cnt_raw >> 15) & 1 == 1;
+    if and_mode {
+        (pressed & selected) == selected
+    } else {
+        (pressed & selected) != 0
+    }
+}
+
+#[cfg(test)]
+mod keypad_interrupt_tests {
+    use super::keypad_interrupt_condition_met;
+
+    const IRQ_ENABLE: u16 = 1 << 14;
+    const IRQ_CONDITION_AND: u16 = 1 << 15;
+    const BUTTON_A: u16 = 1 << 0;
+    const BUTTON_START: u16 = 1 << 3;
+    const ALL_RELEASED: u16 = 0xFFFF;
+
+    #[test]
+    fn disabled_never_fires_even_if_selected_buttons_are_pressed() {
+        let key_cnt = BUTTON_A;
+        let a_pressed = ALL_RELEASED & !BUTTON_A;
+        assert!(!keypad_interrupt_condition_met(a_pressed, key_cnt));
+    }
+
+    #[test]
+    fn or_mode_fires_when_any_selected_button_is_pressed() {
+        let key_cnt = IRQ_ENABLE | BUTTON_A | BUTTON_START;
+        let only_a_pressed = ALL_RELEASED & !BUTTON_A;
+        assert!(keypad_interrupt_condition_met(only_a_pressed, key_cnt));
+    }
+
+    #[test]
+    fn or_mode_does_not_fire_when_no_selected_button_is_pressed() {
+        let key_cnt = IRQ_ENABLE | BUTTON_A | BUTTON_START;
+        assert!(!keypad_interrupt_condition_met(ALL_RELEASED, key_cnt));
+    }
+
+    #[test]
+    fn and_mode_fires_only_when_all_selected_buttons_are_pressed() {
+        let key_cnt = IRQ_ENABLE | IRQ_CONDITION_AND | BUTTON_A | BUTTON_START;
+        let only_a_pressed = ALL_RELEASED & !BUTTON_A;
+        let both_pressed = ALL_RELEASED & !BUTTON_A & !BUTTON_START;
+        assert!(!keypad_interrupt_condition_met(only_a_pressed, key_cnt));
+        assert!(keypad_interrupt_condition_met(both_pressed, key_cnt));
+    }
+
+    #[test]
+    fn no_buttons_selected_never_fires() {
+        let key_cnt = IRQ_ENABLE | IRQ_CONDITION_AND;
+        assert!(!keypad_interrupt_condition_met(ALL_RELEASED, key_cnt));
+        assert!(!keypad_interrupt_condition_met(0, key_cnt));
+    }
+
+    #[test]
+    fn unselected_buttons_being_pressed_is_irrelevant() {
+        let key_cnt = IRQ_ENABLE | BUTTON_A;
+        let only_start_pressed = ALL_RELEASED & !BUTTON_START;
+        assert!(!keypad_interrupt_condition_met(only_start_pressed, key_cnt));
+    }
+}
+
+#[cfg(test)]
+mod single_step_tests {
+    use super::GBA;
+    use crate::memory::memory_map::HaltState;
+
+    #[test]
+    fn halted_with_negative_cycles_to_next_state_does_not_stall() {
+        let mut gba = GBA::default();
+        gba.memory_bus.mem_map.halt_state = HaltState::Halt;
+        gba.gpu.cycles_to_next_state = -100;
+
+        gba.single_step();
+
+        assert!(gba.gpu.cycles_to_next_state.abs() < 1_000_000);
     }
 }

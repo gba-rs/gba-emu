@@ -53,7 +53,6 @@ mod tests {
     use super::*;
     use crate::gba::GBA;
     use crate::cpu::{cpu::InstructionSet, cpu::THUMB_SP};
-    use std::borrow::{BorrowMut};
 
     #[test]
     fn add_positive_test() {
@@ -66,8 +65,8 @@ mod tests {
         // #imm = 12
         let decode_result = gba.cpu.decode(0xB003);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -88,8 +87,8 @@ mod tests {
         // #imm = -12
         let decode_result = gba.cpu.decode(0xB083);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

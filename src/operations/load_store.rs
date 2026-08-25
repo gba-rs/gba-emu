@@ -59,14 +59,26 @@ pub fn load(is_signed: bool, data_type: DataType, destination: u8, cpu: &mut CPU
 * Formats a value from a register and stores it in a given memory address
 */
 pub fn store(data_type: DataType, value_to_store: u32, memory_address: u32, mem_bus: &mut MemoryBus) {
+    let upper_byte = memory_address >> 24;
+    let is_narrow_bus = matches!(
+        mem_bus.mem_map.backup_type,
+        crate::gamepak::BackupType::Sram | crate::gamepak::BackupType::Flash64K | crate::gamepak::BackupType::Flash128K
+    ) && (upper_byte == 0x0E || upper_byte == 0x0F);
+
     match data_type {
         DataType::Word => {
-            // Force word alignment
-            mem_bus.write_u32(memory_address - (memory_address % 4), value_to_store);
+            if is_narrow_bus {
+                mem_bus.write_u32(memory_address, value_to_store);
+            } else {
+                mem_bus.write_u32(memory_address - (memory_address % 4), value_to_store);
+            }
         }
         DataType::Halfword => {
-            // Force halfword alignment
-            mem_bus.write_u16(memory_address - (memory_address % 2), value_to_store as u16);
+            if is_narrow_bus {
+                mem_bus.write_u16(memory_address, value_to_store as u16);
+            } else {
+                mem_bus.write_u16(memory_address - (memory_address % 2), value_to_store as u16);
+            }
         }
         DataType::Byte => {
             mem_bus.write_u8(memory_address, value_to_store as u8);

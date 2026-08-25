@@ -16,7 +16,6 @@ use super::{thumb_instr::THUMB_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
 use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
-use std::borrow::{BorrowMut};
 use crate::memory::memory_bus::MemoryBus;
 use serde::{Serialize, Deserialize};
 
@@ -121,8 +120,148 @@ pub enum ThumbInstructionFormat {
     Undefined
 }
 
+pub enum DecodedInstruction {
+    DataProcessing(DataProcessing),
+    Multiply(Multiply),
+    MultiplyLong(MultiplyLong),
+    SingleDataSwap(SingleDataSwap),
+    SingleDataTransfer(SingleDataTransfer),
+    BranchExchange(BranchExchange),
+    HalfwordRegisterOffset(HalfwordRegisterOffset),
+    HalfwordImmediateOffset(HalfwordImmediateOffset),
+    BlockDataTransfer(BlockDataTransfer),
+    Branch(Branch),
+    SoftwareInterrupt(SoftwareInterrupt),
+    MoveShifted(MoveShifted),
+    AddSubtract(AddSubtract),
+    ALU(ALU),
+    ConditionalBranch(ConditionalBranch),
+    HiRegisterOp(HiRegisterOp),
+    ImmediateOp(ImmediateOp),
+    LoadAddress(LoadAddress),
+    LoadStoreHalfword(LoadStoreHalfword),
+    LoadStoreImmediateOffset(LoadStoreImmediateOffset),
+    LoadStoreRegisterOffset(LoadStoreRegisterOffset),
+    LoadStoreSignExtended(LoadStoreSignExtended),
+    BL(BL),
+    MultipleLoadStore(MultipleLoadStore),
+    LDR(LDR),
+    PushPop(PushPop),
+    ThumbSoftwareInterrupt(ThumbSoftwareInterrupt),
+    SpLoadStore(SpLoadStore),
+    AddOffsetSP(AddOffsetSP),
+    UnconditionalBranch(UnconditionalBranch),
+}
+
+impl DecodedInstruction {
+    pub fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
+        match self {
+            DecodedInstruction::DataProcessing(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::Multiply(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::MultiplyLong(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::SingleDataSwap(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::SingleDataTransfer(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::BranchExchange(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::HalfwordRegisterOffset(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::HalfwordImmediateOffset(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::BlockDataTransfer(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::Branch(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::SoftwareInterrupt(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::MoveShifted(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::AddSubtract(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::ALU(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::ConditionalBranch(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::HiRegisterOp(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::ImmediateOp(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::LoadAddress(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::LoadStoreHalfword(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::LoadStoreImmediateOffset(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::LoadStoreRegisterOffset(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::LoadStoreSignExtended(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::BL(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::MultipleLoadStore(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::LDR(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::PushPop(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::ThumbSoftwareInterrupt(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::SpLoadStore(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::AddOffsetSP(i) => i.execute(cpu, mem_bus),
+            DecodedInstruction::UnconditionalBranch(i) => i.execute(cpu, mem_bus),
+        }
+    }
+
+    pub fn cycles(&self) -> u32 {
+        match self {
+            DecodedInstruction::DataProcessing(i) => i.cycles(),
+            DecodedInstruction::Multiply(i) => i.cycles(),
+            DecodedInstruction::MultiplyLong(i) => i.cycles(),
+            DecodedInstruction::SingleDataSwap(i) => i.cycles(),
+            DecodedInstruction::SingleDataTransfer(i) => i.cycles(),
+            DecodedInstruction::BranchExchange(i) => i.cycles(),
+            DecodedInstruction::HalfwordRegisterOffset(i) => i.cycles(),
+            DecodedInstruction::HalfwordImmediateOffset(i) => i.cycles(),
+            DecodedInstruction::BlockDataTransfer(i) => i.cycles(),
+            DecodedInstruction::Branch(i) => i.cycles(),
+            DecodedInstruction::SoftwareInterrupt(i) => i.cycles(),
+            DecodedInstruction::MoveShifted(i) => i.cycles(),
+            DecodedInstruction::AddSubtract(i) => i.cycles(),
+            DecodedInstruction::ALU(i) => i.cycles(),
+            DecodedInstruction::ConditionalBranch(i) => i.cycles(),
+            DecodedInstruction::HiRegisterOp(i) => i.cycles(),
+            DecodedInstruction::ImmediateOp(i) => i.cycles(),
+            DecodedInstruction::LoadAddress(i) => i.cycles(),
+            DecodedInstruction::LoadStoreHalfword(i) => i.cycles(),
+            DecodedInstruction::LoadStoreImmediateOffset(i) => i.cycles(),
+            DecodedInstruction::LoadStoreRegisterOffset(i) => i.cycles(),
+            DecodedInstruction::LoadStoreSignExtended(i) => i.cycles(),
+            DecodedInstruction::BL(i) => i.cycles(),
+            DecodedInstruction::MultipleLoadStore(i) => i.cycles(),
+            DecodedInstruction::LDR(i) => i.cycles(),
+            DecodedInstruction::PushPop(i) => i.cycles(),
+            DecodedInstruction::ThumbSoftwareInterrupt(i) => i.cycles(),
+            DecodedInstruction::SpLoadStore(i) => i.cycles(),
+            DecodedInstruction::AddOffsetSP(i) => i.cycles(),
+            DecodedInstruction::UnconditionalBranch(i) => i.cycles(),
+        }
+    }
+
+    pub fn asm(&self) -> String {
+        match self {
+            DecodedInstruction::DataProcessing(i) => i.asm(),
+            DecodedInstruction::Multiply(i) => i.asm(),
+            DecodedInstruction::MultiplyLong(i) => i.asm(),
+            DecodedInstruction::SingleDataSwap(i) => i.asm(),
+            DecodedInstruction::SingleDataTransfer(i) => i.asm(),
+            DecodedInstruction::BranchExchange(i) => i.asm(),
+            DecodedInstruction::HalfwordRegisterOffset(i) => i.asm(),
+            DecodedInstruction::HalfwordImmediateOffset(i) => i.asm(),
+            DecodedInstruction::BlockDataTransfer(i) => i.asm(),
+            DecodedInstruction::Branch(i) => i.asm(),
+            DecodedInstruction::SoftwareInterrupt(i) => i.asm(),
+            DecodedInstruction::MoveShifted(i) => i.asm(),
+            DecodedInstruction::AddSubtract(i) => i.asm(),
+            DecodedInstruction::ALU(i) => i.asm(),
+            DecodedInstruction::ConditionalBranch(i) => i.asm(),
+            DecodedInstruction::HiRegisterOp(i) => i.asm(),
+            DecodedInstruction::ImmediateOp(i) => i.asm(),
+            DecodedInstruction::LoadAddress(i) => i.asm(),
+            DecodedInstruction::LoadStoreHalfword(i) => i.asm(),
+            DecodedInstruction::LoadStoreImmediateOffset(i) => i.asm(),
+            DecodedInstruction::LoadStoreRegisterOffset(i) => i.asm(),
+            DecodedInstruction::LoadStoreSignExtended(i) => i.asm(),
+            DecodedInstruction::BL(i) => i.asm(),
+            DecodedInstruction::MultipleLoadStore(i) => i.asm(),
+            DecodedInstruction::LDR(i) => i.asm(),
+            DecodedInstruction::PushPop(i) => i.asm(),
+            DecodedInstruction::ThumbSoftwareInterrupt(i) => i.asm(),
+            DecodedInstruction::SpLoadStore(i) => i.asm(),
+            DecodedInstruction::AddOffsetSP(i) => i.asm(),
+            DecodedInstruction::UnconditionalBranch(i) => i.asm(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
-pub struct CPU {   
+pub struct CPU {
     registers: [u32; 31],
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
@@ -139,7 +278,7 @@ impl CPU {
         };
     }
 
-    pub fn decode(&self, instruction: u32) -> Result<Box<dyn Instruction>, DecodeError> {
+    pub fn decode(&self, instruction: u32) -> Result<DecodedInstruction, DecodeError> {
         if self.get_instruction_set() == InstructionSet::Arm {
            return self.decode_arm(instruction);
         } else{
@@ -147,43 +286,43 @@ impl CPU {
         }
     }
 
-    pub fn decode_arm(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
+    pub fn decode_arm(&self, instruction: u32)-> Result<DecodedInstruction, DecodeError> {
         let opcode: u16 = (((instruction >> 16) & 0xFF0) | ((instruction >> 4) & 0x0F)) as u16;
         let instruction_format = ARM_INSTRUCTIONS[opcode as usize];
         match instruction_format {
             InstructionFormat::DataProcessing | InstructionFormat::PsrTransfer => {
-                return Ok(Box::new(DataProcessing::from(instruction)));
+                return Ok(DecodedInstruction::DataProcessing(DataProcessing::from(instruction)));
             },
             InstructionFormat::Multiply => {
-                return Ok(Box::new(Multiply::from(instruction)));
+                return Ok(DecodedInstruction::Multiply(Multiply::from(instruction)));
             },
             InstructionFormat::MultiplyLong => {
-                return Ok(Box::new(MultiplyLong::from(instruction)));
+                return Ok(DecodedInstruction::MultiplyLong(MultiplyLong::from(instruction)));
             },
             InstructionFormat::SingleDataSwap => {
-                return Ok(Box::new(SingleDataSwap::from(instruction)));
+                return Ok(DecodedInstruction::SingleDataSwap(SingleDataSwap::from(instruction)));
             },
             InstructionFormat::SingleDataTransfer => {
-                return Ok(Box::new(SingleDataTransfer::from(instruction)));
+                return Ok(DecodedInstruction::SingleDataTransfer(SingleDataTransfer::from(instruction)));
             },
             InstructionFormat::BranchAndExchange => {
-                return Ok(Box::new(BranchExchange::from(instruction)));
+                return Ok(DecodedInstruction::BranchExchange(BranchExchange::from(instruction)));
             },
             InstructionFormat::HalfwordDataTransfer => {
                 if opcode & 0x40 == 0 {
-                    return Ok(Box::new(HalfwordRegisterOffset::from(instruction)));
+                    return Ok(DecodedInstruction::HalfwordRegisterOffset(HalfwordRegisterOffset::from(instruction)));
                 } else {
-                    return Ok(Box::new(HalfwordImmediateOffset::from(instruction)));
+                    return Ok(DecodedInstruction::HalfwordImmediateOffset(HalfwordImmediateOffset::from(instruction)));
                 }
             },
             InstructionFormat::BlockDataTransfer => {
-                    return Ok(Box::new(BlockDataTransfer::from(instruction)));
+                    return Ok(DecodedInstruction::BlockDataTransfer(BlockDataTransfer::from(instruction)));
             },
             InstructionFormat::Branch => {
-                return Ok(Box::new(Branch::from(instruction)));
+                return Ok(DecodedInstruction::Branch(Branch::from(instruction)));
             },
             InstructionFormat::SoftwareInterrupt => {
-                return Ok(Box::new(SoftwareInterrupt::from(instruction)));
+                return Ok(DecodedInstruction::SoftwareInterrupt(SoftwareInterrupt::from(instruction)));
             },
             _ => Err(DecodeError{
                 instruction_set: self.get_instruction_set(),
@@ -193,71 +332,71 @@ impl CPU {
         }
     }
 
-    pub fn decode_thumb(&self, instruction: u32)-> Result<Box<dyn Instruction>, DecodeError> {
+    pub fn decode_thumb(&self, instruction: u32)-> Result<DecodedInstruction, DecodeError> {
         let thumb_instruction: u16 = instruction as u16;
         let opcode: u16 = (((thumb_instruction >> 8) & 0xF0) | ((thumb_instruction >> 8) & 0x0F)) as u16;
         let instruction_format = &THUMB_INSTRUCTIONS[opcode as usize];
         // println!("Format: {:?}, Opcode: {:X}, Instruction: {:X}", instruction_format, opcode, thumb_instruction);
         match instruction_format {
             ThumbInstructionFormat::MoveShiftedRegister => {
-                return Ok(Box::new(MoveShifted::from(thumb_instruction)));
+                return Ok(DecodedInstruction::MoveShifted(MoveShifted::from(thumb_instruction)));
             },
             ThumbInstructionFormat::AddSubtract => {
-                return Ok(Box::new(AddSubtract::from(thumb_instruction)));
+                return Ok(DecodedInstruction::AddSubtract(AddSubtract::from(thumb_instruction)));
             },
             ThumbInstructionFormat::ALU => {
-                return Ok(Box::new(ALU::from(thumb_instruction)));
+                return Ok(DecodedInstruction::ALU(ALU::from(thumb_instruction)));
             },
             ThumbInstructionFormat::ConditionalBranch => {
-                return Ok(Box::new(ConditionalBranch::from(thumb_instruction)));
+                return Ok(DecodedInstruction::ConditionalBranch(ConditionalBranch::from(thumb_instruction)));
             },
             ThumbInstructionFormat::HiRegister => {
-                return Ok(Box::new(HiRegisterOp::from(thumb_instruction)));
+                return Ok(DecodedInstruction::HiRegisterOp(HiRegisterOp::from(thumb_instruction)));
             },
             ThumbInstructionFormat::ImmediateOp => {
-                return Ok(Box::new(ImmediateOp::from(thumb_instruction))); 
+                return Ok(DecodedInstruction::ImmediateOp(ImmediateOp::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadAddress => {
-                return Ok(Box::new(LoadAddress::from(thumb_instruction))); 
+                return Ok(DecodedInstruction::LoadAddress(LoadAddress::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreHalfWord => {
-                return Ok(Box::new(LoadStoreHalfword::from(thumb_instruction)));
+                return Ok(DecodedInstruction::LoadStoreHalfword(LoadStoreHalfword::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreImmediateOffset => {
-                return Ok(Box::new(LoadStoreImmediateOffset::from(thumb_instruction)));
+                return Ok(DecodedInstruction::LoadStoreImmediateOffset(LoadStoreImmediateOffset::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreOffset => {
-                return Ok(Box::new(LoadStoreRegisterOffset::from(thumb_instruction)));
+                return Ok(DecodedInstruction::LoadStoreRegisterOffset(LoadStoreRegisterOffset::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreExtended => {
-                return Ok(Box::new(LoadStoreSignExtended::from(thumb_instruction)));
+                return Ok(DecodedInstruction::LoadStoreSignExtended(LoadStoreSignExtended::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LongBranchLink => {
-                return Ok(Box::new(BL::from(thumb_instruction)));
+                return Ok(DecodedInstruction::BL(BL::from(thumb_instruction)));
             },
             ThumbInstructionFormat::MultipleLoadStore => {
-                return Ok(Box::new(MultipleLoadStore::from(thumb_instruction)));
+                return Ok(DecodedInstruction::MultipleLoadStore(MultipleLoadStore::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadPC => {
-                return Ok(Box::new(LDR::from(thumb_instruction)));
+                return Ok(DecodedInstruction::LDR(LDR::from(thumb_instruction)));
             },
             ThumbInstructionFormat::PushPopRegister => {
-                return Ok(Box::new(PushPop::from(thumb_instruction)));
+                return Ok(DecodedInstruction::PushPop(PushPop::from(thumb_instruction)));
             },
             ThumbInstructionFormat::BreakpointInterrupt => {
-                return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction)));
+                return Ok(DecodedInstruction::ThumbSoftwareInterrupt(ThumbSoftwareInterrupt::from(thumb_instruction)));
             },
             ThumbInstructionFormat::LoadStoreSP => {
-                return Ok(Box::new(SpLoadStore::from(thumb_instruction)));
+                return Ok(DecodedInstruction::SpLoadStore(SpLoadStore::from(thumb_instruction)));
             },
             ThumbInstructionFormat::AddOffsetSP => {
-                return Ok(Box::new(AddOffsetSP::from(thumb_instruction)));
+                return Ok(DecodedInstruction::AddOffsetSP(AddOffsetSP::from(thumb_instruction)));
             }
             ThumbInstructionFormat::UnConditonalBranch => {
-                return Ok(Box::new(UnconditionalBranch::from(thumb_instruction)));
+                return Ok(DecodedInstruction::UnconditionalBranch(UnconditionalBranch::from(thumb_instruction)));
             },
             ThumbInstructionFormat::SoftwareInterrupt => {
-                return Ok(Box::new(ThumbSoftwareInterrupt::from(thumb_instruction)));
+                return Ok(DecodedInstruction::ThumbSoftwareInterrupt(ThumbSoftwareInterrupt::from(thumb_instruction)));
             }
             _ => Err(DecodeError{
                 instruction_set: self.get_instruction_set(),
@@ -277,10 +416,17 @@ impl CPU {
         let current_pc = if self.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
         let pc_contents = self.get_register(current_pc);
         // log::debug!("PC: {:X}", pc_contents);
+        crate::memory::memory_map::CURRENT_INSTR_PC.with(|pc| pc.set(pc_contents));
+        crate::memory::memory_map::CURRENT_INSTR_IS_THUMB.with(|t| t.set(self.get_instruction_set() != InstructionSet::Arm));
 
         let instruction: u32 = if self.get_instruction_set() == InstructionSet::Arm { bus.read_u32(pc_contents) } else { bus.read_u16(pc_contents) as u32 };
 
-        if self.get_instruction_set() == InstructionSet::Arm { 
+        if pc_contents < crate::memory::memory_map::BIOS_SIZE && self.get_instruction_set() == InstructionSet::Arm {
+            let prefetched = bus.read_u32(pc_contents + 8);
+            crate::memory::memory_map::BIOS_OPCODE_LATCH.with(|latch| latch.set(prefetched));
+        }
+
+        if self.get_instruction_set() == InstructionSet::Arm {
             self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) 
         } else { 
             self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) 
@@ -291,7 +437,7 @@ impl CPU {
 
         let decode_result = self.decode(instruction);
         let cycles: usize = match decode_result {
-            Ok(mut instr) => {
+            Ok(instr) => {
                 // info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
                 // info!("r0={:X} r1={:X} r2={:X} r3={:X} r4={:X} r5={:X} r6={:X} r7={:X} r8={:X} r9={:X} r10={:X} r11={:X} r12={:X} r13={:X} r14={:X} r15={:X}", 
                 //         self.get_register_unsafe(0), 
@@ -313,10 +459,12 @@ impl CPU {
 
 
                 if check_condition {
-                    let temp_cycles = (instr.borrow_mut() as &mut dyn Instruction).execute(self, bus);
-                    ((instr.borrow_mut() as &mut dyn Instruction).cycles() + temp_cycles) as usize
+                    let temp_cycles = instr.execute(self, bus);
+                    let unclaimed_cycles = bus.cycle_clock.get_cycles();
+                    (instr.cycles() + temp_cycles + unclaimed_cycles) as usize
                 } else {
-                    1usize
+                    let unclaimed_cycles = bus.cycle_clock.get_cycles();
+                    1usize + unclaimed_cycles as usize
                 }
             },
             Err(e) => {
@@ -351,7 +499,7 @@ impl CPU {
             0b10111 => OperatingMode::Abort,
             0b11011 => OperatingMode::Undefined,
             0b11111 => OperatingMode::System,
-            _ => panic!("Mode bits set incorrectly {:b}", self.cpsr.control_bits.mode_bits)
+            _ => OperatingMode::System
         }
     }
 
@@ -491,6 +639,16 @@ mod tests {
         bus.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut bus);
         cpu.fetch(&mut bus);
+    }
+
+    #[test]
+    fn fetch_claims_all_pending_cycle_clock_cost_for_non_memory_instructions() {
+        let mut cpu = CPU::new();
+        cpu.set_register(15, 0x02000000);
+        let mut bus = MemoryBus::new_stub();
+        bus.write_u32(0x02000000, 0xE1A00000);
+        cpu.fetch(&mut bus);
+        assert_eq!(bus.cycle_clock.get_cycles(), 0);
     }
 
     #[test]

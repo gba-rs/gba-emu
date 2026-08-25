@@ -1,7 +1,8 @@
 use crate::{
     memory::{
         memory_map::MemoryMap,
-        lcd_io_registers::*
+        lcd_io_registers::*,
+        GbaMem
     },
     operations::bitutils,
     dma::DMAController,
@@ -12,10 +13,7 @@ use super::{
     object::Object,
     object::AffineMatrix
 };
-use std::{
-    cell::RefCell,
-    rc::Rc
-};
+use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 use serde_with::{serde_as};
 use memory_macros::{gen_aff_matrix_array, gen_obj_array};
@@ -51,7 +49,7 @@ pub struct Background {
 }
 
 impl Background {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.control.register(mem);
         self.horizontal_offset.register(mem);
         self.vertical_offset.register(mem);
@@ -77,7 +75,7 @@ pub struct BgAffineComponent {
 }
 
 impl BgAffineComponent {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.refrence_point_x_external.register(mem);
         self.refrence_point_y_external.register(mem);
         self.rotation_scaling_param_a.register(mem);
@@ -94,7 +92,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         self.horizontal_dimensions.register(mem);
         self.vertical_dimensions.register(mem);
     }
@@ -246,7 +244,7 @@ impl GPU {
         };
     }
 
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+    pub fn register(&mut self, mem: &Rc<GbaMem>) {
         for i in 0..4 {
             self.backgrounds[i].register(mem);
         }
@@ -355,17 +353,17 @@ impl GPU {
                 self.cycles_to_next_state = HBLANK_CYCLES;
             },
             GpuState::HBlank => {
-                self.update_vcount((current_scanline + 1) as u8, irq_ctl);
-                current_scanline += 1;
                 self.display_status.set_hblank_flag(0);
 
                 if current_scanline < DISPLAY_HEIGHT {
-                    // render scanline
                     self.render_scanline(mem_map);
-
-                    // composite the backgrounds
                     self.composite_background(mem_map);
+                }
 
+                self.update_vcount((current_scanline + 1) as u8, irq_ctl);
+                current_scanline += 1;
+
+                if current_scanline < DISPLAY_HEIGHT {
                     // update refrence points at end of scanline
                     for i in 0..2 {
                         let mut internal_x = bitutils::sign_extend_u32(self.bg_affine_components[i].refrence_point_x_internal, 27) as i32;

@@ -1,13 +1,13 @@
 use super::{gpu::{GPU, DISPLAY_WIDTH, DISPLAY_HEIGHT}, rgb15::Rgb15};
 use crate::memory::{
-    memory_map::MemoryMap, 
-    lcd_io_registers::PixelFormat, 
+    memory_map::{MemoryMap, PALETTE_RAM_START, PALETTE_RAM_SIZE},
+    lcd_io_registers::PixelFormat,
     lcd_io_registers::ObjAttribute0,
     lcd_io_registers::ObjAttribute1,
     lcd_io_registers::ObjAttribute2,
-    lcd_io_registers::OBJRotScaleParam
+    lcd_io_registers::OBJRotScaleParam,
+    GbaMem
 };
-use std::cell::RefCell;
 use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 
@@ -19,7 +19,7 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
+    pub fn register(&mut self, mem: &Rc<GbaMem>){
         self.attr0.register(mem);
         self.attr1.register(mem);
         self.attr2.register(mem);
@@ -73,7 +73,7 @@ pub struct AffineMatrix {
 }
 
 impl AffineMatrix {
-    pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>){
+    pub fn register(&mut self, mem: &Rc<GbaMem>){
         self.pa.register(mem);
         self.pb.register(mem);
         self.pc.register(mem);
@@ -83,6 +83,14 @@ impl AffineMatrix {
 
 impl GPU {
     pub fn render_obj(&mut self, mem_map: &mut MemoryMap) {
+        let current_scanline = self.vertical_count.get_current_scanline() as u32;
+        let row_start = (DISPLAY_WIDTH * current_scanline) as usize;
+        let row_end = row_start + (DISPLAY_WIDTH as usize);
+        for i in row_start..row_end {
+            self.obj_buffer[i] = (Rgb15::new(0x8000), 4, 0);
+            self.obj_window[i] = false;
+        }
+
         for i in 0..128 {
             match self.objects[i].attr0.get_obj_mode() {
                 0b10 => continue,
@@ -149,7 +157,13 @@ impl GPU {
         let half_width = bbox_w / 2;
         let half_height = bbox_h / 2;
         let iy = current_scanline - (ref_point_y + half_height);
-        
+
+        let mem = &mem_map.memory;
+        let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
+            let idx = addr as usize;
+            u16::from_le_bytes([mem[idx].get(), mem[idx + 1].get()])
+        };
+
         for ix in -half_width..half_width {
             let screen_x = ref_point_x + half_width + ix;
             if screen_x < 0 {
@@ -160,7 +174,7 @@ impl GPU {
             }
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
-            if self.obj_buffer[obj_buffer_index].1 <= priority {
+            if gfx_mode != 0b10 && self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
             }
 
@@ -175,11 +189,11 @@ impl GPU {
                 let pixel_index = match pixel_format {
                     PixelFormat::EightBit => {
                         let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
-                        mem_map.read_u8(pixel_index_address)
+                        mem[pixel_index_address as usize].get()
                     },
                     PixelFormat::FourBit => {
                         let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
-                        let value = mem_map.read_u8(pixel_index_address);
+                        let value = mem[pixel_index_address as usize].get();
                         if tile_x & 1 != 0 {
                             value >> 4
                         } else {
@@ -192,7 +206,9 @@ impl GPU {
                     Rgb15::new(0x8000)
                 } else {
                     let palette_ram_index = 0x200 + 2 * pixel_index + 0x20 * palette_bank;
-                    Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+                    let raw_addr = palette_ram_index + 0x500_0000u32;
+                    let masked_addr = (raw_addr & PALETTE_RAM_SIZE) + PALETTE_RAM_START;
+                    Rgb15::new(read_u16_at(&mem, masked_addr))
                 };
 
                 let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (screen_x as u32)) as usize;
@@ -255,20 +271,26 @@ impl GPU {
             obj_w / 8
         };
 
+        let mem = &mem_map.memory;
+        let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
+            let idx = addr as usize;
+            u16::from_le_bytes([mem[idx].get(), mem[idx + 1].get()])
+        };
+
         for x in obj_x..end_x {
             if x < 0 {
                 continue;
-            } 
+            }
 
             if x >= screen_width {
                 break;
             }
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
-            if self.obj_buffer[obj_buffer_index].1 <= priority {
+            if gfx_mode != 0b10 && self.obj_buffer[obj_buffer_index].1 <= priority {
                 continue;
             }
-            
+
             let mut sprite_y = current_scanline - obj_y;
             let mut sprite_x = x - obj_x;
 
@@ -290,11 +312,11 @@ impl GPU {
             let pixel_index = match pixel_format {
                 PixelFormat::EightBit => {
                     let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
-                    mem_map.read_u8(pixel_index_address)
+                    mem[pixel_index_address as usize].get()
                 },
                 PixelFormat::FourBit => {
                     let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
-                    let value = mem_map.read_u8(pixel_index_address);
+                    let value = mem[pixel_index_address as usize].get();
                     if tile_x & 1 != 0 {
                         value >> 4
                     } else {
@@ -307,7 +329,9 @@ impl GPU {
                 Rgb15::new(0x8000)
             } else {
                 let palette_ram_index = 0x200 + 2 * pixel_index + 0x20 * palette_bank;
-                Rgb15::new(mem_map.read_u16(palette_ram_index + 0x500_0000u32))
+                let raw_addr = palette_ram_index + 0x500_0000u32;
+                let masked_addr = (raw_addr & PALETTE_RAM_SIZE) + PALETTE_RAM_START;
+                Rgb15::new(read_u16_at(&mem, masked_addr))
             };
 
             let obj_buffer_index: usize = (DISPLAY_WIDTH * (current_scanline as u32) + (x as u32)) as usize;
@@ -321,5 +345,46 @@ impl GPU {
             }
         }
 
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+    use crate::memory::memory_map::MemoryMap;
+
+    fn setup() -> (GPU, MemoryMap) {
+        let mem_map = MemoryMap::new(BackupType::Sram);
+        let mut gpu = GPU::new();
+        gpu.register(&mem_map.memory);
+        (gpu, mem_map)
+    }
+
+    fn configure_sprite(sprite: &mut Object, gfx_mode: u8, priority: u8) {
+        sprite.attr0.set_y_coordinate(0);
+        sprite.attr0.set_obj_mode(0b00);
+        sprite.attr0.set_gfx_mode(gfx_mode);
+        sprite.attr0.set_obj_shape(0);
+        sprite.attr1.set_x_coordinate(0);
+        sprite.attr1.set_obj_size(0);
+        sprite.attr2.set_character_name(0);
+        sprite.attr2.set_priority_rel_to_bg(priority);
+    }
+
+    #[test]
+    fn window_mode_sprite_is_not_occluded_by_a_same_priority_normal_sprite() {
+        let (mut gpu, mut mem_map) = setup();
+        mem_map.memory[0x06010000].set(0x01);
+        mem_map.memory[0x05000202].set(0xff);
+        mem_map.memory[0x05000203].set(0x7f);
+        gpu.vertical_count.set_current_scanline(0);
+
+        configure_sprite(&mut gpu.objects[0], 0b00, 2);
+        configure_sprite(&mut gpu.objects[1], 0b10, 2);
+
+        gpu.render_obj(&mut mem_map);
+
+        assert!(gpu.obj_window[0]);
     }
 }

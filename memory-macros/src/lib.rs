@@ -1,4 +1,3 @@
-#![feature(proc_macro_diagnostic)]
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
@@ -11,27 +10,32 @@ use quote::{ToTokens};
 enum BitFieldOption {
     SingleAddress(IORegister),
     MultipleAddress(MultipleAddressIORegister),
-    ParseError
 }
 
 struct BitField {
     name: Ident,
-    start_bit: Lit,
-    num_bits: Lit
+    start_bit: u8,
+    num_bits: u8,
+    min_type: proc_macro2::TokenStream,
 }
 
 impl Parse for BitField {
     fn parse(input: ParseStream) -> Result<Self> {
         let name: Ident = input.parse()?;
         input.parse::<Token![:]>()?;
-        let start_bit: Lit = input.parse()?;
+        let start_bit_lit: Lit = input.parse()?;
         input.parse::<Token![,]>()?;
-        let num_bits: Lit = input.parse()?;
+        let num_bits_lit: Lit = input.parse()?;
+
+        let start_bit = lit_to_u8(&start_bit_lit)?;
+        let num_bits = lit_to_u8(&num_bits_lit)?;
+        let min_type = min_type_for(num_bits, &num_bits_lit)?;
 
         Ok(BitField {
             name,
             start_bit,
-            num_bits
+            num_bits,
+            min_type,
         })
     }
 }
@@ -41,8 +45,9 @@ impl ToTokens for BitField {
         let get_ident = format_ident!("get_{}", self.name);
         let set_ident = format_ident!("set_{}", self.name);
 
-        let start_bit = parse_start_bit(&self.start_bit, &self.name.span());
-        let (num_bits, min_type) = parse_num_bits(&self.num_bits, &self.name.span());
+        let start_bit = self.start_bit;
+        let num_bits = self.num_bits;
+        let min_type = &self.min_type;
 
         let value_mask: u32 = (1 << num_bits) - 1;
         let mask: u32 = value_mask << start_bit;
@@ -74,7 +79,7 @@ impl Parse for IORegister {
         let segment_address = input.parse::<Lit>()?;
         input.parse::<Token![,]>()?;
 
-        let fields = parse_fields(input);
+        let fields = parse_fields(input)?;
 
         Ok(IORegister {
             segment_address,
@@ -85,18 +90,24 @@ impl Parse for IORegister {
 
 struct MultipleAddressIORegister {
     segment_addresses: Expr,
+    num_elements: usize,
     fields: Vec<BitField>,
 }
 
 impl Parse for MultipleAddressIORegister {
     fn parse(input: ParseStream) -> Result<Self> {
         let segment_addresses: Expr = input.parse()?;
+        let num_elements = match &segment_addresses {
+            Expr::Array(array) => array.elems.len(),
+            other => return Err(syn::Error::new_spanned(other, "expected an array literal of addresses")),
+        };
         input.parse::<Token![,]>()?;
 
-        let fields = parse_fields(input);
+        let fields = parse_fields(input)?;
 
         Ok(MultipleAddressIORegister {
             segment_addresses,
+            num_elements,
             fields
         })
     }
@@ -105,6 +116,7 @@ impl Parse for MultipleAddressIORegister {
 struct BaseIORegister {
     name: Ident,
     segment_size: Lit,
+    segment_type: proc_macro2::TokenStream,
     option: BitFieldOption
 }
 
@@ -114,7 +126,9 @@ impl Parse for BaseIORegister {
         input.parse::<Token![=>]>()?;
         let segment_size = input.parse::<Lit>()?;
         input.parse::<syn::token::Comma>()?;
-        
+
+        let segment_size_int = lit_to_u8(&segment_size)?;
+        let segment_type = segment_type_for(segment_size_int, &segment_size)?;
 
         let lookahead = input.lookahead1();
         let option = if lookahead.peek(Bracket) {
@@ -122,30 +136,23 @@ impl Parse for BaseIORegister {
         } else if lookahead.peek(Lit) {
             BitFieldOption::SingleAddress(IORegister::parse(input)?)
         } else {
-            BitFieldOption::ParseError
+            return Err(lookahead.error());
         };
 
         Ok(BaseIORegister {
             name,
             segment_size,
+            segment_type,
             option
         })
     }
 }
 
-fn parse_fields(input: ParseStream) -> Vec<BitField> {
+fn parse_fields(input: ParseStream) -> Result<Vec<BitField>> {
     let mut fields: Vec<BitField> = vec![];
 
     loop {
-        match BitField::parse(input) {
-            Ok(field) => {
-                fields.push(field);
-            }, 
-            _ => {
-                input.cursor().span().unwrap().error("Unable to parse field").emit();
-            }
-        }
-
+        fields.push(BitField::parse(input)?);
 
         match input.parse::<Token![,]>() {
             Ok(_) => {
@@ -157,92 +164,50 @@ fn parse_fields(input: ParseStream) -> Vec<BitField> {
         }
     }
 
-    return fields;
+    Ok(fields)
 }
 
-fn parse_segment_size(segment_size: &syn::Lit, span: &proc_macro2::Span) -> (u8, proc_macro2::TokenStream) {
-    let segment_size_int = match &segment_size {
-        Lit::Int(seg_size_int) => {
-            seg_size_int.base10_parse::<u8>().unwrap()
-        },
-        _ => {
-            span.unwrap().error("Segment size has to be an int").emit();
-            0u8
-        }
-    };
-
-    let segment_type = match segment_size_int {
-        1 => quote!{u8},
-        2 => quote!{u16},
-        4 => quote!{u32},
-        _ => {
-            if let Lit::Int(ref segment_size) = segment_size {
-                segment_size.span().unwrap().error("Unsupported segment size").emit();
-            }
-            panic!("Memory Macro error");
-        }
-    };
-
-    return (segment_size_int, segment_type);
+fn segment_type_for(segment_size: u8, segment_size_lit: &Lit) -> Result<proc_macro2::TokenStream> {
+    match segment_size {
+        1 => Ok(quote!{u8}),
+        2 => Ok(quote!{u16}),
+        4 => Ok(quote!{u32}),
+        _ => Err(syn::Error::new_spanned(segment_size_lit, "unsupported segment size (must be 1, 2, or 4)")),
+    }
 }
 
-fn parse_num_bits(num_bits_lit: &syn::Lit, span: &proc_macro2::Span) -> (u8, proc_macro2::TokenStream) {
-
-    let num_bits = match &num_bits_lit {
-        Lit::Int(num_bits_int) => {
-            num_bits_int.base10_parse::<u8>().unwrap()
-        }
-        _ => {
-            span.unwrap().error("Num bits must be an integer").emit();
-            0u8
-        }
-    };
-
-    let min_type = match num_bits {
-        1..=8 => quote!{u8},
-        9..=16 => quote!{u16},
-        17..=32 => quote!{u32},
-        _ => {
-            if let Lit::Int(ref num_bits_lit) = num_bits_lit {
-                num_bits_lit.span().unwrap().error("Can't do bitfields greater than 32 bits").emit();
-            }
-            panic!("Can't do bitfields greater than 32 bits")
-        }
-    };
-
-    return (num_bits, min_type);
+fn min_type_for(num_bits: u8, num_bits_lit: &Lit) -> Result<proc_macro2::TokenStream> {
+    match num_bits {
+        1..=8 => Ok(quote!{u8}),
+        9..=16 => Ok(quote!{u16}),
+        17..=32 => Ok(quote!{u32}),
+        _ => Err(syn::Error::new_spanned(num_bits_lit, "can't do bitfields greater than 32 bits")),
+    }
 }
 
-fn parse_start_bit(start_bit_lit: &syn::Lit, span: &proc_macro2::Span) -> u8 {
-    return match &start_bit_lit {
-        Lit::Int(start_bit_int) => {
-            start_bit_int.base10_parse::<u8>().unwrap()
-        }
-        _ => {
-            span.unwrap().error("Start bit must be an integer").emit();
-            0u8
-        }
-    };
+fn lit_to_u8(lit: &Lit) -> Result<u8> {
+    match lit {
+        Lit::Int(int) => int.base10_parse::<u8>(),
+        _ => Err(syn::Error::new_spanned(lit, "expected an integer literal")),
+    }
 }
 
-fn create_bit_field(name: Ident, segment_size: Lit, bit_fields: &IORegister) -> TokenStream {
+fn create_bit_field(name: Ident, segment_size: Lit, segment_type: proc_macro2::TokenStream, bit_fields: &IORegister) -> TokenStream {
 
     let IORegister {
         segment_address,
         fields
     } = bit_fields;
 
-    let (_, segment_type) = parse_segment_size(&segment_size, &name.span());
-
     let expanded = quote! {
         #[derive(Default, Serialize, Deserialize)]
         pub struct #name {
             #[serde(skip)]
-            pub memory: Option<Rc<RefCell<GbaMem>>>,
+            pub memory: Option<Rc<GbaMem>>,
         }
 
         impl #name {
-            pub const SEGMENT_SIZE: usize = #segment_size; 
+            pub const SEGMENT_SIZE: usize = #segment_size;
             pub const SEGMENT_INDEX: usize = #segment_address;
 
             pub fn new() -> #name {
@@ -251,16 +216,15 @@ fn create_bit_field(name: Ident, segment_size: Lit, bit_fields: &IORegister) -> 
                 };
             }
 
-            pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+            pub fn register(&mut self, mem: &Rc<GbaMem>) {
                 self.memory = Some(mem.clone());
             }
 
             pub fn get_register(&self) -> #segment_type {
                 let mut value: #segment_type = 0;
                 if let Some(mem) = &self.memory {
-                    let mem_ref = mem.borrow();
                     for i in 0..#name::SEGMENT_SIZE {
-                        value |= (mem_ref[#name::SEGMENT_INDEX + (i as usize)] as #segment_type) <<  (i * 8);
+                        value |= (mem[#name::SEGMENT_INDEX + (i as usize)].get() as #segment_type) <<  (i * 8);
                     }
                 } else {
                     panic!("IO register was accessed without being registered");
@@ -271,9 +235,8 @@ fn create_bit_field(name: Ident, segment_size: Lit, bit_fields: &IORegister) -> 
 
             pub fn set_register(&self, value: u32) {
                 if let Some(mem) = &self.memory {
-                    let mut mem_ref = mem.borrow_mut();
                     for i in 0..#name::SEGMENT_SIZE {
-                        mem_ref[#name::SEGMENT_INDEX + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                        mem[#name::SEGMENT_INDEX + (i as usize)].set(((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8);
                     }
                 } else {
                     panic!("IO register was accessed without being registered");
@@ -287,30 +250,19 @@ fn create_bit_field(name: Ident, segment_size: Lit, bit_fields: &IORegister) -> 
     return expanded.into();
 }
 
-fn create_multiple_bit_field(name: Ident, segment_size: Lit, bit_fields: &MultipleAddressIORegister) -> TokenStream {
+fn create_multiple_bit_field(name: Ident, segment_size: Lit, segment_type: proc_macro2::TokenStream, bit_fields: &MultipleAddressIORegister) -> TokenStream {
 
     let MultipleAddressIORegister {
         segment_addresses,
+        num_elements,
         fields
     } = bit_fields;
-
-    let (_, segment_type) = parse_segment_size(&segment_size, &name.span());
-
-    let num_elements = match &segment_addresses {
-        Expr::Array(array) => {
-            array.elems.len()
-        },
-        _ => {
-            name.span().unwrap().error("Num bits must be an integer").emit();
-            0usize
-        }
-    };
 
     let expanded = quote! {
         #[derive(Default, Serialize, Deserialize)]
         pub struct #name {
             #[serde(skip)]
-            pub memory: Option<Rc<RefCell<GbaMem>>>,
+            pub memory: Option<Rc<GbaMem>>,
             pub index: usize
         }
 
@@ -325,16 +277,15 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, bit_fields: &Multip
                 };
             }
 
-            pub fn register(&mut self, mem: &Rc<RefCell<Vec<u8>>>) {
+            pub fn register(&mut self, mem: &Rc<GbaMem>) {
                 self.memory = Some(mem.clone());
             }
 
             pub fn get_register(&self) -> #segment_type {
                 let mut value: #segment_type = 0;
                 if let Some(mem) = &self.memory {
-                    let mem_ref = mem.borrow();
                     for i in 0..#name::SEGMENT_SIZE {
-                        value |= (mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] as #segment_type) <<  (i * 8);
+                        value |= (mem[#name::SEGMENT_INDICIES[self.index] + (i as usize)].get() as #segment_type) <<  (i * 8);
                     }
                 }
 
@@ -343,9 +294,8 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, bit_fields: &Multip
 
             pub fn set_register(&self, value: u32) {
                 if let Some(mem) = &self.memory {
-                    let mut mem_ref = mem.borrow_mut();
                     for i in 0..#name::SEGMENT_SIZE {
-                        mem_ref[#name::SEGMENT_INDICIES[self.index] + (i as usize)] = ((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8;
+                        mem[#name::SEGMENT_INDICIES[self.index] + (i as usize)].set(((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8);
                     }
                 }
             }
@@ -362,26 +312,23 @@ pub fn io_register(input: TokenStream) -> TokenStream {
     let BaseIORegister {
         name,
         segment_size,
+        segment_type,
         option
     } = parse_macro_input!(input as BaseIORegister);
 
     match option {
         BitFieldOption::SingleAddress(register) => {
-            return create_bit_field(name, segment_size, &register);
+            return create_bit_field(name, segment_size, segment_type, &register);
         },
         BitFieldOption::MultipleAddress(register) => {
-            return create_multiple_bit_field(name, segment_size, &register);
+            return create_multiple_bit_field(name, segment_size, segment_type, &register);
         },
-        BitFieldOption::ParseError => {
-            name.span().unwrap().error("Error parsing io register").emit();
-            panic!("Error parsing io register");
-        }
     }
 }
 
 #[proc_macro]
 pub fn gen_obj_array(_: TokenStream) -> TokenStream {
-    
+
     let mut obj_array_tokens: Vec<proc_macro2::TokenStream> = Vec::new();
     for i in 0usize..128usize {
         let token_stream = quote!{
@@ -411,7 +358,7 @@ pub fn gen_obj_array(_: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn gen_aff_matrix_array(_: TokenStream) -> TokenStream {
-    
+
     let mut aff_matrix_array_tokens: Vec<proc_macro2::TokenStream> = Vec::new();
     for i in (0usize..128usize).step_by(4) {
         let pa = i;

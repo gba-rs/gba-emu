@@ -52,6 +52,14 @@ impl MemoryBus {
         self.mem_map.write_u16(address, value);
     }
 
+    pub fn prepare_eeprom_write(&self, halfword_count: u32) {
+        self.mem_map.prepare_eeprom_write(halfword_count);
+    }
+
+    pub fn prepare_eeprom_read(&self, halfword_count: u32) {
+        self.mem_map.prepare_eeprom_read(halfword_count);
+    }
+
     pub fn write_u32(&mut self, address: u32, value: u32) {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem32);
 

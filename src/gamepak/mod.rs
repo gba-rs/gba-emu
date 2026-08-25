@@ -1,8 +1,37 @@
-use std::io::prelude::*;
-use std::fs::File;
 use serde::{Serialize, Deserialize};
+use std::fmt;
 
 pub mod flash;
+
+#[derive(Debug)]
+pub enum GamePackError {
+    RomReadFailed { path: String, source: std::io::Error },
+    BiosReadFailed { path: String, source: std::io::Error },
+    SaveDataReadFailed { path: String, source: std::io::Error },
+}
+
+impl fmt::Display for GamePackError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GamePackError::RomReadFailed { path, source } =>
+                write!(f, "failed to read ROM file '{}': {}", path, source),
+            GamePackError::BiosReadFailed { path, source } =>
+                write!(f, "failed to read BIOS file '{}': {}", path, source),
+            GamePackError::SaveDataReadFailed { path, source } =>
+                write!(f, "failed to read save data file '{}': {}", path, source),
+        }
+    }
+}
+
+impl std::error::Error for GamePackError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            GamePackError::RomReadFailed { source, .. } => Some(source),
+            GamePackError::BiosReadFailed { source, .. } => Some(source),
+            GamePackError::SaveDataReadFailed { source, .. } => Some(source),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 pub enum BackupType {
@@ -30,85 +59,65 @@ pub struct GamePack {
 pub const MEM_STRINGS: [&str; 5] = ["SRAM", "EEPROM", "FLASH_", "FLASH512_", "FLASH1M_"];
 
 impl GamePack {
-    pub fn new(bios_file_path: &str, rom_file_path: &str) -> GamePack {
-        let mut rom = File::open(rom_file_path);
-        let mut rom_bytes = Vec::new();
+    pub fn from_bytes(rom_bytes: Vec<u8>, bios_bytes: Vec<u8>) -> GamePack {
+        let title = GamePack::parse_header_str(&rom_bytes, 0xA0, 0xAC, "Title");
+        let game_code = GamePack::parse_header_str(&rom_bytes, 0xAC, 0xB0, "Game Code");
+        let maker_code = GamePack::parse_header_str(&rom_bytes, 0xB0, 0xB2, "Maker Code");
+        let backup_type = GamePack::detect_backup_type(&rom_bytes);
 
-        match &mut rom {
-            Ok(val) => {
-                let _ = val.read_to_end(&mut rom_bytes);
-            },
-            Err(_) => {
-                panic!("Error loading rom: {}", rom_file_path);
-            }
-        }
-
-        let mut bios = File::open(&bios_file_path);
-        let mut bios_bytes = Vec::new();
-
-        match &mut bios {
-            Ok(val) => {
-                let _ = val.read_to_end(&mut bios_bytes);
-            },
-            Err(_) => {
-                panic!("Error loading bios: {}", bios_file_path);
-            }
-        }
-
-        let mut title = "";
-        match std::str::from_utf8(&rom_bytes[0xA0..0xAC]) {
-            Ok(val) => {
-                title = val; 
-            },
-            Err(_) => {
-                log::info!("Title could not be parsed");
-            }
-        }
-
-        let mut game_code = "";
-        match std::str::from_utf8(&rom_bytes[0xAC..0xB0]) {
-            Ok(val) => {
-                game_code = val; 
-            },
-            Err(_) => {
-                log::info!("Game Code could not be parsed");
-            }
-        }
-
-        let mut make_code = "";
-        match std::str::from_utf8(&rom_bytes[0xB0..0xB2]) {
-            Ok(val) => {
-                make_code = val; 
-            },
-            Err(_) => {
-                log::info!("Maker Code could not be parsed");
-            }
-        }
-
-        let backup = GamePack::detect_backup_type(&rom_bytes);
-
-        return GamePack {
-            rom: rom_bytes.clone(),
+        GamePack {
+            rom: rom_bytes,
             bios: bios_bytes,
             save_data: Vec::new(),
-            title: String::from(title),
-            game_code: String::from(game_code),
-            maker_code: String::from(make_code),
-            backup_type: backup
-        };
+            title,
+            game_code,
+            maker_code,
+            backup_type,
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn load(bios_file_path: &str, rom_file_path: &str) -> Result<GamePack, GamePackError> {
+        use std::fs;
+
+        let rom_bytes = fs::read(rom_file_path).map_err(|source| GamePackError::RomReadFailed {
+            path: rom_file_path.to_string(),
+            source,
+        })?;
+
+        let bios_bytes = fs::read(bios_file_path).map_err(|source| GamePackError::BiosReadFailed {
+            path: bios_file_path.to_string(),
+            source,
+        })?;
+
+        Ok(GamePack::from_bytes(rom_bytes, bios_bytes))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[deprecated(note = "use GamePack::load, which returns a Result instead of panicking")]
+    pub fn new(bios_file_path: &str, rom_file_path: &str) -> GamePack {
+        match GamePack::load(bios_file_path, rom_file_path) {
+            Ok(pack) => pack,
+            Err(e) => panic!("{}", e),
+        }
+    }
+
+    fn parse_header_str(rom_bytes: &[u8], start: usize, end: usize, field_name: &str) -> String {
+        if rom_bytes.len() < end {
+            log::info!("{} could not be parsed: ROM shorter than header", field_name);
+            return String::new();
+        }
+        match std::str::from_utf8(&rom_bytes[start..end]) {
+            Ok(val) => String::from(val),
+            Err(_) => {
+                log::info!("{} could not be parsed", field_name);
+                String::new()
+            }
+        }
     }
 
     pub fn read_title(&mut self) {
-        let mut title = "";
-        match std::str::from_utf8(&self.rom[0xA0..0xAC]) {
-            Ok(val) => {
-                title = val; 
-            },
-            Err(_) => {
-                log::info!("Title could not be parsed");
-            }
-        }
-        self.title = String::from(title);
+        self.title = GamePack::parse_header_str(&self.rom, 0xA0, 0xAC, "Title");
     }
 
     pub fn default() -> GamePack {
@@ -123,22 +132,21 @@ impl GamePack {
         };
     }
 
-    pub fn load_save_data(&mut self, save_data_file_path: &str) {
-        let mut save_data = File::open(&save_data_file_path);
-        let mut save_data_bytes = Vec::new();
+    pub fn set_save_data(&mut self, save_data: Vec<u8>) {
+        self.save_data = save_data;
+    }
 
-        match &mut save_data {
-            Ok(val) => {
-                let _ = val.read_to_end(&mut save_data_bytes);
-            },
-            Err(_) => {
-                panic!("Error loading bios: {}", save_data_file_path);
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn load_save_data(&mut self, save_data_file_path: &str) -> Result<(), GamePackError> {
+        let save_data_bytes = std::fs::read(save_data_file_path).map_err(|source| {
+            GamePackError::SaveDataReadFailed {
+                path: save_data_file_path.to_string(),
+                source,
             }
-        }
+        })?;
 
-        // todo put a check in here to see if the save data matches the size of the backup type
-
-        self.save_data = save_data_bytes;
+        self.set_save_data(save_data_bytes);
+        Ok(())
     }
 
     pub fn detect_backup_type(rom: &Vec<u8>) -> BackupType {
@@ -165,5 +173,37 @@ impl GamePack {
         }
 
         return BackupType::Error;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_bytes_never_panics_on_short_rom() {
+        let pack = GamePack::from_bytes(vec![0u8; 4], vec![]);
+        assert_eq!(pack.title, "");
+        assert_eq!(pack.game_code, "");
+        assert_eq!(pack.maker_code, "");
+    }
+
+    #[test]
+    fn from_bytes_parses_header_fields() {
+        let mut rom = vec![0u8; 0xC0];
+        rom[0xA0..0xAC].copy_from_slice(b"TESTGAME\0\0\0\0");
+        rom[0xAC..0xB0].copy_from_slice(b"ABCD");
+        rom[0xB0..0xB2].copy_from_slice(b"01");
+
+        let pack = GamePack::from_bytes(rom, vec![]);
+        assert_eq!(pack.game_code, "ABCD");
+        assert_eq!(pack.maker_code, "01");
+    }
+
+    #[test]
+    fn detect_backup_type_finds_flash1m() {
+        let mut rom = vec![0u8; 16];
+        rom.extend_from_slice(b"FLASH1M_V100");
+        assert_eq!(GamePack::detect_backup_type(&rom), BackupType::Flash128K);
     }
 }

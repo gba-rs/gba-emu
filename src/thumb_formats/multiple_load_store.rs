@@ -98,7 +98,6 @@ mod tests {
     use super::*;
     use crate::gba::GBA;
     use crate::cpu::{cpu::InstructionSet};
-    use std::borrow::{BorrowMut};
 
     #[test]
     fn stmia_test() {
@@ -116,8 +115,8 @@ mod tests {
         // STMIA r2!, {1, 3, 5, 7}
         let decode_result = gba.cpu.decode(0xC2AA);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -147,8 +146,8 @@ mod tests {
         // LDMIA r2!, {1, 3, 5, 7}
         let decode_result = gba.cpu.decode(0xCAAA);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);

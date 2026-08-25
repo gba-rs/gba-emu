@@ -47,7 +47,6 @@ mod tests{
     use super::*;
     use crate::gba::GBA;
     use crate::cpu::{cpu::InstructionSet, cpu::THUMB_PC};
-    use std::borrow::{BorrowMut};
 
     #[test]
     fn branch_conditional_negative_offset() {
@@ -57,8 +56,8 @@ mod tests{
 
         let decode_result = gba.cpu.decode(0xD0F6);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -77,8 +76,8 @@ mod tests{
 
         let decode_result = gba.cpu.decode(0xD00A);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
@@ -96,8 +95,8 @@ mod tests{
 
         let decode_result = gba.cpu.decode(0xD00A);
         match decode_result {
-            Ok(mut instr) => {
-                (instr.borrow_mut() as &mut dyn Instruction).execute(&mut gba.cpu, &mut gba.memory_bus);
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
             },
             Err(e) => {
                 panic!("{:?}", e);
