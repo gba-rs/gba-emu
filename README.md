@@ -94,8 +94,6 @@ To get started, you need to have Rust installed on your system. You can download
 
 Contributions are welcome! If you have any improvements or bug fixes, feel free to open a pull request.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for an overview of the current design, recent architectural changes, and a roadmap of larger structural work that's still open.
-
 ## License
 
 This project is licensed under either of the following licenses:
