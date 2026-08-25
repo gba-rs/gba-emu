@@ -11,16 +11,10 @@ use square_channel::SquareChannel;
 use wave_channel::WaveChannel;
 use noise_channel::NoiseChannel;
 
-// 16777216 / 512 = 32768 Hz exactly.
 pub const OUTPUT_SAMPLE_RATE: usize = 32768;
 const CYCLES_PER_SAMPLE: usize = 512;
 const FRAME_SEQUENCER_CYCLES: i32 = 32768;
 
-// Direct Sound: two channels, each up to |i8::MIN| = 128 at 100% volume, no DC
-// centering applied (a channel's own byte IS the instantaneous DAC value).
-// PSG: 4 channels summed 0-15 each (unsigned - a truly silent mix is exactly
-// 0, never artificially offset), scaled by up to 8/8.
-// Worst case magnitude: max(256 + 60, 256 - 0) = 316 -> 316 * MIX_SCALE <= i16::MAX.
 const MIX_SCALE: i32 = 100;
 
 #[derive(Serialize, Deserialize)]
@@ -107,14 +101,6 @@ impl Apu {
             self.clock_frame_sequencer();
         }
 
-        // PSG and Direct Sound are both stepped in CYCLES_PER_SAMPLE increments,
-        // interleaved with sample emission — otherwise a single large batch (the
-        // CPU can jump by up to a full scanline while halted) advances a
-        // high-frequency channel through many waveform toggles at once, and every
-        // sample emitted in that batch sees only the final post-batch state
-        // instead of the waveform's true instantaneous value. Low notes have a
-        // period much longer than one batch so this barely shows; high notes,
-        // whose period can be shorter than CYCLES_PER_SAMPLE itself, alias badly.
         self.cycle_accumulator += cycles;
         while self.cycle_accumulator >= CYCLES_PER_SAMPLE {
             self.cycle_accumulator -= CYCLES_PER_SAMPLE;
@@ -129,7 +115,6 @@ impl Apu {
         }
     }
 
-    // 256 Hz length, 128 Hz sweep, 64 Hz envelope.
     fn clock_frame_sequencer(&mut self) {
         if self.frame_sequencer_step % 2 == 0 {
             self.square1.clock_length();
@@ -155,7 +140,6 @@ impl Apu {
             return;
         }
 
-        // SOUNDCNT_H: 0=50%, 1=100% of the FIFO byte, which is already full-scale.
         let ds_a = if self.sound_control_high.get_dma_sound_a_volume() != 0 {
             self.direct_sound_a.current_sample as i32
         } else {
@@ -214,11 +198,6 @@ mod tests {
 
     #[test]
     fn fifo_reset_also_silences_the_channel() {
-        // Regression: clearing the FIFO used to leave the channel's last
-        // latched sample untouched, so a one-shot SFX (e.g. a chime) ending
-        // and resetting its FIFO for the next sound would keep outputting
-        // its last, possibly loud, byte as a stuck constant until fresh
-        // data arrived — an audible pop right after the effect finished.
         let mut gba = GBA::default();
         gba.apu.direct_sound_a.current_sample = 100;
         gba.apu.direct_sound_b.current_sample = -100;
@@ -240,10 +219,6 @@ mod tests {
 
     #[test]
     fn true_silence_produces_exactly_zero() {
-        // Regression: the PSG mix used to unconditionally subtract a flat
-        // "4 channels at half-scale" constant, so a mix with zero channels
-        // routed or triggered still produced a small nonzero value — an
-        // audible click at any enable/disable transition.
         let mut gba = GBA::default();
         gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
         gba.apu.sound_control_low.set_sound_master_volume_left(7);
@@ -274,12 +249,6 @@ mod tests {
 
     #[test]
     fn sustained_signal_does_not_decay_toward_zero() {
-        // Regression: an adaptive DC-blocking filter was previously applied
-        // to compensate for the flat "-30" bug above. Once that bug was fixed
-        // at the source, the filter itself became the problem: it can't tell
-        // a genuine sustained level (e.g. a note holding) from an artificial
-        // offset, and decays any sustained input toward zero, producing an
-        // audible click-then-fade after every real note/channel change.
         let mut gba = GBA::default();
         gba.apu.direct_sound_a.current_sample = 100;
         gba.apu.sound_control_high.set_dma_sound_a_volume(1);

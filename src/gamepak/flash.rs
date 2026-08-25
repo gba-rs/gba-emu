@@ -58,12 +58,6 @@ impl Flash {
         };
     }
 
-    /// The flash chip only ever decodes 16 bits of address internally (a
-    /// bank is 64KB); the CPU-side address it's actually invoked with
-    /// mirrors throughout the whole 0x0E/0x0F window (and, for Flash128K,
-    /// the selected bank picks *which* 64KB half of the chip that mirrored
-    /// offset lands in). Confirmed against jsmolka/gba-tests' save/flash.asm
-    /// ("Mirror 1"/"Mirror 2").
     pub fn banked_address(&self, address: u32) -> u32 {
         let offset = address & 0xFFFF;
         return 0x0E000000 + ((self.bank as u32) * 65536) + offset;

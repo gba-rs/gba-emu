@@ -108,25 +108,7 @@ impl GBA {
         self.patch_known_bad_bios_swi_dispatcher();
     }
 
-    /// The authentic GBA BIOS's SWI dispatcher (interrupt vector 0x08) saves
-    /// only `{r2, lr}` around the call into the actual SWI handler — see the
-    /// Cult-of-GBA BIOS reimplementation's `exception_swi`. Several common
-    /// `gba_bios.bin` dumps instead have `{r2, r3, lr}` at this exact spot (a
-    /// one-bit difference in the STM/LDM register-list field, at BIOS
-    /// offsets 0x88 and 0x94), which silently discards r3 across every SWI
-    /// call. That breaks `SWI 06h`/`07h` (Div/DivArm) in particular, since
-    /// GBATEK documents r3 as carrying `abs(quotient)` back to the caller —
-    /// e.g. Minish Cap's file-select screen reads r3 right after a Div call
-    /// to pick a movement direction, gets garbage instead, and the affected
-    /// entity's position never converges, which keeps the screen's
-    /// `isTransitioning` flag pinned and blocks all input forever.
-    /// Only patches when the known-bad bytes are found, so a correctly
-    /// dumped BIOS is left untouched.
     fn patch_known_bad_bios_swi_dispatcher(&mut self) {
-        // BIOS space isn't writable through write_u8/write_u32 (real
-        // hardware can't write its own BIOS either), so this pokes the
-        // backing memory directly, the same way load_bios/load_rom do via
-        // write_block.
         const BAD_STMFD: [u8; 4] = [0x0C, 0x40, 0x2D, 0xE9];
         const GOOD_STMFD: [u8; 4] = [0x04, 0x40, 0x2D, 0xE9];
         const BAD_LDMFD: [u8; 4] = [0x0C, 0x40, 0xBD, 0xE8];
@@ -224,17 +206,6 @@ impl GBA {
     }
 }
 
-/// Per GBATEK's KEYCNT (Key Interrupt Control, 0x4000132): bit 14 enables
-/// the keypad IRQ; bit 15 selects the combination logic over whichever
-/// buttons are selected in bits 0-9 (same bit layout as KEYINPUT/KeyStatus)
-/// — 0=Logical OR (any selected button pressed), 1=Logical AND (all
-/// selected buttons pressed simultaneously). KEYINPUT is active-low
-/// (0=pressed, 1=released), so it's inverted before comparing against the
-/// KEYCNT selection mask. This was previously never evaluated anywhere —
-/// KeyInterruptControl was a fully modeled, readable/writable I/O register
-/// that nothing ever read, so any game relying on a keypad-IRQ-driven
-/// input wait (rather than plain per-frame KEYINPUT polling) would HALT
-/// forever no matter what was pressed.
 fn keypad_interrupt_condition_met(key_status_raw: u16, key_cnt_raw: u16) -> bool {
     let irq_enabled = (key_cnt_raw >> 14) & 1 == 1;
     if !irq_enabled {
@@ -267,14 +238,14 @@ mod keypad_interrupt_tests {
 
     #[test]
     fn disabled_never_fires_even_if_selected_buttons_are_pressed() {
-        let key_cnt = BUTTON_A; // selected, but bit 14 (enable) is 0
+        let key_cnt = BUTTON_A;
         let a_pressed = ALL_RELEASED & !BUTTON_A;
         assert!(!keypad_interrupt_condition_met(a_pressed, key_cnt));
     }
 
     #[test]
     fn or_mode_fires_when_any_selected_button_is_pressed() {
-        let key_cnt = IRQ_ENABLE | BUTTON_A | BUTTON_START; // OR (bit 15 = 0)
+        let key_cnt = IRQ_ENABLE | BUTTON_A | BUTTON_START;
         let only_a_pressed = ALL_RELEASED & !BUTTON_A;
         assert!(keypad_interrupt_condition_met(only_a_pressed, key_cnt));
     }
@@ -296,8 +267,6 @@ mod keypad_interrupt_tests {
 
     #[test]
     fn no_buttons_selected_never_fires() {
-        // Selection mask (bits 0-9) is all zero; enable/condition bits alone
-        // must not vacuously satisfy an AND-mode check over an empty set.
         let key_cnt = IRQ_ENABLE | IRQ_CONDITION_AND;
         assert!(!keypad_interrupt_condition_met(ALL_RELEASED, key_cnt));
         assert!(!keypad_interrupt_condition_met(0, key_cnt));
@@ -305,7 +274,7 @@ mod keypad_interrupt_tests {
 
     #[test]
     fn unselected_buttons_being_pressed_is_irrelevant() {
-        let key_cnt = IRQ_ENABLE | BUTTON_A; // only A selected, OR mode
+        let key_cnt = IRQ_ENABLE | BUTTON_A;
         let only_start_pressed = ALL_RELEASED & !BUTTON_START;
         assert!(!keypad_interrupt_condition_met(only_start_pressed, key_cnt));
     }

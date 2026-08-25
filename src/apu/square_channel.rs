@@ -2,7 +2,6 @@ use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 use crate::memory::{GbaMem, sound_registers::{SoundChannelControlSweep, SoundChannelControlDLE, SoundChannelControlFC}};
 
-// Pan Docs Channel 1 duty patterns (identical hardware to GB's, reused by GBA).
 const DUTY_TABLE: [[u8; 8]; 4] = [
     [0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 1],
@@ -58,7 +57,6 @@ impl SquareChannel {
         self.fc.register(mem);
     }
 
-    // GBATEK: 131072/(2048-rate) Hz per full 8-step cycle -> 16*(2048-rate) CPU cycles/step.
     fn step_period(frequency: u16) -> i32 {
         16 * (2048 - frequency as i32)
     }
@@ -190,13 +188,6 @@ mod tests {
 
     #[test]
     fn high_frequency_output_is_independent_of_cpu_batch_size() {
-        // Regression: PSG channels used to be advanced by the CPU's entire
-        // cycle batch (up to a full scanline while halted) before any sample
-        // was emitted, so a high-frequency (short-period) channel's rapid
-        // toggling got aliased into whatever single state happened to land
-        // after the whole batch — audible as distortion specific to high
-        // notes, since a low note's long period barely changes within one
-        // batch and so was largely unaffected.
         fn make_gba() -> GBA {
             let mut gba = GBA::default();
             {

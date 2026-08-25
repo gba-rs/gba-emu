@@ -2,7 +2,6 @@ use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 use crate::memory::{GbaMem, sound_registers::{SoundChannelControlNoiseLow, SoundChannelControlNoiseHigh}};
 
-// GB divisor table (Pan Docs Channel 4), scaled x4 for the GBA's 4x clock.
 const GB_DIVISOR: [i32; 8] = [8, 16, 32, 48, 64, 80, 96, 112];
 
 #[derive(Serialize, Deserialize)]
@@ -67,7 +66,6 @@ impl NoiseChannel {
             self.lfsr >>= 1;
             self.lfsr |= xor_result << 14;
             if self.high.get_counter_step_width() != 0 {
-                // Narrow/7-bit mode mirrors the feedback bit into bit 6 too.
                 self.lfsr &= !(1 << 6);
                 self.lfsr |= xor_result << 6;
             }

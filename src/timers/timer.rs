@@ -33,9 +33,6 @@ impl Timer {
         self.timer.set_data(self.timer.get_reload());
     }
 
-    // Cycles between overflows at the timer's current reload/prescaler, or 0
-    // while disabled. Used by Apu to tick Direct Sound at cycle-accurate
-    // granularity instead of a per-CPU-step overflow count.
     pub fn period_cycles(&self) -> usize {
         if self.controller.get_enable() == 0 {
             return 0;
@@ -144,7 +141,6 @@ impl TimerHandler {
         }
     }
 
-    // Per-timer overflow counts this call, indexed 0-3 (used by Apu/DMAController for Direct Sound).
     pub fn update(&mut self, cycles: usize, irq_ctrl: &mut Interrupts) -> [usize; 4] {
         let mut overflows = 0usize;
         let mut per_timer_overflows = [0usize; 4];

@@ -154,8 +154,6 @@ impl DMAChannel {
         }
     }
 
-    // Direct Sound FIFO refill: always a fixed 32-bit read, distinct from transfer()'s
-    // word-count/repeat/IRQ bookkeeping — real hardware ignores the transfer-type bit here.
     pub fn refill_sound_fifo(&mut self, mem_map: &mut MemoryBus, is_fifo_a: bool) {
         let value = mem_map.read_u32(self.internal_source_address & !3);
         let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
@@ -182,7 +180,6 @@ pub struct DMAController {
     pub dma_channels: [DMAChannel; 4],
     pub hblanking: bool,
     pub vblanking: bool,
-    // Shared view of SOUNDCNT_H (Apu owns the other registered instance).
     sound_control_high: SoundControlHigh,
 }
 
@@ -223,7 +220,6 @@ impl DMAController {
                         // self.dma_channels[i].control.set_dma_enable(0);
                     },
                     3 => {
-                        // special: Direct Sound FIFO refill (DMA1/2 only; DMA3 video capture unimplemented)
                         let destination = self.dma_channels[i].destination_address.get_address();
                         let is_fifo_a = (i == 1 || i == 2) && destination == FIFO_A_ADDRESS;
                         let is_fifo_b = (i == 1 || i == 2) && destination == FIFO_B_ADDRESS;

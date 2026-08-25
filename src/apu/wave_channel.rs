@@ -2,9 +2,6 @@ use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 use crate::memory::{GbaMem, memory_bus::MemoryBus, sound_registers::{SoundChannelControlWaveLow, SoundChannelControlWaveHigh, SoundChannelControlWaveX}};
 
-// Reads Wave RAM directly from 0x04000090-0x0400009F rather than the real
-// dual-bank-switched register; diverges from hardware only for the rare
-// bank-swap double-buffering trick some games use for streamed playback.
 #[derive(Serialize, Deserialize)]
 pub struct WaveChannel {
     low: SoundChannelControlWaveLow,
@@ -36,13 +33,10 @@ impl WaveChannel {
         self.x.register(mem);
     }
 
-    // GBATEK: 2097152/(2048-rate) Hz per sample step (already per-sample, not per-cycle).
     fn step_period(frequency: u16) -> i32 {
         8 * (2048 - frequency as i32)
     }
 
-    // NR30 bit 7: 1 = DAC on. sound_registers.rs's field name reflects the
-    // register's traditional name, not this bit's polarity.
     fn dac_enabled(&self) -> bool {
         self.low.get_sound_channel_3_off() != 0
     }

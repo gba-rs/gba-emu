@@ -355,15 +355,6 @@ impl GPU {
             GpuState::HBlank => {
                 self.display_status.set_hblank_flag(0);
 
-                // Render THIS scanline now, before vcount advances, using
-                // register state as of the end of its own HDraw period.
-                // Rendering after the increment (as this used to) meant
-                // the very first HBlank of a frame — vcount going 0->1 —
-                // rendered row 1 and skipped row 0 entirely, leaving row 0
-                // permanently black. Every value current_scanline can have
-                // here (0..DISPLAY_HEIGHT-1) is a real visible row, since
-                // this branch is only ever reached via HDraw's transition
-                // for one of the DISPLAY_HEIGHT active scanlines.
                 if current_scanline < DISPLAY_HEIGHT {
                     self.render_scanline(mem_map);
                     self.composite_background(mem_map);

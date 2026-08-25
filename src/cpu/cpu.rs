@@ -120,11 +120,6 @@ pub enum ThumbInstructionFormat {
     Undefined
 }
 
-// Replaces `Box<dyn Instruction>`: decoding used to heap-allocate on every
-// single instruction (the hottest loop in the interpreter) just to get
-// dynamic dispatch. Every format the decode tables can produce is known
-// ahead of time, so an enum + `match` gives the same uniform `execute`/
-// `cycles`/`asm` surface with no allocation and no vtable indirection.
 pub enum DecodedInstruction {
     DataProcessing(DataProcessing),
     Multiply(Multiply),
@@ -426,19 +421,6 @@ impl CPU {
 
         let instruction: u32 = if self.get_instruction_set() == InstructionSet::Arm { bus.read_u32(pc_contents) } else { bus.read_u16(pc_contents) as u32 };
 
-        // The real GBA BIOS is entirely ARM-mode code, so this only ever
-        // needs to latch full 32-bit ARM opcodes — see BIOS_OPCODE_LATCH's
-        // doc comment for why this exists. Critically, the latched value is
-        // NOT this instruction's own encoding — the ARM7TDMI's 3-stage
-        // pipeline means that while this instruction is executing, the one
-        // 8 bytes ahead is simultaneously being fetched (this is exactly
-        // why PC always reads as "instruction address + 8" elsewhere in
-        // this codebase). That fetch happens regardless of whether this
-        // instruction turns out to branch, so it's what's actually left
-        // sitting on the bus once execution leaves the BIOS. Verified
-        // against jsmolka/gba-tests' bios.gba test 1: the last real BIOS
-        // fetch before jumping to the game is a `BX LR` at 0xDC, and the
-        // test expects the opcode at 0xDC+8=0xE4 (not 0xDC itself).
         if pc_contents < crate::memory::memory_map::BIOS_SIZE && self.get_instruction_set() == InstructionSet::Arm {
             let prefetched = bus.read_u32(pc_contents + 8);
             crate::memory::memory_map::BIOS_OPCODE_LATCH.with(|latch| latch.set(prefetched));
@@ -517,32 +499,6 @@ impl CPU {
             0b10111 => OperatingMode::Abort,
             0b11011 => OperatingMode::Undefined,
             0b11111 => OperatingMode::System,
-            // The mode bits are a 5-bit field but only 7 encodings are
-            // architecturally valid; real ARM7TDMI silicon leaves the other
-            // 25 as UNPREDICTABLE rather than faulting, so a ROM that
-            // writes one of them (deliberately, as GBA test suites like
-            // jsmolka/gba-tests' psr_transfer do, or by accident) must not
-            // crash the whole emulator. Register banking for every
-            // unpredictable encoding falls back to the User/System bank
-            // (REG_MAP's own default), matching common real-hardware
-            // behavior for reserved mode values closely enough to keep
-            // running rather than panicking. This is called on essentially
-            // every register access, so it deliberately does not log —
-            // jsmolka/gba-tests' psr_transfer test spends a large stretch
-            // of its run in this state on purpose, and logging each call
-            // there turns a sub-second test run into a many-minute one.
-            //
-            // Deliberately System, not User: the two share the same
-            // register bank (so this stays a safe, panic-free fallback
-            // either way), but data_processing.rs's MSR handling gates
-            // writes to CPSR's mode bits on `get_operating_mode() !=
-            // OperatingMode::User` — real ARM7TDMI privilege rules. Only
-            // genuinely privileged code can leave a reserved mode encoding
-            // via MSR in the first place, so falling back to User would
-            // make that MSR look unprivileged and silently block it,
-            // permanently trapping the CPU in the reserved state instead
-            // of letting the program's own recovery code (as tested by
-            // jsmolka/gba-tests' psr_transfer test 252) fix it.
             _ => OperatingMode::System
         }
     }

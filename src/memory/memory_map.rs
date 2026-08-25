@@ -11,29 +11,11 @@ use std::fmt;
 use std::marker::PhantomData;
 
 thread_local! {
-    /// The address of the instruction currently being executed, set once per
-    /// CPU::fetch() call. Consumed by general_open_bus()'s "PC+8 lookahead"
-    /// prefetch model and by the BIOS-protection read path below.
     pub static CURRENT_INSTR_PC: std::cell::Cell<u32> = std::cell::Cell::new(0);
-    /// Companion to CURRENT_INSTR_PC — true if the CPU is currently in Thumb
-    /// mode, since general_open_bus()'s prefetch model fetches a differently
-    /// sized/aligned value depending on instruction set.
     pub static CURRENT_INSTR_IS_THUMB: std::cell::Cell<bool> = std::cell::Cell::new(false);
-    /// The last 32-bit opcode fetched while PC was actually inside the
-    /// BIOS (0x00000000-0x00003FFF). Real hardware protects BIOS memory
-    /// from being read except by code executing from within it — any read
-    /// from BIOS address space while PC is elsewhere returns this latched
-    /// "last prefetched opcode" instead of the real byte content. Set by
-    /// CPU::fetch(), consumed by MemoryMap::read_u8's BIOS branch.
-    /// Confirmed against jsmolka/gba-tests' bios.gba (all 4 tests: at
-    /// startup, after an SWI, during an IRQ, and after an IRQ each expect a
-    /// different specific latched value, matching whichever BIOS routine
-    /// most recently ran).
     pub static BIOS_OPCODE_LATCH: std::cell::Cell<u32> = std::cell::Cell::new(0);
 }
 
-/// Real BIOS size (16KB) — the actual protected/latched region. GBA's BIOS
-/// occupies exactly 0x00000000-0x00003FFF; nothing above that is BIOS.
 pub const BIOS_SIZE: u32 = 0x4000;
 
 pub const ON_BOARD_WRAM_START: u32 = 0x02000000;
@@ -66,11 +48,8 @@ pub struct MemoryMap {
     pub backed_up: bool,
     pub flash: Flash,
     pub eeprom: RefCell<Eeprom>,
-    // Direct Sound FIFO A/B (0x040000A0-0x040000A7) — real hardware queues, not flat registers.
     pub fifo_a: std::collections::VecDeque<u8>,
     pub fifo_b: std::collections::VecDeque<u8>,
-    // PSG channel Trigger bit is write-only/edge-triggered on real hardware; latched
-    // here at write time (bit N = channel N+1) since our registers can't model that.
     pub trigger_flags: u8,
 }
 
@@ -78,15 +57,8 @@ impl MemoryMap {
 
     pub fn new(backup_type: BackupType) -> MemoryMap {
         let mut memory: GbaMem = vec![Cell::new(0u8); 0x1000_00F0];
-        // Real SRAM/Flash chips read as 0xFF (all bits set) until something
-        // is actually written — that's the electrically "erased" state, not
-        // 0x00. Confirmed by jsmolka/gba-tests' save/*.gba suite, whose very
-        // first check reads backup memory before writing anything and
-        // expects 0xFF. Only the backup-storage window needs this; the rest
-        // of the map (WRAM, VRAM, ...) has no meaningful "erased" value and
-        // zero-init there is fine.
         let backup_start = SRAM_START as usize;
-        let backup_end = backup_start + 0x20000; // covers SRAM/Flash64K/Flash128K
+        let backup_end = backup_start + 0x20000;
         memory[backup_start..backup_end].fill(Cell::new(0xFF));
 
         return MemoryMap {
@@ -102,19 +74,12 @@ impl MemoryMap {
         }
     }
 
-    /// Called by DMA right before it streams values into the EEPROM address
-    /// window, with the halfword count for that specific transfer — the
-    /// EEPROM state machine uses this to tell an opcode+address request
-    /// apart from an opcode+address+data request without needing to know
-    /// the chip size ahead of time.
     pub fn prepare_eeprom_write(&self, halfword_count: u32) {
         if self.backup_type == BackupType::Eeprom {
             self.eeprom.borrow_mut().prepare_write_transfer(halfword_count);
         }
     }
 
-    /// Called by DMA right before it streams the data read-back out of the
-    /// EEPROM address window, with the halfword count for that transfer.
     pub fn prepare_eeprom_read(&self, halfword_count: u32) {
         if self.backup_type == BackupType::Eeprom {
             self.eeprom.borrow_mut().prepare_read_transfer(halfword_count);
@@ -141,15 +106,12 @@ impl MemoryMap {
                     let bit = (value & 0x80) >> 7;
                     if bit == 0 {
                         self.halt_state = HaltState::Halt;
-                        // log::info!("Setting state to halted: {:X}", value);
                     } else if bit == 1 {
-                        // log::info!("Setting state to stopped: {:X}", value);
                         self.halt_state = HaltState::Stop
                     }
                 }else if address == 0x4000130 ||  address == 0x4000131  {
                     // read only
                 }else if address == 0x4000065 || address == 0x400006D || address == 0x4000075 || address == 0x400007D {
-                    // Bit 7 of a channel's frequency-control high byte is Trigger.
                     if value & 0x80 != 0 {
                         let channel_bit = match address {
                             0x4000065 => 0x1,
@@ -175,12 +137,6 @@ impl MemoryMap {
                 }
 
             },
-            // Palette RAM, and most of VRAM, only have a 16-bit-wide write
-            // bus on real hardware: an 8-bit store duplicates the byte into
-            // both halves of the containing halfword rather than writing
-            // just that one byte. OAM has no 8-bit bus access at all, so a
-            // byte store there is simply dropped. Confirmed against
-            // jsmolka/gba-tests' memory/video_strb.asm.
             0x05 => {
                 let halfword_addr = ((address & PALETTE_RAM_SIZE) + PALETTE_RAM_START) & !1;
                 self.memory[halfword_addr as usize].set(value);
@@ -189,8 +145,6 @@ impl MemoryMap {
             0x06 => {
                 let mirrored = Self::vram_mirrored_address(address);
                 if mirrored - VIDEO_RAM_START >= self.vram_obj_boundary() {
-                    // Byte stores to the OBJ tile-data portion of VRAM are
-                    // ignored, same as OAM.
                 } else {
                     let halfword_addr = mirrored & !1;
                     self.memory[halfword_addr as usize].set(value);
@@ -198,14 +152,10 @@ impl MemoryMap {
                 }
             },
             0x07 => {
-                // Byte stores to OAM are ignored entirely on real hardware.
             },
             0x08..=0x0F => {
                 match self.backup_type {
                     BackupType::Sram => {
-                        // The chip only decodes its own low bits, so it
-                        // mirrors throughout the whole 0x0E/0x0F window,
-                        // not just at the base address.
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].set(value);
                         } else {
@@ -213,10 +163,6 @@ impl MemoryMap {
                         }
                     },
                     BackupType::Eeprom => {
-                        // The chip only responds on the 0x0D bank; 0x08-0x0C
-                        // (and 0x0E/0x0F) are still plain ROM/mirror space
-                        // for an EEPROM cart and must not be diverted into
-                        // the bit-serial protocol.
                         if upper_byte == 0x0D {
                             self.eeprom.borrow_mut().write_bit(value as u16);
                         } else {
@@ -230,9 +176,6 @@ impl MemoryMap {
                             self.memory[address as usize].set(value);
                         }
                     },
-                    // BackupType::Flash128K => {
-                    //     self.memory[address as usize].set(value);
-                    // },
                     BackupType::Error => {
                         self.memory[address as usize].set(value);
                     },
@@ -244,36 +187,11 @@ impl MemoryMap {
 
     }
 
-    /// Returns the physical index into `memory` for a `len`-byte access
-    /// starting at `address`, but only when the *entire* access lands in a
-    /// plain RAM-like region (WRAM, IWRAM, palette RAM, VRAM, OAM) whose
-    /// `read_u8`/`write_u8` handling is a pure store with no per-address
-    /// side effects.
-    ///
-    /// Deliberately excludes the I/O region (0x04......) and the
-    /// gamepak/backup region (0x08...... - 0x0F......), since both have
-    /// per-address special-case behavior in `read_u8`/`write_u8` (halt
-    /// state, IE/IF write semantics, flash chip commands, SRAM mirroring by
-    /// backup type, ...) that a bulk slice copy would silently skip. Those
-    /// regions keep going through the byte-wise path below, which remains
-    /// the single source of truth for that logic.
-    ///
-    /// Also returns `None` if the access would straddle a region's mirror
-    /// wraparound boundary (e.g. the last 1-3 bytes of on-chip WRAM), so
-    /// the byte-wise fallback can reproduce that mirroring exactly. This
-    /// is a real edge case in principle but not one any known GBA game
-    /// relies on, since the CPU only ever issues aligned halfword/word
-    /// accesses.
     #[inline]
     fn fast_region_index(address: u32, len: u32) -> Option<usize> {
         let upper_byte = address >> 24;
 
         if upper_byte == 0x06 {
-            // The mirror seams (every 0x8000/0x18000/0x20000 bytes) all sit
-            // on addresses divisible by 4, so any CPU-aligned halfword/word
-            // access lands entirely within one mirrored segment — no
-            // straddle handling needed here, same assumption the other
-            // regions below already make.
             return Some(Self::vram_mirrored_address(address) as usize);
         }
 
@@ -287,46 +205,23 @@ impl MemoryMap {
 
         let offset = address & size_mask;
         if offset + (len - 1) > size_mask {
-            // Access straddles the region's wraparound point.
             return None;
         }
 
         Some((offset + start) as usize)
     }
 
-    /// SRAM and Flash chips both only have an 8-bit-wide data bus — a
-    /// 16/32-bit CPU access to either one only ever really transfers a
-    /// single byte (see the write_u16/write_u32/read_u16/read_u32 call
-    /// sites, and `operations::load_store::store`'s alignment bypass).
     #[inline]
     fn has_narrow_backup_bus(&self, upper_byte: u32) -> bool {
         matches!(self.backup_type, BackupType::Sram | BackupType::Flash64K | BackupType::Flash128K)
             && (upper_byte == 0x0E || upper_byte == 0x0F)
     }
 
-    /// The cartridge ROM is mapped into three address windows
-    /// (0x08000000-0x09FFFFFF, 0x0A000000-0x0BFFFFFF, 0x0C000000-0x0DFFFFFF)
-    /// that only differ in their *default wait-state timing* — all three
-    /// read the exact same underlying ROM bytes. `write_block`/`load_rom`
-    /// only ever store the ROM at its first window, so the other two need
-    /// remapping back onto it. Confirmed against jsmolka/gba-tests'
-    /// memory/mirrors.asm ("GamePak mirror 1/2" tests).
     #[inline]
     fn rom_mirrored_address(address: u32) -> u32 {
         (address & ROM_SIZE) + ROM_START
     }
 
-    /// GBA VRAM is 96KB (0x18000) but the chip-select decodes it in 128KB
-    /// (0x20000) steps: within each step, the layout is 64KB + 32KB + a
-    /// 32KB mirror of that second 32KB block. Confirmed against
-    /// jsmolka/gba-tests' memory/mirrors.asm (128K-period and 32K-submirror
-    /// tests).
-    /// The offset (from VRAM's base) where OBJ (sprite) tile data starts —
-    /// everything before it is BG tile/map data. Bitmap modes (3-5) give BG
-    /// more room (0x14000) than tile modes (0-2, 0x10000), since bitmap
-    /// mode framebuffers are larger. Reads DISPCNT directly out of the
-    /// backing array (I/O registers live there like everything else) to
-    /// avoid needing a GPU reference just for this one field.
     #[inline]
     fn vram_obj_boundary(&self) -> u32 {
         let bg_mode = self.memory[0x04000000].get() & 0x7;
@@ -354,13 +249,6 @@ impl MemoryMap {
             return;
         }
 
-        // SRAM's data bus is only 8 bits wide: a 16-bit store only ever
-        // actually writes a single byte, at `address` itself — never
-        // address+1. Which byte of `value` lands depends on address&1
-        // (the CPU replicates the halfword across its internal 32-bit bus,
-        // and whichever byte lane the 8-bit chip is wired to is what
-        // reaches it). Confirmed against jsmolka/gba-tests' save/sram.asm
-        // ("Store half position" / "Store half just byte").
         if self.has_narrow_backup_bus(upper_byte) {
             let byte = if address & 1 == 0 { (value & 0xFF) as u8 } else { ((value >> 8) & 0xFF) as u8 };
             self.write_u8(address, byte);
@@ -430,12 +318,6 @@ impl MemoryMap {
 
         let upper_byte = address >> 24;
         if self.has_narrow_backup_bus(upper_byte) {
-            // SRAM/Flash's 8-bit bus means a wider read only ever samples
-            // the one real byte at `address`; the CPU/bus then replicates
-            // it to fill the requested width, rather than reading
-            // neighboring (unrelated) bytes. Confirmed against
-            // jsmolka/gba-tests' save/sram.asm and save/flash.asm ("Load
-            // word").
             let byte = self.read_u8(address) as u32;
             return byte * 0x0101_0101;
         }
@@ -458,7 +340,6 @@ impl MemoryMap {
             return self.eeprom.borrow_mut().read_bit();
         }
 
-        // See read_u32's branch above — same 8-bit-bus replication.
         if self.has_narrow_backup_bus(upper_byte) {
             let byte = self.read_u8(address) as u16;
             return byte | (byte << 8);
@@ -501,27 +382,8 @@ impl MemoryMap {
                             return self.memory[Self::rom_mirrored_address(address) as usize].get();
                         }
                     },
-                    // BackupType::Flash128K => {
-                    //     if address == 0x0E000000 {
-                    //         return 0x62;
-                    //     } else if address == 0x0E000001 {
-                    //         return 0x13;
-                    //     }
-                    //     return self.memory[address as usize].get();
-
-                    // },
                     BackupType::Error => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
-                            // No backup chip is actually present on this
-                            // cart — real hardware has nothing responding
-                            // on this address range at all (it's on a
-                            // separate chip-select from the ROM, so ROM
-                            // data doesn't leak through here either), which
-                            // reads back as a floating/open bus that
-                            // settles high. Confirmed against
-                            // jsmolka/gba-tests' save/none.asm, which
-                            // expects the same 0xFF "erased" reading as a
-                            // real backup chip would give.
                             return self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].get();
                         } else {
                             return self.memory[Self::rom_mirrored_address(address) as usize].get();
@@ -531,53 +393,23 @@ impl MemoryMap {
             }
             0x00 => {
                 if address >= BIOS_SIZE {
-                    // Unused address space above the real 16KB BIOS image;
-                    // nothing lives here on real hardware either, so reads
-                    // return general open-bus garbage just like the fully
-                    // unmapped regions below.
                     let open_bus = self.general_open_bus();
                     return ((open_bus >> ((address & 3) * 8)) & 0xFF) as u8;
                 }
                 let current_pc = CURRENT_INSTR_PC.with(|pc| pc.get());
                 if current_pc < BIOS_SIZE {
-                    // PC is actually executing from inside the BIOS, so
-                    // this read is allowed to see the real byte content.
                     return self.memory[address as usize].get();
                 }
-                // BIOS memory is protected from being read by anything
-                // outside the BIOS itself: real hardware returns whatever
-                // opcode the BIOS's own prefetch last fetched, not the
-                // literal byte at `address`. Confirmed against
-                // jsmolka/gba-tests' bios.gba.
                 let latch = BIOS_OPCODE_LATCH.with(|l| l.get());
                 return ((latch >> ((address & 3) * 8)) & 0xFF) as u8;
             }
             _ => {
-                // Genuinely unmapped memory (the 0x01000000-0x01FFFFFF gap,
-                // and everything above the 28-bit address space GBA's bus
-                // actually decodes). Nothing responds here on real
-                // hardware, so what shows up is open-bus garbage — the
-                // CPU's own current prefetch value — not a fixed 0. Getting
-                // this wrong turns any code that stumbles into this region
-                // (e.g. dereferencing a null/garbage pointer) into a
-                // guaranteed infinite loop instead of the finite, if
-                // glitchy, garbage-data walk real hardware would do.
                 let open_bus = self.general_open_bus();
                 return ((open_bus >> ((address & 3) * 8)) & 0xFF) as u8;
             }
         }
     }
 
-    /// General open-bus value for reads from unused/unmapped memory —
-    /// distinct from BIOS_OPCODE_LATCH above, which models the BIOS chip's
-    /// own internal latch (frozen at whatever it last drove while code was
-    /// actually executing from BIOS). This instead reflects the CPU's own
-    /// prefetch pipeline, which keeps moving regardless of what memory
-    /// region PC is currently in — so it's computed live from
-    /// CURRENT_INSTR_PC every time, never cached. Mirrors the same
-    /// "PC+8 lookahead" trick CPU::fetch() already uses for the BIOS case;
-    /// Thumb mode only ever fetches 16-bit halfwords, so the pipeline holds
-    /// a duplicated halfword rather than one 32-bit word.
     fn general_open_bus(&self) -> u32 {
         let pc = CURRENT_INSTR_PC.with(|p| p.get());
         if CURRENT_INSTR_IS_THUMB.with(|t| t.get()) {
@@ -598,9 +430,6 @@ impl Serialize for MemoryMap {
         // Determine how many fields we're serializing
         let mut state = serializer.serialize_struct("MemoryMap", 9)?;
 
-        // Serialize the shared Vec<Cell<u8>> directly — serde has a built-in
-        // Serialize impl for Cell<T: Copy + Serialize>, so this needs no
-        // borrowing at all (unlike the old Rc<RefCell<Vec<u8>>>).
         state.serialize_field("memory", &*self.memory)?;
 
         // Serialize the rest of the fields normally
@@ -839,10 +668,6 @@ mod fast_path_tests {
 
     #[test]
     fn fast_path_matches_byte_wise_semantics_across_wram_mirror() {
-        // WRAM is 0x40000 bytes of address space (ON_BOARD_WRAM_SIZE mask)
-        // mirrored across a larger region. Writing near the top and
-        // reading back should still round-trip correctly whether or not
-        // the fast path is taken.
         let mut mem = MemoryMap::new(BackupType::Error);
         let addr = ON_BOARD_WRAM_START + ON_BOARD_WRAM_SIZE - 3;
         mem.write_u16(addr, 0xABCD);
@@ -851,9 +676,6 @@ mod fast_path_tests {
 
     #[test]
     fn io_region_writes_still_go_through_byte_wise_special_casing() {
-        // Regression guard: the fast path must never touch the I/O region,
-        // since writes there (e.g. the HALTCNT/stop-halt byte at
-        // 0x4000301) have side effects beyond storing bytes.
         let mut mem = MemoryMap::new(BackupType::Error);
         assert_eq!(mem.halt_state, HaltState::Running);
         mem.write_u8(0x4000301, 0x00);
@@ -862,12 +684,6 @@ mod fast_path_tests {
 
     #[test]
     fn eeprom_backup_type_does_not_intercept_rom_reads() {
-        // Regression guard: only the 0x0D bank is the real EEPROM chip.
-        // 0x08-0x0C (and 0x0E/0x0F) are still plain ROM/mirror space for
-        // an EEPROM-backed cart, and the CPU fetches actual game code from
-        // 0x08000000+ — routing those reads through the bit-serial EEPROM
-        // protocol instead of returning the real ROM bytes previously
-        // broke booting entirely for every EEPROM-backed game.
         let mut mem = MemoryMap::new(BackupType::Eeprom);
         mem.memory[0x0800_0100].set(0x12);
         mem.memory[0x0800_0101].set(0x34);
@@ -881,7 +697,6 @@ mod fast_path_tests {
     #[test]
     fn eeprom_backup_type_intercepts_only_the_0d_bank() {
         let mut mem = MemoryMap::new(BackupType::Eeprom);
-        // A write request: opcode "10", 6-bit address, 64 data bits, stop bit.
         let bits: Vec<u16> = std::iter::once(1)
             .chain(std::iter::once(0))
             .chain((0..6).map(|_| 0))
@@ -891,8 +706,6 @@ mod fast_path_tests {
         for bit in bits {
             mem.write_u16(0x0D00_0000, bit);
         }
-        // A byte written to the EEPROM window must not land in flat memory
-        // at that literal address the way an ordinary ROM/mirror write would.
         assert_eq!(mem.memory[0x0D00_0000].get(), 0);
     }
 }

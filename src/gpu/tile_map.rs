@@ -63,9 +63,6 @@ impl GPU {
         let mut start_tile_x = background_x % 8;
         let tile_py = background_y % 8;
 
-        // Tile map, tile pixel, and palette reads below all index directly
-        // into this shared byte array (every memory region here is backed
-        // by the same flat buffer).
         let mem = &mem_map.memory;
         let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
             let idx = addr as usize;

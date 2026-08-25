@@ -1,17 +1,9 @@
 use std::collections::VecDeque;
 use serde::{Serialize, Deserialize};
 
-// Real EEPROM chips come in two sizes: a "narrow" 512-byte chip addressed
-// with 6 bits, or a "wide" 8KB chip addressed with 14 bits. Neither the
-// chip nor this emulator is ever told up front which size is in use — the
-// game always sends the correct number of address bits for whichever chip
-// its ROM was built against, and the DMA transfer that carries the request
-// is exactly long enough to fit "opcode + address + optional data + stop
-// bit" for that chip. So chip size is derived per-request from the halfword
-// count of the enclosing DMA transfer rather than guessed from ROM size.
 const DATA_BITS: u32 = 64;
 const DATA_BYTES: usize = 8;
-const STORAGE_SIZE: usize = 0x2000; // 8KB upper bound covers both chip sizes
+const STORAGE_SIZE: usize = 0x2000;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 enum EepromPhase {
@@ -36,10 +28,6 @@ pub struct Eeprom {
     address: u32,
     write_buffer: u64,
     read_queue: VecDeque<bool>,
-    /// Real chip size, learned the first time a request's address bit
-    /// count is decoded (6 bits => 512B narrow chip, 14 bits => 8KB wide
-    /// chip). Used only to size save-file import/export; the protocol
-    /// logic itself doesn't need to know this ahead of time.
     detected_size: Option<usize>,
 }
 
@@ -60,9 +48,6 @@ impl Eeprom {
         }
     }
 
-    /// Overwrites the backing storage with previously saved data (e.g. a
-    /// .sav file loaded from disk). Shorter files are placed at the start
-    /// and the remainder stays erased (0xFF); longer files are truncated.
     pub fn import_bytes(&mut self, data: &[u8]) {
         let len = data.len().min(self.storage.len());
         self.storage[..len].copy_from_slice(&data[..len]);
@@ -72,17 +57,11 @@ impl Eeprom {
         log::info!("EEPROM: loaded {} bytes of existing save data", len);
     }
 
-    /// Returns the backing storage, sized to whatever chip size has been
-    /// observed so far (falling back to the full 8KB upper bound if no
-    /// request has been made yet, e.g. on a completely fresh save).
     pub fn export_bytes(&self) -> Vec<u8> {
         let len = self.detected_size.unwrap_or(self.storage.len());
         self.storage[..len].to_vec()
     }
 
-    /// Called by DMA right before it streams `halfword_count` values from
-    /// somewhere in memory into the EEPROM address window (opcode+address,
-    /// or opcode+address+data for a write request).
     pub fn prepare_write_transfer(&mut self, halfword_count: u32) {
         self.pending_len = halfword_count;
         self.phase = EepromPhase::Idle;
@@ -90,9 +69,6 @@ impl Eeprom {
         self.command = 0;
     }
 
-    /// Called by DMA right before it streams `halfword_count` values out of
-    /// the EEPROM address window into memory (the data read-back following
-    /// an earlier read request).
     pub fn prepare_read_transfer(&mut self, halfword_count: u32) {
         if self.phase != EepromPhase::AwaitingRead {
             return;
@@ -114,14 +90,6 @@ impl Eeprom {
             }
         }
 
-        // TEMP DIAGNOSTIC: the actual 8 data bytes served, not just which
-        // block — Minish Cap reads each save slot's data twice, from two
-        // block addresses 0x200 apart (a primary copy and a mirrored backup
-        // copy), and treats the slot as corrupt if they don't match. A
-        // "served fine, no protocol error" read can still hand back the
-        // wrong bytes if the write path stored the two copies
-        // inconsistently; this line makes that visible by dumping the raw
-        // data so the primary/mirror pairs can be diffed directly.
         log::info!(
             "EEPROM: read request served for block {:#06X} ({} dummy bits, 64 data bits) data={:02X?}",
             self.address, dummy_bits, block_bytes
@@ -129,7 +97,6 @@ impl Eeprom {
         self.phase = EepromPhase::Reading;
     }
 
-    /// Bit 0 of `value` is the serial bit being clocked into the chip.
     pub fn write_bit(&mut self, value: u16) {
         let bit = (value & 1) != 0;
 
@@ -196,18 +163,10 @@ impl Eeprom {
                 };
             }
             EepromPhase::AwaitingRead | EepromPhase::Reading => {
-                // The chip is driving the bus during a read; stray writes
-                // from software during this window are not meaningful.
             }
         }
     }
 
-    /// Bit 0 of the returned value is the serial bit the chip is driving.
-    /// Outside of an active read (including status polls right after a
-    /// write), the real chip has no write latency to model here, so it
-    /// always reports "ready" (1) — returning 0 by default would look
-    /// like a permanently busy/failed chip to any game that polls this
-    /// bit after a save write before proceeding.
     pub fn read_bit(&mut self) -> u16 {
         match self.read_queue.pop_front() {
             Some(bit) => {
@@ -312,9 +271,6 @@ mod tests {
 
     #[test]
     fn ready_bit_defaults_to_ready_outside_an_active_read() {
-        // A game polling for write-completion status right after a save
-        // (or reading with no request pending at all) must see "ready"
-        // (1), not a permanently "busy" chip.
         let mut eeprom = Eeprom::new();
         assert_eq!(eeprom.read_bit(), 1);
 
@@ -332,8 +288,6 @@ mod tests {
         eeprom.import_bytes(&save_file);
         assert_eq!(eeprom.export_bytes(), save_file);
 
-        // Imported data must actually be readable through the real
-        // protocol, not just visible via export_bytes.
         let data = read_request(&mut eeprom, 0, 6);
         assert_eq!(data.to_be_bytes()[0], 0xAB);
     }

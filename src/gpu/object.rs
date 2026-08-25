@@ -83,12 +83,6 @@ impl AffineMatrix {
 
 impl GPU {
     pub fn render_obj(&mut self, mem_map: &mut MemoryMap) {
-        // obj_buffer/obj_window are indexed by scanline, but persist across
-        // scanlines/frames in this struct — without clearing the current
-        // row first, a pixel a sprite no longer covers keeps showing that
-        // sprite's stale color/priority from whenever it last covered it,
-        // since the priority check below only ever allows overwriting with
-        // a strictly higher-priority sprite.
         let current_scanline = self.vertical_count.get_current_scanline() as u32;
         let row_start = (DISPLAY_WIDTH * current_scanline) as usize;
         let row_end = row_start + (DISPLAY_WIDTH as usize);
