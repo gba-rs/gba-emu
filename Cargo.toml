@@ -3,7 +3,8 @@ name = "gba-emulator"
 version = "0.1.0"
 authors = [
     "Brady Cassada <cassadab@msoe.edu>",
-    "Eric Nowac <nowace@msoe.edu>"
+    "Eric Nowac <nowace@msoe.edu>",
+    "Noe Gonzalez <noe.gon@outlook.com>"
 ]
 edition = "2018"
 
