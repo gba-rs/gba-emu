@@ -42,7 +42,7 @@ impl Instruction for SpLoadStore {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;} // 1s + 1n + 1l
+    fn cycles(&self) -> u32 {if self.load {3} else {2}} // LDR: 1s + 1n + 1l, STR: 2n
 
 }
 

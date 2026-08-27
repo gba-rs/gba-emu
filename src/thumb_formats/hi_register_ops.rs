@@ -69,15 +69,13 @@ impl Instruction for HiRegisterOp {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
+        let writes_pc = self.hi_flag_1 && self.destination_register == 7;
         match self.op {
-            OpCodes::BX => {
-                return 3; //2s + 1n
-            }
-            _ => {
-                return 1; //1s
-            }
+            OpCodes::BX => 3, // 2S + 1N
+            OpCodes::ADD | OpCodes::MOV if writes_pc => 3, // 2S + 1N: writing PC flushes the pipeline
+            _ => 1, // 1S
         }
-    } // 1s or 2s + 1n
+    }
 
 }
 

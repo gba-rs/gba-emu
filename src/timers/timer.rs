@@ -40,6 +40,18 @@ impl Timer {
         self.frequency() * (0x10000 - self.timer.get_reload() as usize)
     }
 
+    // Cycles until this timer next overflows and raises its IRQ, for HALT wake-up
+    // purposes. None if it can't wake the CPU on its own (disabled, IRQ not enabled,
+    // or cascaded off another timer's overflow rather than the cycle prescaler).
+    pub fn cycles_until_irq_overflow(&self) -> Option<usize> {
+        if self.controller.get_enable() == 0 || self.controller.get_irq_enable() == 0 || self.controller.get_cascade() == 1 {
+            return None;
+        }
+        let freq = self.frequency();
+        let ticks_remaining = 0x10000 - self.timer.get_data() as usize;
+        Some(ticks_remaining * freq - self.cycles)
+    }
+
     pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> usize {
         self.cycles += current_cycles;
         let mut overflows = 0;
@@ -50,12 +62,14 @@ impl Timer {
             self.cycles -= freq;
             timer_data = timer_data.wrapping_add(1);
             if timer_data == 0 {
-                match self.timer.index {
-                    0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
-                    1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
-                    2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
-                    3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
-                    _ => panic!("Error in processing timer")
+                if self.controller.get_irq_enable() == 1 {
+                    match self.timer.index {
+                        0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
+                        1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
+                        2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
+                        3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
+                        _ => panic!("Error in processing timer")
+                    }
                 }
 
                 timer_data = self.timer.get_reload();
@@ -73,12 +87,14 @@ impl Timer {
         for _ in 0..overflows {
             timer_data = timer_data.wrapping_add(1);
             if timer_data == 0 {
-                match self.timer.index {
-                    0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
-                    1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
-                    2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
-                    3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
-                    _ => panic!("Error in processing timer")
+                if self.controller.get_irq_enable() == 1 {
+                    match self.timer.index {
+                        0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
+                        1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
+                        2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
+                        3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
+                        _ => panic!("Error in processing timer")
+                    }
                 }
 
                 timer_data = self.initial_value;

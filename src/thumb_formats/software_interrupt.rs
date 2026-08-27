@@ -31,7 +31,7 @@ impl Instruction for ThumbSoftwareInterrupt {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 2;} // Coprocessor data operations take 1S + bI incremental cycles to execute, where b is the number of cycles spent in the coprocessor busy-wait loop.
+    fn cycles(&self) -> u32 {return 3;} // SWI: 2S + 1N (exception entry flushes the pipeline)
 
 }
 

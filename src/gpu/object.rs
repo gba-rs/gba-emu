@@ -101,6 +101,86 @@ impl GPU {
         }
     }
 
+    pub fn decode_object_pixels(&self, sprite_num: usize, mem_map: &MemoryMap) -> Vec<Rgb15> {
+        let sprite = &self.objects[sprite_num];
+        let (obj_w, obj_h) = sprite.size();
+        let mode = self.display_control.get_bg_mode();
+
+        let tile_index = sprite.attr2.get_character_name();
+        const BITMAP_MODE_OBJ_TILE_OFFSET: u16 = 512;
+        let tile_base = if mode > 2 {
+            0x06014000 + 0x20 * (tile_index.saturating_sub(BITMAP_MODE_OBJ_TILE_OFFSET) as u32)
+        } else {
+            0x06010000 + 0x20 * (tile_index as u32)
+        };
+
+        let pixel_format = sprite.color_format();
+        let tile_size = sprite.tile_size();
+
+        let palette_bank = match pixel_format {
+            PixelFormat::FourBit => sprite.attr2.get_palette_number() as u32,
+            PixelFormat::EightBit => 0u32,
+        };
+
+        let tile_array_width = if self.display_control.get_obj_charcter_vram_mapping() == 0 {
+            match pixel_format {
+                PixelFormat::FourBit => 32,
+                PixelFormat::EightBit => 16,
+            }
+        } else {
+            obj_w / 8
+        };
+
+        let mem = &mem_map.memory;
+        let read_u16_at = |mem: &GbaMem, addr: u32| -> u16 {
+            let idx = addr as usize;
+            u16::from_le_bytes([mem[idx].get(), mem[idx + 1].get()])
+        };
+
+        let h_flip = sprite.attr1.get_horizontal_flip() != 0;
+        let v_flip = sprite.attr1.get_vertical_flip() != 0;
+
+        let mut pixels = Vec::with_capacity((obj_w * obj_h).max(0) as usize);
+        for y in 0..obj_h {
+            let sprite_y = if v_flip { obj_h - y - 1 } else { y };
+            for x in 0..obj_w {
+                let sprite_x = if h_flip { obj_w - x - 1 } else { x };
+
+                let tile_x = sprite_x % 8;
+                let tile_y = sprite_y % 8;
+                let tile_addr = tile_base + ((tile_array_width as u32) * ((sprite_y as u32) / 8) + ((sprite_x as u32) / 8)) * (tile_size as u32);
+                let pixel_index = match pixel_format {
+                    PixelFormat::EightBit => {
+                        let pixel_index_address = tile_addr + (8 * (tile_y as u32) + (tile_x as u32));
+                        mem[pixel_index_address as usize].get()
+                    },
+                    PixelFormat::FourBit => {
+                        let pixel_index_address = tile_addr + (4 * (tile_y as u32) + ((tile_x as u32) / 2));
+                        let value = mem[pixel_index_address as usize].get();
+                        if tile_x & 1 != 0 {
+                            value >> 4
+                        } else {
+                            value & 0xf
+                        }
+                    }
+                } as u32;
+
+                let color = if pixel_index == 0 || (palette_bank != 0 && pixel_index % 16 == 0) {
+                    Rgb15::new(0x8000)
+                } else {
+                    let palette_ram_index = 0x200 + 2 * pixel_index + 0x20 * palette_bank;
+                    let raw_addr = palette_ram_index + 0x500_0000u32;
+                    let masked_addr = (raw_addr & PALETTE_RAM_SIZE) + PALETTE_RAM_START;
+                    Rgb15::new(read_u16_at(&mem, masked_addr))
+                };
+
+                pixels.push(color);
+            }
+        }
+
+        pixels
+    }
+
     pub fn render_aff_obj(&mut self, sprite_num: usize, mem_map: &mut MemoryMap){
         let sprite = &mut self.objects[sprite_num];
         let current_scanline = self.vertical_count.get_current_scanline() as i32;
@@ -130,7 +210,12 @@ impl GPU {
         let mode = self.display_control.get_bg_mode();
 
         let tile_index = sprite.attr2.get_character_name();
-        let tile_base = (if mode > 2 { 0x06014000 } else { 0x06010000 }) + 0x20 * (tile_index as u32);
+        const BITMAP_MODE_OBJ_TILE_OFFSET: u16 = 512;
+        let tile_base = if mode > 2 {
+            0x06014000 + 0x20 * (tile_index.saturating_sub(BITMAP_MODE_OBJ_TILE_OFFSET) as u32)
+        } else {
+            0x06010000 + 0x20 * (tile_index as u32)
+        };
 
         let pixel_format = sprite.color_format();
         let tile_size = sprite.tile_size();
@@ -249,7 +334,12 @@ impl GPU {
         let mode = self.display_control.get_bg_mode();
 
         let tile_index = sprite.attr2.get_character_name();
-        let tile_base = (if mode > 2 { 0x06014000 } else { 0x06010000 }) + 0x20 * (tile_index as u32);
+        const BITMAP_MODE_OBJ_TILE_OFFSET: u16 = 512;
+        let tile_base = if mode > 2 {
+            0x06014000 + 0x20 * (tile_index.saturating_sub(BITMAP_MODE_OBJ_TILE_OFFSET) as u32)
+        } else {
+            0x06010000 + 0x20 * (tile_index as u32)
+        };
 
         let pixel_format = sprite.color_format();
         let tile_size = sprite.tile_size();
@@ -386,5 +476,54 @@ mod tests {
         gpu.render_obj(&mut mem_map);
 
         assert!(gpu.obj_window[0]);
+    }
+
+    #[test]
+    fn decode_object_pixels_reads_tile_and_palette_correctly() {
+        let (mut gpu, mut mem_map) = setup();
+        configure_sprite(&mut gpu.objects[0], 0b00, 2);
+
+        mem_map.memory[0x06010000].set(0x05);
+
+        mem_map.memory[0x0500020A].set(0x34);
+        mem_map.memory[0x0500020B].set(0x12);
+
+        let pixels = gpu.decode_object_pixels(0, &mem_map);
+        assert_eq!(pixels.len(), 64);
+        assert_eq!(pixels[0].value, 0x1234);
+        assert!(pixels[1].is_transparent());
+    }
+
+    #[test]
+    fn decode_object_pixels_offsets_tile_index_by_512_in_bitmap_modes() {
+        let (mut gpu, mut mem_map) = setup();
+        gpu.display_control.set_bg_mode(4);
+        configure_sprite(&mut gpu.objects[0], 0b00, 2);
+        gpu.objects[0].attr2.set_character_name(512);
+
+        // Tile 512 is the first tile of the OBJ-exclusive region in bitmap
+        // modes (0x06014000); tiles 0-511 physically overlap the bitmap
+        // framebuffer and are not valid OBJ tiles there.
+        mem_map.memory[0x0601_4000].set(0x05);
+        mem_map.memory[0x0500_020A].set(0x34);
+        mem_map.memory[0x0500_020B].set(0x12);
+
+        let pixels = gpu.decode_object_pixels(0, &mem_map);
+        assert_eq!(pixels[0].value, 0x1234);
+    }
+
+    #[test]
+    fn decode_object_pixels_honors_horizontal_flip() {
+        let (mut gpu, mut mem_map) = setup();
+        configure_sprite(&mut gpu.objects[0], 0b00, 2);
+        gpu.objects[0].attr1.set_horizontal_flip(1);
+
+        mem_map.memory[0x06010000].set(0x05);
+        mem_map.memory[0x0500020A].set(0x34);
+        mem_map.memory[0x0500020B].set(0x12);
+
+        let pixels = gpu.decode_object_pixels(0, &mem_map);
+        assert!(pixels[0].is_transparent());
+        assert_eq!(pixels[7].value, 0x1234);
     }
 }

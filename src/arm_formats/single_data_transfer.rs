@@ -140,7 +140,14 @@ impl Instruction for SingleDataTransfer {
         return format!("{:?}", self);
     }
 
-    fn cycles(&self) -> u32 {return 3;}
+    fn cycles(&self) -> u32 {
+        // LDR: 1S + 1N + 1I, STR: 2N. LDR into PC flushes the pipeline: +1S + 1N.
+        if self.load {
+            if self.destination_register == 15 { 5 } else { 3 }
+        } else {
+            2
+        }
+    }
 }
 
 #[cfg(test)]

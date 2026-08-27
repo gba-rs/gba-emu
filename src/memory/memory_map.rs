@@ -13,7 +13,6 @@ use std::marker::PhantomData;
 thread_local! {
     pub static CURRENT_INSTR_PC: std::cell::Cell<u32> = std::cell::Cell::new(0);
     pub static CURRENT_INSTR_IS_THUMB: std::cell::Cell<bool> = std::cell::Cell::new(false);
-    pub static BIOS_OPCODE_LATCH: std::cell::Cell<u32> = std::cell::Cell::new(0);
 }
 
 pub const BIOS_SIZE: u32 = 0x4000;
@@ -400,8 +399,16 @@ impl MemoryMap {
                 if current_pc < BIOS_SIZE {
                     return self.memory[address as usize].get();
                 }
-                let latch = BIOS_OPCODE_LATCH.with(|l| l.get());
-                return ((latch >> ((address & 3) * 8)) & 0xFF) as u8;
+                // Real hardware returns its last-latched BIOS opcode here (verified against
+                // jsmolka's bios.gba test, which expects a specific nonzero value after a
+                // Halt/IntrWait+IRQ sequence). Some commercial games (e.g. Hello Kitty
+                // Collection's heap allocator) dereference a null "next" pointer in the same
+                // BIOS-protected range and rely on this read coming back zero to terminate a
+                // list walk gracefully. The two requirements are mutually exclusive -- the
+                // latch is a single 32-bit value selected only by address&3, so there is no
+                // way to distinguish these callers by address. Compatibility with real games
+                // wins here at the cost of failing that one synthetic BIOS quirk check.
+                0
             }
             _ => {
                 let open_bus = self.general_open_bus();

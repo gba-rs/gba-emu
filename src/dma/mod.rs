@@ -104,7 +104,15 @@ impl DMAChannel {
         }
     }
 
-    pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {        
+    pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
+        // GBATEK: starting a DMA costs 2I; +2I more if source and destination are both gamepak memory.
+        mem_map.cycle_clock.cycles += 2;
+        let src_is_gamepak = (0x08..=0x0D).contains(&(self.internal_source_address >> 24));
+        let dst_is_gamepak = (0x08..=0x0D).contains(&(self.internal_destination_address >> 24));
+        if src_is_gamepak && dst_is_gamepak {
+            mem_map.cycle_clock.cycles += 2;
+        }
+
         match self.control.get_dma_transfer_type() {
             0 => {  // 16
                 let dest_region = self.internal_destination_address >> 24;
@@ -155,6 +163,10 @@ impl DMAChannel {
     }
 
     pub fn refill_sound_fifo(&mut self, mem_map: &mut MemoryBus, is_fifo_a: bool) {
+        // GBATEK: starting a DMA costs 2I (destination here is always the IO FIFO register,
+        // never gamepak, so the "+2I both regions gamepak" case never applies).
+        mem_map.cycle_clock.cycles += 2;
+
         let value = mem_map.read_u32(self.internal_source_address & !3);
         let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
         for byte in value.to_le_bytes() {
@@ -192,6 +204,12 @@ impl DMAController {
     }
 
     pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts, timer_overflows: [usize; 4]) {
+        // Snapshot these so every channel independently sees the same HBlank/VBlank event
+        // this update() call; consuming the flag on the first matching channel would
+        // otherwise hide it from any other channel also configured for the same trigger.
+        let vblanking = self.vblanking;
+        let hblanking = self.hblanking;
+
         for i in 0..4 {
             if self.dma_channels[i].control.get_dma_enable() == 1 {
                 if self.dma_channels[i].previously_disabled {
@@ -206,16 +224,14 @@ impl DMAController {
                     },
                     1 => {
                         // start at vblank
-                        if self.vblanking {
+                        if vblanking {
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
-                            self.vblanking = false;
                         }
                     },
                     2 => {
                         // start at hblank
-                        if self.hblanking {
+                        if hblanking {
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
-                            self.hblanking = false;
                         }
                         // self.dma_channels[i].control.set_dma_enable(0);
                     },
@@ -246,6 +262,9 @@ impl DMAController {
                 self.dma_channels[i].previously_disabled = true;
             }
         }
+
+        self.vblanking = false;
+        self.hblanking = false;
     }
 
     pub fn new() -> DMAController {

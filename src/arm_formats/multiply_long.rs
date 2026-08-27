@@ -31,8 +31,19 @@ impl From<u32> for MultiplyLong {
     }
 }
 
+// GBATEK: extra internal cycles depend on how many of Rs's high bits are all zero
+// (unsigned) or all zero/one (signed).
+fn multiplier_extra_cycles(rs: u32, unsigned: bool) -> u32 {
+    let top_one_ok = !unsigned;
+    if rs & 0xFFFF_FF00 == 0 || (top_one_ok && rs & 0xFFFF_FF00 == 0xFFFF_FF00) { 0 }
+    else if rs & 0xFFFF_0000 == 0 || (top_one_ok && rs & 0xFFFF_0000 == 0xFFFF_0000) { 1 }
+    else if rs & 0xFF00_0000 == 0 || (top_one_ok && rs & 0xFF00_0000 == 0xFF00_0000) { 2 }
+    else { 3 }
+}
+
 impl Instruction for MultiplyLong {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
+        _mem_bus.cycle_clock.cycles += multiplier_extra_cycles(cpu.get_register(self.op2_register), self.unsigned);
         let (rdhi, rdlo, flags) = arm_arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);
@@ -78,7 +89,11 @@ impl Instruction for MultiplyLong {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;}
+    fn cycles(&self) -> u32 {
+        // Baseline for the m=1 case; execute() adds extra I cycles for larger Rs.
+        // (U)MULL: 1S + (m+1)I; (U)MLAL: 1S + (m+2)I
+        if self.accumulate { 4 } else { 3 }
+    }
 }
 
 // Unit Tests

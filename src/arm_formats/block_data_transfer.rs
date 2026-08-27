@@ -92,7 +92,15 @@ impl Instruction for BlockDataTransfer {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;}
+    fn cycles(&self) -> u32 {
+        let n = self.register_list.len() as u32;
+        if self.load {
+            // LDM: nS + 1N + 1I; loading PC additionally flushes the pipeline (+1N).
+            if self.register_list.contains(&15) { n + 3 } else { n + 2 }
+        } else {
+            n + 1 // STM: (n-1)S + 2N
+        }
+    }
 }
 
 impl BlockDataTransfer {
