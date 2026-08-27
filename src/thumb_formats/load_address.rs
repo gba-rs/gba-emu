@@ -46,7 +46,7 @@ impl Instruction for LoadAddress {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;} // 2s + 1n... PC being written
+    fn cycles(&self) -> u32 {return 1;} // 1S; destination is always r0-r7, never PC
 
 }
 

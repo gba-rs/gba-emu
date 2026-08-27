@@ -54,7 +54,7 @@ impl Instruction for SingleDataSwap {
         return format!("{:?}", self);
     }
 
-    fn cycles(&self) -> u32 {return 2;}
+    fn cycles(&self) -> u32 {4} // SWP/SWPB: 1S + 2N + 1I
 }
 
 #[cfg(test)]

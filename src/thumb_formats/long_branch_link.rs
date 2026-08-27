@@ -43,7 +43,11 @@ impl Instruction for BL {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 4;} // for more info look at 10.3 in dwedit.org/files/arm7tdmi.pdf
+    fn cycles(&self) -> u32 {
+        // BL is fetched as two Thumb halves: H=0 sets LR (1S), H=1 performs the actual
+        // branch (2S+1N=3) for a combined 4 cycles across both halves.
+        if self.offset_bit { 3 } else { 1 }
+    }
 }
 
 impl fmt::Debug for BL {

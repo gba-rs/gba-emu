@@ -391,7 +391,16 @@ impl Instruction for DataProcessing {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 1;}
+    fn cycles(&self) -> u32 {
+        let mut cost = 1u32; // 1S
+        if !self.operand2.immediate && !self.operand2.shift.immediate {
+            cost += 1; // +1I: shift amount taken from a register
+        }
+        if self.destination_register == 15 {
+            cost += 2; // +1S + 1N: writing the result to PC
+        }
+        cost
+    }
 }
 
 

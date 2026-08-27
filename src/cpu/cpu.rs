@@ -266,6 +266,14 @@ pub struct CPU {
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
     pub last_instruction: String,
+    // One-instruction-deep prefetch: the next instruction's word, already fetched before the
+    // current instruction executes. Real ARM7TDMI hardware works this way, and some games
+    // (e.g. GBA's "Classic NES Series") deliberately self-modify the next instruction and check
+    // whether the stale (already-fetched) or fresh byte executes, as an anti-emulation probe.
+    #[serde(skip)]
+    prefetch_cache: u32,
+    #[serde(skip)]
+    prefetch_primed: bool,
 }
 
 impl CPU {
@@ -275,7 +283,13 @@ impl CPU {
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b011111),
             last_instruction: "".to_string(),
+            prefetch_cache: 0,
+            prefetch_primed: false,
         };
+    }
+
+    pub fn flush_prefetch(&mut self) {
+        self.prefetch_primed = false;
     }
 
     pub fn decode(&self, instruction: u32) -> Result<DecodedInstruction, DecodeError> {
@@ -413,24 +427,29 @@ impl CPU {
     }
 
     pub fn fetch(&mut self, bus: &mut MemoryBus) -> usize {
-        let current_pc = if self.get_instruction_set() == InstructionSet::Arm { ARM_PC } else { THUMB_PC };
+        let is_arm = self.get_instruction_set() == InstructionSet::Arm;
+        let current_pc = if is_arm { ARM_PC } else { THUMB_PC };
+        let word_size = if is_arm { ARM_WORD_SIZE } else { THUMB_WORD_SIZE } as u32;
         let pc_contents = self.get_register(current_pc);
+        let pc_after_advance = pc_contents + word_size;
         // log::debug!("PC: {:X}", pc_contents);
         crate::memory::memory_map::CURRENT_INSTR_PC.with(|pc| pc.set(pc_contents));
         crate::memory::memory_map::CURRENT_INSTR_IS_THUMB.with(|t| t.set(self.get_instruction_set() != InstructionSet::Arm));
 
-        let instruction: u32 = if self.get_instruction_set() == InstructionSet::Arm { bus.read_u32(pc_contents) } else { bus.read_u16(pc_contents) as u32 };
-
-        if pc_contents < crate::memory::memory_map::BIOS_SIZE && self.get_instruction_set() == InstructionSet::Arm {
-            let prefetched = bus.read_u32(pc_contents + 8);
-            crate::memory::memory_map::BIOS_OPCODE_LATCH.with(|latch| latch.set(prefetched));
-        }
-
-        if self.get_instruction_set() == InstructionSet::Arm {
-            self.set_register(current_pc, pc_contents + ARM_WORD_SIZE as u32) 
-        } else { 
-            self.set_register(current_pc, pc_contents + THUMB_WORD_SIZE as u32) 
+        let read_word = |addr: u32, bus: &mut MemoryBus| -> u32 {
+            if is_arm { bus.read_u32(addr) } else { bus.read_u16(addr) as u32 }
         };
+
+        let instruction: u32 = if self.prefetch_primed { self.prefetch_cache } else { read_word(pc_contents, bus) };
+
+        // Fetch the next instruction's word now, before this instruction executes -- matching
+        // real hardware's pipeline, where the next instruction is already fetched by the time
+        // the current one runs. This must happen before execute() so a self-modifying write to
+        // the next instruction's address (the anti-emulation probe some games use) doesn't
+        // affect what we cache here.
+        let lookahead = read_word(pc_after_advance, bus);
+
+        self.set_register(current_pc, pc_after_advance);
 
         let condition = if self.get_instruction_set() == InstructionSet::Arm { Condition::from((instruction & 0xF000_0000) >> 28)} else {Condition::from(0x0)};//THUMB codes don't include conditions 
         let check_condition = if self.get_instruction_set() == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
@@ -471,6 +490,21 @@ impl CPU {
                 panic!("{:?}", e);
             }
         };
+
+        // Use get_pc() (not the captured current_pc index), and also check the instruction set
+        // wasn't switched (e.g. by BX), since either changes which register slot the PC lives in
+        // and whether pc_after_advance is even the right comparison.
+        let mode_unchanged = (self.get_instruction_set() == InstructionSet::Arm) == is_arm;
+        if mode_unchanged && self.get_pc() == pc_after_advance {
+            // Sequential flow: the lookahead word we already fetched is genuinely the next
+            // instruction, so cache it for next time.
+            self.prefetch_cache = lookahead;
+            self.prefetch_primed = true;
+        } else {
+            // Branch/exception redirected PC; the lookahead fetch was speculative and wasted,
+            // matching real hardware discarding a prefetch on a taken branch.
+            self.prefetch_primed = false;
+        }
 
         return cycles;
     }

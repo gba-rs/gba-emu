@@ -36,7 +36,8 @@ pub const VBLANK_CYCLES: i64 = 83776;
 pub enum GpuState {
     HDraw,
     HBlank,
-    VBlank
+    VBlank,
+    VBlankHBlank
 }
 
 #[derive(Serialize, Deserialize)]
@@ -408,23 +409,28 @@ impl GPU {
 
                     self.display_status.set_vblank_flag(1);
                     self.current_state = GpuState::VBlank;
-                    self.cycles_to_next_state = SCANLINE_CYCLES;
+                    self.cycles_to_next_state = HDRAW_CYCLES;
                 }
 
             },
             GpuState::VBlank => {
+                self.display_status.set_hblank_flag(1);
+                if self.display_status.get_hblank_irq_enable() == 1 {
+                    irq_ctl.if_interrupt.set_lcd_h_blank(1);
+                }
+
+                self.current_state = GpuState::VBlankHBlank;
+                self.cycles_to_next_state = HBLANK_CYCLES;
+            },
+            GpuState::VBlankHBlank => {
+                self.display_status.set_hblank_flag(0);
+
                 self.update_vcount((current_scanline + 1) as u8, irq_ctl);
                 current_scanline += 1;
 
                 if current_scanline < DISPLAY_HEIGHT + VBLANK_LENGTH - 1 {
                     self.current_state = GpuState::VBlank;
-
-                    self.display_status.set_hblank_flag(1);
-                    if self.display_status.get_hblank_irq_enable() == 1 {
-                        irq_ctl.if_interrupt.set_lcd_h_blank(1);
-                    }
-                    
-                    self.cycles_to_next_state = SCANLINE_CYCLES;
+                    self.cycles_to_next_state = HDRAW_CYCLES;
                 } else {
                     self.display_status.set_vblank_flag(0);
 
@@ -433,7 +439,7 @@ impl GPU {
                     self.cycles_to_next_state = HDRAW_CYCLES;
                     self.frame_ready = true;
                 }
-            }  
+            }
         }
     }
 
