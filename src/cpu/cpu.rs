@@ -490,8 +490,16 @@ impl CPU {
                     1usize + unclaimed_cycles as usize
                 }
             },
-            Err(e) => {
-                panic!("{:?}", e);
+            Err(_) => {
+                let return_address = self.get_register(current_pc);
+                let old_cpsr = self.cpsr;
+                self.set_instruction_set(InstructionSet::Arm);
+                self.set_operating_mode(OperatingMode::Undefined);
+                self.cpsr.control_bits.irq_disable = true;
+                self.set_spsr(old_cpsr);
+                self.set_register(ARM_LR, return_address);
+                self.set_register(ARM_PC, 0x04);
+                1usize + bus.cycle_clock.get_cycles() as usize
             }
         };
 
@@ -679,6 +687,21 @@ mod tests {
         bus.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut bus);
         cpu.fetch(&mut bus);
+    }
+
+    #[test]
+    fn fetch_enters_undefined_instruction_exception_instead_of_panicking() {
+        let mut cpu = CPU::new();
+        cpu.set_register(15, 0x0200_0000);
+        let mut bus = MemoryBus::new_stub();
+        bus.write_u32(0x0200_0000, 0xEE80_1000);
+
+        cpu.fetch(&mut bus);
+
+        assert_eq!(cpu.get_operating_mode(), OperatingMode::Undefined);
+        assert_eq!(cpu.get_instruction_set(), InstructionSet::Arm);
+        assert_eq!(cpu.get_pc(), 0x04);
+        assert_eq!(cpu.get_register(ARM_LR), 0x0200_0004);
     }
 
     #[test]
