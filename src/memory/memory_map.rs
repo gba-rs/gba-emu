@@ -50,6 +50,8 @@ pub struct MemoryMap {
     pub fifo_a: std::collections::VecDeque<u8>,
     pub fifo_b: std::collections::VecDeque<u8>,
     pub trigger_flags: u8,
+    rom_size: u32,
+    rom_undersize_mirror_mask: Option<u32>,
 }
 
 impl MemoryMap {
@@ -70,6 +72,8 @@ impl MemoryMap {
             fifo_a: std::collections::VecDeque::new(),
             fifo_b: std::collections::VecDeque::new(),
             trigger_flags: 0,
+            rom_size: ROM_SIZE + 1,
+            rom_undersize_mirror_mask: None,
         }
     }
 
@@ -158,7 +162,7 @@ impl MemoryMap {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].set(value);
                         } else {
-                            self.memory[Self::rom_mirrored_address(address) as usize].set(value);
+                            self.memory[self.rom_mirrored_address(address) as usize].set(value);
                         }
                     },
                     BackupType::Eeprom => {
@@ -217,8 +221,26 @@ impl MemoryMap {
     }
 
     #[inline]
-    fn rom_mirrored_address(address: u32) -> u32 {
-        (address & ROM_SIZE) + ROM_START
+    fn rom_mirrored_address(&self, address: u32) -> u32 {
+        let offset = address & ROM_SIZE;
+        if offset >= self.rom_size {
+            if let Some(mask) = self.rom_undersize_mirror_mask {
+                let mirrored = offset & mask;
+                if mirrored < self.rom_size {
+                    return mirrored + ROM_START;
+                }
+            }
+        }
+        offset + ROM_START
+    }
+
+    pub fn configure_rom(&mut self, rom_len: usize, game_code: &str) {
+        self.rom_size = rom_len as u32;
+        if game_code.starts_with('F') && rom_len > 0 {
+            self.rom_undersize_mirror_mask = Some((rom_len as u32).next_power_of_two() - 1);
+        } else {
+            self.rom_undersize_mirror_mask = None;
+        }
     }
 
     #[inline]
@@ -364,28 +386,28 @@ impl MemoryMap {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             return self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].get()
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Eeprom => {
                         if upper_byte == 0x0D {
                             return self.eeprom.borrow_mut().read_bit() as u8;
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Flash64K | BackupType::Flash128K => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             return self.read_flash(address);
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Error => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             return self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].get();
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                 }
@@ -534,6 +556,8 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     fifo_a,
                     fifo_b,
                     trigger_flags,
+                    rom_size: ROM_SIZE + 1,
+                    rom_undersize_mirror_mask: None,
                 })
             }
 
@@ -634,6 +658,8 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     fifo_a,
                     fifo_b,
                     trigger_flags,
+                    rom_size: ROM_SIZE + 1,
+                    rom_undersize_mirror_mask: None,
                 })
             }
         }

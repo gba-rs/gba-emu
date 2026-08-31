@@ -86,6 +86,7 @@ impl GBA {
         // General INternal Memory
         temp.load_bios(&game_pack.bios);
         temp.load_rom(&game_pack.rom);
+        temp.memory_bus.mem_map.configure_rom(game_pack.rom.len(), &game_pack.game_code);
 
         return temp;
     }
