@@ -28,7 +28,7 @@ impl TimerDataRegister {
 
     pub fn write_reload(&mut self, value: u16) {
         if let Some(mem) = &self.memory {
-            let address = 0x1000_0000 + (self.index * 2);
+            let address = 0x1000_0000 + (TimerDataRegister::SEGMENT_INDICIES[self.index] & 0xF);
 
             mem[address].set((value & 0xFF) as u8);
             mem[address + 1].set(((value & 0xFF00) >> 8) as u8);

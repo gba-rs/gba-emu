@@ -8,7 +8,6 @@ use serde::{Serialize, Deserialize};
 pub struct Timer {
     pub timer: TimerDataRegister,
     pub controller: TimerControlRegister,
-    pub initial_value: u16,
     pub cycles: usize,
     pub previously_disabled: bool
 }
@@ -97,7 +96,7 @@ impl Timer {
                     }
                 }
 
-                timer_data = self.initial_value;
+                timer_data = self.timer.get_reload();
                 new_overflows += 1;
             }
         }
@@ -120,28 +119,24 @@ impl TimerHandler {
                 Timer {
                     timer: TimerDataRegister::new(0),
                     controller: TimerControlRegister::new(0),
-                    initial_value: 0,
                     cycles: 0,
                     previously_disabled: true
                 },
                 Timer {
                     timer: TimerDataRegister::new(1),
                     controller: TimerControlRegister::new(1),
-                    initial_value: 0,
                     cycles: 0,
                     previously_disabled: true
                 },
                 Timer {
                     timer: TimerDataRegister::new(2),
                     controller: TimerControlRegister::new(2),
-                    initial_value: 0,
                     cycles: 0,
                     previously_disabled: true
                 },
                 Timer {
                     timer: TimerDataRegister::new(3),
                     controller: TimerControlRegister::new(3),
-                    initial_value: 0,
                     cycles: 0,
                     previously_disabled: true
                 },
@@ -191,6 +186,21 @@ impl TimerHandler {
 #[cfg(test)]
 mod tests {
     use crate::gba::GBA;
+
+    #[test]
+    fn cascade_timer_reloads_from_reload_register_not_zero_after_overflow() {
+        let mut gba = GBA::default();
+        let timer = &mut gba.timer_handler.timers[1];
+        timer.controller.set_cascade(1);
+        timer.controller.set_irq_enable(1);
+        timer.timer.write_reload(0xFF60);
+        timer.controller.set_enable(1);
+        timer.timer.set_data(0xFFFF);
+
+        gba.timer_handler.timers[1].update_overflow(1, &mut gba.interrupt_handler);
+
+        assert_eq!(gba.timer_handler.timers[1].timer.get_data(), 0xFF60);
+    }
 
     #[test]
     fn period_cycles_matches_frequency_and_reload() {
