@@ -146,7 +146,8 @@ pub struct GPU {
     pub current_state: GpuState,
     pub frame_ready: bool,
     pub frame_buffer: Vec<u32>,
-    pub obj_buffer: Vec<(Rgb15, u8, u8)>
+    pub obj_buffer: Vec<(Rgb15, u8, u8)>,
+    pub aff_ref_point_history: [Vec<(i32, i32)>; 2]
 }
 
 impl GPU {
@@ -241,7 +242,8 @@ impl GPU {
             current_state: GpuState::HDraw,
             frame_ready: false,
             frame_buffer: vec![0; (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize],
-            obj_buffer: vec![(Rgb15::new(0x8000), 4, 0); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
+            obj_buffer: vec![(Rgb15::new(0x8000), 4, 0); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize],
+            aff_ref_point_history: [vec![(0, 0); DISPLAY_HEIGHT as usize], vec![(0, 0); DISPLAY_HEIGHT as usize]]
         };
     }
 

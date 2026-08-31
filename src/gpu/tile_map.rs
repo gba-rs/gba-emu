@@ -140,13 +140,25 @@ impl GPU {
     }
 
     pub fn render_aff_bg(&mut self, mem_map: &mut MemoryMap, bg_number: usize) {
+        let component_index = bg_number - 2;
         let texture_size = 128 << self.backgrounds[bg_number].control.get_screen_size();
+        let current_scanline = self.vertical_count.get_current_scanline() as usize;
 
-        let ref_point_x = bitutils::sign_extend_u32(self.bg_affine_components[bg_number - 2].refrence_point_x_internal, 27) as i32;
-        let ref_point_y =  bitutils::sign_extend_u32(self.bg_affine_components[bg_number - 2].refrence_point_y_internal, 27) as i32;
+        let raw_ref_point_x = bitutils::sign_extend_u32(self.bg_affine_components[component_index].refrence_point_x_internal, 27) as i32;
+        let raw_ref_point_y = bitutils::sign_extend_u32(self.bg_affine_components[component_index].refrence_point_y_internal, 27) as i32;
+        self.aff_ref_point_history[component_index][current_scanline] = (raw_ref_point_x, raw_ref_point_y);
 
-        let pa = i32::from(&self.bg_affine_components[bg_number - 2].rotation_scaling_param_a);
-        let pc = i32::from(&self.bg_affine_components[bg_number - 2].rotation_scaling_param_c);
+        let mosaic_enabled = self.backgrounds[bg_number].control.get_mosaic() != 0;
+        let (ref_point_x, ref_point_y) = if mosaic_enabled {
+            let v_block = self.mosaic_size.bg_v_block() as usize;
+            let effective_scanline = current_scanline - (current_scanline % v_block);
+            self.aff_ref_point_history[component_index][effective_scanline]
+        } else {
+            (raw_ref_point_x, raw_ref_point_y)
+        };
+
+        let pa = i32::from(&self.bg_affine_components[component_index].rotation_scaling_param_a);
+        let pc = i32::from(&self.bg_affine_components[component_index].rotation_scaling_param_c);
 
         let screen_block = self.backgrounds[bg_number].control.get_tilemap_location();
         let char_block = self.backgrounds[bg_number].control.get_tileset_location();
@@ -185,6 +197,13 @@ impl GPU {
             self.backgrounds[bg_number].scan_line[screen_x as usize] = color;
         }
 
+        if mosaic_enabled {
+            let h_block = self.mosaic_size.bg_h_block() as usize;
+            for x in 0..(DISPLAY_WIDTH as usize) {
+                let block_start = x - (x % h_block);
+                self.backgrounds[bg_number].scan_line[x] = self.backgrounds[bg_number].scan_line[block_start];
+            }
+        }
     }
 }
 
@@ -270,4 +289,50 @@ mod tests {
         }
     }
 
+    fn write_single_tile_affine_bg(gpu: &mut GPU, mem_map: &mut MemoryMap) {
+        gpu.backgrounds[2].control.set_screen_base_block(8);
+        mem_map.memory[0x0600_4000].set(1);
+        mem_map.memory[0x0600_0040].set(5);
+        mem_map.memory[0x0600_0048].set(6);
+        mem_map.memory[0x0500_000A].set(0x34);
+        mem_map.memory[0x0500_000B].set(0x12);
+        mem_map.memory[0x0500_000C].set(0x78);
+        mem_map.memory[0x0500_000D].set(0x56);
+        gpu.bg_affine_components[0].rotation_scaling_param_a.set_register(256);
+        gpu.bg_affine_components[0].rotation_scaling_param_c.set_register(0);
+    }
+
+    #[test]
+    fn render_aff_bg_without_mosaic_reads_each_scanlines_own_reference_point() {
+        let (mut gpu, mut mem_map) = setup();
+        write_single_tile_affine_bg(&mut gpu, &mut mem_map);
+
+        gpu.vertical_count.set_current_scanline(0);
+        gpu.bg_affine_components[0].refrence_point_y_internal = 0;
+        gpu.render_aff_bg(&mut mem_map, 2);
+        assert_eq!(gpu.backgrounds[2].scan_line[0].value, 0x1234);
+
+        gpu.vertical_count.set_current_scanline(1);
+        gpu.bg_affine_components[0].refrence_point_y_internal = 1 << 8;
+        gpu.render_aff_bg(&mut mem_map, 2);
+        assert_eq!(gpu.backgrounds[2].scan_line[0].value, 0x5678);
+    }
+
+    #[test]
+    fn render_aff_bg_vertical_mosaic_uses_earlier_scanlines_reference_point() {
+        let (mut gpu, mut mem_map) = setup();
+        write_single_tile_affine_bg(&mut gpu, &mut mem_map);
+        gpu.backgrounds[2].control.set_mosaic(1);
+        gpu.mosaic_size.set_bg_mosaic_vsize(3);
+
+        gpu.vertical_count.set_current_scanline(0);
+        gpu.bg_affine_components[0].refrence_point_y_internal = 0;
+        gpu.render_aff_bg(&mut mem_map, 2);
+        assert_eq!(gpu.backgrounds[2].scan_line[0].value, 0x1234);
+
+        gpu.vertical_count.set_current_scanline(1);
+        gpu.bg_affine_components[0].refrence_point_y_internal = 1 << 8;
+        gpu.render_aff_bg(&mut mem_map, 2);
+        assert_eq!(gpu.backgrounds[2].scan_line[0].value, 0x1234);
+    }
 }
