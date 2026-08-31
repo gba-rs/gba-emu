@@ -16,6 +16,7 @@ use super::{thumb_instr::THUMB_INSTRUCTIONS};
 use super::{decode_error::DecodeError};
 use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
+use crate::operations::timing::MemAccessSize;
 use crate::memory::memory_bus::MemoryBus;
 use serde::{Serialize, Deserialize};
 
@@ -266,14 +267,10 @@ pub struct CPU {
     spsr: [ProgramStatusRegister; 7],
     pub cpsr: ProgramStatusRegister,
     pub last_instruction: String,
-    // One-instruction-deep prefetch: the next instruction's word, already fetched before the
-    // current instruction executes. Real ARM7TDMI hardware works this way, and some games
-    // (e.g. GBA's "Classic NES Series") deliberately self-modify the next instruction and check
-    // whether the stale (already-fetched) or fresh byte executes, as an anti-emulation probe.
     #[serde(skip)]
-    prefetch_cache: u32,
+    prefetch: [u32; 2],
     #[serde(skip)]
-    prefetch_primed: bool,
+    prefetch_depth: u8,
 }
 
 impl CPU {
@@ -283,13 +280,13 @@ impl CPU {
             spsr: [ProgramStatusRegister::from(0); 7],
             cpsr: ProgramStatusRegister::from(0b011111),
             last_instruction: "".to_string(),
-            prefetch_cache: 0,
-            prefetch_primed: false,
+            prefetch: [0, 0],
+            prefetch_depth: 0,
         };
     }
 
     pub fn flush_prefetch(&mut self) {
-        self.prefetch_primed = false;
+        self.prefetch_depth = 0;
     }
 
     pub fn decode(&self, instruction: u32) -> Result<DecodedInstruction, DecodeError> {
@@ -439,15 +436,15 @@ impl CPU {
         let read_word = |addr: u32, bus: &mut MemoryBus| -> u32 {
             if is_arm { bus.read_u32(addr) } else { bus.read_u16(addr) as u32 }
         };
+        let peek_word = |addr: u32, bus: &MemoryBus| -> u32 {
+            if is_arm { bus.mem_map.read_u32(addr) } else { bus.mem_map.read_u16(addr) as u32 }
+        };
 
-        let instruction: u32 = if self.prefetch_primed { self.prefetch_cache } else { read_word(pc_contents, bus) };
-
-        // Fetch the next instruction's word now, before this instruction executes -- matching
-        // real hardware's pipeline, where the next instruction is already fetched by the time
-        // the current one runs. This must happen before execute() so a self-modifying write to
-        // the next instruction's address (the anti-emulation probe some games use) doesn't
-        // affect what we cache here.
-        let lookahead = read_word(pc_after_advance, bus);
+        let instruction: u32 = if self.prefetch_depth >= 1 { self.prefetch[0] } else { read_word(pc_contents, bus) };
+        let near_lookahead = if self.prefetch_depth == 2 { self.prefetch[1] } else { read_word(pc_after_advance, bus) };
+        let far_addr = pc_after_advance + word_size;
+        let far_lookahead = if self.prefetch_depth >= 1 { Some(peek_word(far_addr, bus)) } else { None };
+        let far_access_size = if is_arm { MemAccessSize::Mem32 } else { MemAccessSize::Mem16 };
 
         self.set_register(current_pc, pc_after_advance);
 
@@ -479,9 +476,16 @@ impl CPU {
 
                 if check_condition {
                     let temp_cycles = instr.execute(self, bus);
+                    let branched = !((self.get_instruction_set() == InstructionSet::Arm) == is_arm && self.get_pc() == pc_after_advance);
+                    if !branched && self.prefetch_depth == 2 {
+                        bus.cycle_clock.update_cycles(far_addr, far_access_size);
+                    }
                     let unclaimed_cycles = bus.cycle_clock.get_cycles();
                     (instr.cycles() + temp_cycles + unclaimed_cycles) as usize
                 } else {
+                    if self.prefetch_depth == 2 {
+                        bus.cycle_clock.update_cycles(far_addr, far_access_size);
+                    }
                     let unclaimed_cycles = bus.cycle_clock.get_cycles();
                     1usize + unclaimed_cycles as usize
                 }
@@ -496,14 +500,16 @@ impl CPU {
         // and whether pc_after_advance is even the right comparison.
         let mode_unchanged = (self.get_instruction_set() == InstructionSet::Arm) == is_arm;
         if mode_unchanged && self.get_pc() == pc_after_advance {
-            // Sequential flow: the lookahead word we already fetched is genuinely the next
-            // instruction, so cache it for next time.
-            self.prefetch_cache = lookahead;
-            self.prefetch_primed = true;
+            self.prefetch[0] = near_lookahead;
+            match far_lookahead {
+                Some(word) => {
+                    self.prefetch[1] = word;
+                    self.prefetch_depth = 2;
+                }
+                None => self.prefetch_depth = 1,
+            }
         } else {
-            // Branch/exception redirected PC; the lookahead fetch was speculative and wasted,
-            // matching real hardware discarding a prefetch on a taken branch.
-            self.prefetch_primed = false;
+            self.prefetch_depth = 0;
         }
 
         return cycles;
@@ -673,6 +679,49 @@ mod tests {
         bus.write_u32(0x02000004, 0x012081E0);
         cpu.fetch(&mut bus);
         cpu.fetch(&mut bus);
+    }
+
+    #[test]
+    fn fetch_protects_instruction_two_positions_ahead_from_self_modification() {
+        let mut cpu = CPU::new();
+        let mut bus = MemoryBus::new_stub();
+        let base = 0x0200_0000u32;
+
+        cpu.set_register(15, base);
+        cpu.set_register(0, base + 0xC);
+        cpu.set_register(2, 0);
+
+        let mov_r5_r5 = 0xE1A0_5005;
+        bus.write_u32(base + 0x0, mov_r5_r5);
+        bus.write_u32(base + 0x4, 0xE580_2000);
+        bus.write_u32(base + 0x8, mov_r5_r5);
+        bus.write_u32(base + 0xC, 0xE3A0_3063);
+
+        for _ in 0..4 {
+            cpu.fetch(&mut bus);
+        }
+
+        assert_eq!(cpu.get_register(3), 0x63);
+    }
+
+    #[test]
+    fn taken_branch_from_a_warm_pipeline_does_not_charge_for_the_discarded_far_lookahead() {
+        let mut cpu = CPU::new();
+        let mut bus = MemoryBus::new_stub();
+        let base = 0x0200_0000u32;
+        let mov_r5_r5 = 0xE1A0_5005;
+        let branch = 0xEA00_003E;
+
+        cpu.set_register(15, base);
+        bus.write_u32(base + 0x0, mov_r5_r5);
+        bus.write_u32(base + 0x4, mov_r5_r5);
+        bus.write_u32(base + 0x8, branch);
+
+        cpu.fetch(&mut bus);
+        cpu.fetch(&mut bus);
+        let branch_cycles = cpu.fetch(&mut bus);
+
+        assert_eq!(branch_cycles, 0);
     }
 
     #[test]
