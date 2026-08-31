@@ -15,7 +15,7 @@ pub const OUTPUT_SAMPLE_RATE: usize = 32768;
 const CYCLES_PER_SAMPLE: usize = 512;
 const FRAME_SEQUENCER_CYCLES: i32 = 32768;
 
-const MIX_SCALE: i32 = 100;
+const MIX_SCALE: i32 = 64;
 
 #[derive(Serialize, Deserialize)]
 pub struct Apu {
@@ -64,6 +64,7 @@ impl Apu {
         self.sound_control_high.register(mem);
         self.sound_control_x.register(mem);
         self.sound_bias.register(mem);
+        self.sound_bias.set_bias_level(0x100);
         self.square1.register(mem);
         self.square2.register(mem);
         self.wave.register(mem);
@@ -141,14 +142,14 @@ impl Apu {
         }
 
         let ds_a = if self.sound_control_high.get_dma_sound_a_volume() != 0 {
-            self.direct_sound_a.current_sample as i32
+            self.direct_sound_a.current_sample as i32 * 4
         } else {
-            self.direct_sound_a.current_sample as i32 / 2
+            self.direct_sound_a.current_sample as i32 * 2
         };
         let ds_b = if self.sound_control_high.get_dma_sound_b_volume() != 0 {
-            self.direct_sound_b.current_sample as i32
+            self.direct_sound_b.current_sample as i32 * 4
         } else {
-            self.direct_sound_b.current_sample as i32 / 2
+            self.direct_sound_b.current_sample as i32 * 2
         };
 
         let mut left: i32 = 0;
@@ -171,8 +172,9 @@ impl Apu {
         let mut psg_left_raw: i32 = 0;
         for (i, amplitude) in amplitudes.iter().enumerate() {
             let bit = 1 << i;
-            if enable_right & bit != 0 { psg_right_raw += *amplitude as i32; }
-            if enable_left & bit != 0 { psg_left_raw += *amplitude as i32; }
+            let centered = (*amplitude as i32) * 16 - 128;
+            if enable_right & bit != 0 { psg_right_raw += centered; }
+            if enable_left & bit != 0 { psg_left_raw += centered; }
         }
 
         let master_right = (self.sound_control_low.get_sound_master_volume_right() as i32) + 1;
@@ -183,8 +185,12 @@ impl Apu {
         left += psg_left;
         right += psg_right;
 
-        let left_sample = (left * MIX_SCALE).clamp(i16::MIN as i32, i16::MAX as i32) as i16;
-        let right_sample = (right * MIX_SCALE).clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+        let bias = (self.sound_bias.get_bias_level() as i32) << 1;
+        let biased_left = (left + bias).clamp(0, 0x3FF) - bias;
+        let biased_right = (right + bias).clamp(0, 0x3FF) - bias;
+
+        let left_sample = (biased_left * MIX_SCALE).clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+        let right_sample = (biased_right * MIX_SCALE).clamp(i16::MIN as i32, i16::MAX as i32) as i16;
 
         self.sample_buffer.push(left_sample);
         self.sample_buffer.push(right_sample);
@@ -209,12 +215,60 @@ mod tests {
     }
 
     #[test]
-    fn mix_never_clips_at_worst_case_amplitude() {
-        let ds_max = 128i32;
-        let psg_max = 60 * 8 / 8;
-        let worst_case = ds_max * 2 + psg_max;
-        assert!(worst_case * MIX_SCALE <= i16::MAX as i32);
-        assert!(-worst_case * MIX_SCALE >= i16::MIN as i32);
+    fn mix_never_panics_or_overflows_at_worst_case_amplitude() {
+        let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
+        gba.apu.sound_control_low.set_sound_master_volume_left(7);
+        gba.apu.sound_control_low.set_sound_master_volume_right(7);
+        gba.apu.sound_control_low.set_sound_enable_flags_left(0xF);
+        gba.apu.sound_control_low.set_sound_enable_flags_right(0xF);
+        gba.apu.direct_sound_a.current_sample = i8::MIN;
+        gba.apu.direct_sound_b.current_sample = i8::MIN;
+        gba.apu.sound_control_high.set_dma_sound_a_volume(1);
+        gba.apu.sound_control_high.set_dma_sound_b_volume(1);
+        gba.apu.sound_control_high.set_dma_sound_a_enable_left(1);
+        gba.apu.sound_control_high.set_dma_sound_a_enable_right(1);
+        gba.apu.sound_control_high.set_dma_sound_b_enable_left(1);
+        gba.apu.sound_control_high.set_dma_sound_b_enable_right(1);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        assert_eq!(gba.apu.sample_buffer[0], i16::MIN);
+        assert_eq!(gba.apu.sample_buffer[1], i16::MIN);
+    }
+
+    #[test]
+    fn bias_domain_clamp_saturates_rather_than_wrapping() {
+        let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
+        gba.apu.sound_control_low.set_sound_master_volume_left(7);
+        gba.apu.sound_control_low.set_sound_enable_flags_left(0xF);
+        gba.apu.direct_sound_a.current_sample = i8::MIN;
+        gba.apu.direct_sound_b.current_sample = i8::MIN;
+        gba.apu.sound_control_high.set_dma_sound_a_volume(1);
+        gba.apu.sound_control_high.set_dma_sound_b_volume(1);
+        gba.apu.sound_control_high.set_dma_sound_a_enable_left(1);
+        gba.apu.sound_control_high.set_dma_sound_b_enable_left(1);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        assert_eq!(gba.apu.sample_buffer[0], i16::MIN);
+    }
+
+    #[test]
+    fn bias_level_register_measurably_shifts_output() {
+        let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
+        gba.apu.direct_sound_a.current_sample = i8::MIN;
+        gba.apu.sound_control_high.set_dma_sound_a_enable_left(1);
+
+        gba.apu.sound_bias.set_bias_level(0x10);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        let at_small_bias = gba.apu.sample_buffer[0];
+
+        gba.apu.sound_bias.set_bias_level(0x100);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        let at_default_bias = gba.apu.sample_buffer[2];
+
+        assert_ne!(at_small_bias, at_default_bias);
+        assert!(at_small_bias.unsigned_abs() < i16::MAX.unsigned_abs());
+        assert!(at_default_bias.unsigned_abs() < i16::MAX.unsigned_abs());
     }
 
     #[test]
@@ -230,12 +284,13 @@ mod tests {
     #[test]
     fn direct_sound_100_percent_is_not_amplified_beyond_source() {
         let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
         gba.apu.direct_sound_a.current_sample = i8::MIN;
         gba.apu.sound_control_high.set_dma_sound_a_volume(1);
         gba.apu.sound_control_high.set_dma_sound_a_enable_left(1);
         gba.apu.mix_and_emit_sample(&gba.memory_bus);
         let left = gba.apu.sample_buffer[0] as i32;
-        assert!(left.unsigned_abs() <= (i8::MIN.unsigned_abs() as u32) * MIX_SCALE as u32);
+        assert!(left.unsigned_abs() <= (i8::MIN.unsigned_abs() as u32) * 4 * MIX_SCALE as u32);
     }
 
     #[test]
