@@ -41,10 +41,17 @@ impl GPU {
         let tile_size = self.backgrounds[bg_number].control.get_tilesize();
 
         let current_scanline = self.vertical_count.get_current_scanline() as u32;
+        let mosaic_enabled = self.backgrounds[bg_number].control.get_mosaic() != 0;
+        let effective_scanline = if mosaic_enabled {
+            let v_block = self.mosaic_size.bg_v_block();
+            current_scanline - (current_scanline % v_block)
+        } else {
+            current_scanline
+        };
         let mut x = 0;
 
         let background_x = (x + horizontal_offset) % background_width;
-        let background_y = (current_scanline + vertical_offset) % background_height;
+        let background_y = (effective_scanline + vertical_offset) % background_height;
 
         let mut sbb: u32 = 0;
         if background_width == 256 && background_height == 256 {
@@ -69,7 +76,7 @@ impl GPU {
             u16::from_le_bytes([mem[idx].get(), mem[idx + 1].get()])
         };
 
-        loop {
+        'render: loop {
             let mut map_address = tilemap_location + 0x800u32 * sbb + 2u32 * (32 * se_column + se_row);
             for _ in se_row..32 {
                 let entry_value = TileMapEntry::from(read_u16_at(&mem, map_address));
@@ -111,7 +118,7 @@ impl GPU {
                     self.backgrounds[bg_number].scan_line[x as usize] = color;
                     x += 1;
                     if DISPLAY_WIDTH == x {
-                        return;
+                        break 'render;
                     }
                 }
                 start_tile_x = 0;
@@ -120,6 +127,14 @@ impl GPU {
             se_row = 0;
             if background_width == 512 {
                 sbb = sbb ^ 1;
+            }
+        }
+
+        if mosaic_enabled {
+            let h_block = self.mosaic_size.bg_h_block();
+            for x in 0..(DISPLAY_WIDTH as usize) {
+                let block_start = x - (x % h_block as usize);
+                self.backgrounds[bg_number].scan_line[x] = self.backgrounds[bg_number].scan_line[block_start];
             }
         }
     }
@@ -171,4 +186,88 @@ impl GPU {
         }
 
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+    use crate::memory::memory_map::MemoryMap;
+
+    fn setup() -> (GPU, MemoryMap) {
+        let mem_map = MemoryMap::new(BackupType::Sram);
+        let mut gpu = GPU::new();
+        gpu.register(&mem_map.memory);
+        (gpu, mem_map)
+    }
+
+    fn write_single_tile_bg(gpu: &mut GPU, mem_map: &mut MemoryMap, bg: usize) {
+        gpu.backgrounds[bg].control.set_screen_base_block(8);
+        mem_map.memory[0x0600_4000].set(0x01);
+        mem_map.memory[0x0600_4001].set(0x00);
+
+        mem_map.memory[0x0500_0002].set(0x1F);
+        mem_map.memory[0x0500_0003].set(0x00);
+        mem_map.memory[0x0500_0004].set(0xE0);
+        mem_map.memory[0x0500_0005].set(0x03);
+    }
+
+    #[test]
+    fn render_bg_without_mosaic_reads_each_column_independently() {
+        let (mut gpu, mut mem_map) = setup();
+        write_single_tile_bg(&mut gpu, &mut mem_map, 0);
+
+        mem_map.memory[0x0600_0020].set(0x01);
+        mem_map.memory[0x0600_0022].set(0x02);
+
+        gpu.vertical_count.set_current_scanline(0);
+        gpu.render_bg(&mut mem_map, 0);
+
+        assert_eq!(gpu.backgrounds[0].scan_line[0].value, 0x001F);
+        assert!(gpu.backgrounds[0].scan_line[1].is_transparent());
+        assert_eq!(gpu.backgrounds[0].scan_line[4].value, 0x03E0);
+        assert!(gpu.backgrounds[0].scan_line[5].is_transparent());
+    }
+
+    #[test]
+    fn render_bg_applies_horizontal_mosaic_column_snapping() {
+        let (mut gpu, mut mem_map) = setup();
+        write_single_tile_bg(&mut gpu, &mut mem_map, 0);
+        gpu.backgrounds[0].control.set_mosaic(1);
+        gpu.mosaic_size.set_bg_mosaic_hsize(3);
+
+        mem_map.memory[0x0600_0020].set(0x01);
+        mem_map.memory[0x0600_0022].set(0x02);
+
+        gpu.vertical_count.set_current_scanline(0);
+        gpu.render_bg(&mut mem_map, 0);
+
+        for x in 0..4 {
+            assert_eq!(gpu.backgrounds[0].scan_line[x].value, 0x001F, "column {}", x);
+        }
+        for x in 4..8 {
+            assert_eq!(gpu.backgrounds[0].scan_line[x].value, 0x03E0, "column {}", x);
+        }
+    }
+
+    #[test]
+    fn render_bg_applies_vertical_mosaic_row_snapping() {
+        let (mut gpu, mut mem_map) = setup();
+        write_single_tile_bg(&mut gpu, &mut mem_map, 0);
+        gpu.backgrounds[0].control.set_mosaic(1);
+        gpu.mosaic_size.set_bg_mosaic_vsize(3);
+
+        for i in 0..4usize {
+            mem_map.memory[0x0600_0020 + i].set(0x11);
+            mem_map.memory[0x0600_0030 + i].set(0x22);
+        }
+
+        for scanline in 0..8u8 {
+            gpu.vertical_count.set_current_scanline(scanline);
+            gpu.render_bg(&mut mem_map, 0);
+            let expected = if scanline < 4 { 0x001Fu16 } else { 0x03E0u16 };
+            assert_eq!(gpu.backgrounds[0].scan_line[0].value, expected, "scanline {}", scanline);
+        }
+    }
+
 }
