@@ -177,4 +177,3 @@ mod tests {
         assert_eq!(gba.memory_bus.cycle_clock.get_cycles(), 0);
     }
 }
-

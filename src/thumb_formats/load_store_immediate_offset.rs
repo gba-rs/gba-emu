@@ -81,7 +81,7 @@ impl Instruction for LoadStoreImmediateOffset {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {if self.load {3} else {2}} // LDR: 1s + 1n + 1l, STR: 2n
+    fn cycles(&self) -> u32 {if self.load {1} else {0}}
 }
 
 

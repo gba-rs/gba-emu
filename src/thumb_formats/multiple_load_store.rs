@@ -74,10 +74,7 @@ impl Instruction for MultipleLoadStore {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
-        // Normal LDM instructions take nS + 1N + 1I; STM instructions take (n-1)S + 2N,
-        // where n is the number of words transferred.
-        let n = self.register_list.len().max(1) as u32;
-        if self.load { n + 2 } else { n + 1 }
+        if self.load { 1 } else { 0 }
     }
 
 }

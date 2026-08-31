@@ -247,8 +247,7 @@ impl Instruction for ALU {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
-        // MUL: 1S + mI (baseline for m=1; execute() adds extra I cycles for larger Rs). All other ops: 1S.
-        if self.opcode == OpCodes::MUL { 2 } else { 1 }
+        if self.opcode == OpCodes::MUL { 1 } else { 0 }
     }
 
 }

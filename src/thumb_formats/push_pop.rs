@@ -78,14 +78,7 @@ impl Instruction for PushPop {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
-        // POP (LDMIA): nS + 1N + 1I; PUSH (STMDB): (n-1)S + 2N, where n includes the LR/PC slot.
-        // POP that includes PC additionally flushes the pipeline (+1N).
-        let n = (self.register_list.len() + if self.store_lr { 1 } else { 0 }) as u32;
-        if self.load {
-            if self.store_lr { n + 3 } else { n + 2 }
-        } else {
-            n + 1
-        }
+        if self.load { 1 } else { 0 }
     }
 }
 

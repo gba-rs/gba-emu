@@ -25,7 +25,6 @@ impl Instruction for ConditionalBranch {
             let (signed_offset, _) = arm_arithmetic::add(self.signed_offset, 2);    // Fetch adds the other +2
             let (new_pc, _) = arm_arithmetic::add(cpu.get_register(THUMB_PC), signed_offset);
             cpu.set_register(THUMB_PC, new_pc);
-            _mem_bus.cycle_clock.cycles += 2; // taken: 2S + 1N total (the +1N baseline comes from cycles())
         }
         _mem_bus.cycle_clock.get_cycles()
     }
@@ -33,7 +32,7 @@ impl Instruction for ConditionalBranch {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 1;} // not taken: 1S; taken adds +2 in execute()
+    fn cycles(&self) -> u32 {return 0;}
 
 }
 

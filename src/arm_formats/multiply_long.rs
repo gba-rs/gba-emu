@@ -90,9 +90,7 @@ impl Instruction for MultiplyLong {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
-        // Baseline for the m=1 case; execute() adds extra I cycles for larger Rs.
-        // (U)MULL: 1S + (m+1)I; (U)MLAL: 1S + (m+2)I
-        if self.accumulate { 4 } else { 3 }
+        if self.accumulate { 3 } else { 2 }
     }
 }
 

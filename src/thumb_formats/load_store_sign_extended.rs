@@ -79,7 +79,7 @@ impl Instruction for LoadStoreSignExtended {
     }
     fn cycles(&self) -> u32 {
         let is_strh = !self.sign_extended && !self.h_flag;
-        if is_strh {2} else {3} // STRH: 2n, LDRH/LDSB/LDSH: 1s + 1n + 1l
+        if is_strh {0} else {1}
     }
 }
 

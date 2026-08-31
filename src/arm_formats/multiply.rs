@@ -69,9 +69,7 @@ impl Instruction for Multiply {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
-        // Baseline for the m=1 case; execute() adds extra I cycles for larger Rs.
-        // MUL: 1S + mI; MLA: 1S + (m+1)I
-        if self.accumulate { 3 } else { 2 }
+        if self.accumulate { 2 } else { 1 }
     }
 }
 

@@ -44,9 +44,7 @@ impl Instruction for BL {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
-        // BL is fetched as two Thumb halves: H=0 sets LR (1S), H=1 performs the actual
-        // branch (2S+1N=3) for a combined 4 cycles across both halves.
-        if self.offset_bit { 3 } else { 1 }
+        0
     }
 }
 

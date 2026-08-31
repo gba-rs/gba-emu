@@ -31,7 +31,7 @@ impl Instruction for ThumbSoftwareInterrupt {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;} // SWI: 2S + 1N (exception entry flushes the pipeline)
+    fn cycles(&self) -> u32 {return 0;}
 
 }
 

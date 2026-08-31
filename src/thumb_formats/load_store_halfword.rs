@@ -52,7 +52,7 @@ impl Instruction for LoadStoreHalfword {
         }
         return format!("STRH {}", instruction);
     }
-    fn cycles(&self) -> u32 {if self.load {3} else {2}} // LDRH: 1s + 1n + 1l, STRH: 2n
+    fn cycles(&self) -> u32 {if self.load {1} else {0}}
 
 }
 
