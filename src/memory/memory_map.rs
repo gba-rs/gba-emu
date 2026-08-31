@@ -52,6 +52,7 @@ pub struct MemoryMap {
     pub trigger_flags: u8,
     rom_size: u32,
     rom_undersize_mirror_mask: Option<u32>,
+    wave_ram_banks: [[u8; 16]; 2],
 }
 
 impl MemoryMap {
@@ -74,7 +75,21 @@ impl MemoryMap {
             trigger_flags: 0,
             rom_size: ROM_SIZE + 1,
             rom_undersize_mirror_mask: None,
+            wave_ram_banks: [[0; 16]; 2],
         }
+    }
+
+    pub fn read_wave_ram_byte(&self, bank: u8, offset: u32) -> u8 {
+        self.wave_ram_banks[(bank & 1) as usize][(offset & 0xF) as usize]
+    }
+
+    fn write_wave_ram_byte(&mut self, bank: u8, offset: u32, value: u8) {
+        self.wave_ram_banks[(bank & 1) as usize][(offset & 0xF) as usize] = value;
+    }
+
+    fn cpu_visible_wave_ram_bank(&self) -> u8 {
+        let sound3cnt_l = self.memory[0x0400_0070usize].get();
+        ((sound3cnt_l >> 6) & 1) ^ 1
     }
 
     pub fn prepare_eeprom_write(&self, halfword_count: u32) {
@@ -125,6 +140,9 @@ impl MemoryMap {
                         self.trigger_flags |= channel_bit;
                     }
                     self.memory[address as usize].set(value);
+                }else if (0x0400_0090..=0x0400_009F).contains(&address) {
+                    let bank = self.cpu_visible_wave_ram_bank();
+                    self.write_wave_ram_byte(bank, address - 0x0400_0090, value);
                 }else if (0x4000_00A0..=0x4000_00A3).contains(&address) {
                     if self.fifo_a.len() < 32 {
                         self.fifo_a.push_back(value);
@@ -376,7 +394,13 @@ impl MemoryMap {
         match upper_byte {
             0x02 => return self.memory[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize].get(),
             0x03 => return self.memory[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize].get(),
-            0x04 => return self.memory[address as usize].get(),
+            0x04 => {
+                if (0x0400_0090..=0x0400_009F).contains(&address) {
+                    let bank = self.cpu_visible_wave_ram_bank();
+                    return self.read_wave_ram_byte(bank, address - 0x0400_0090);
+                }
+                return self.memory[address as usize].get();
+            },
             0x05 => return self.memory[((address & PALETTE_RAM_SIZE) + PALETTE_RAM_START) as usize].get(),
             0x06 => return self.memory[Self::vram_mirrored_address(address) as usize].get(),
             0x07 => return self.memory[((address & OBJECT_ATTRIBUTES_SIZE) + OBJECT_ATTRIBUTES_START) as usize].get(),
@@ -558,6 +582,7 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     trigger_flags,
                     rom_size: ROM_SIZE + 1,
                     rom_undersize_mirror_mask: None,
+                    wave_ram_banks: [[0; 16]; 2],
                 })
             }
 
@@ -660,6 +685,7 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     trigger_flags,
                     rom_size: ROM_SIZE + 1,
                     rom_undersize_mirror_mask: None,
+                    wave_ram_banks: [[0; 16]; 2],
                 })
             }
         }
