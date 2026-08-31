@@ -15,7 +15,9 @@ pub struct DMAChannel {
     pub internal_destination_address: u32,
     pub internal_word_count: u32,
     pub id: usize,
-    pub previously_disabled: bool
+    pub previously_disabled: bool,
+    #[serde(skip)]
+    pub pending_immediate: bool,
 }
 
 impl fmt::Debug for DMAChannel {
@@ -37,6 +39,7 @@ impl DMAChannel {
             internal_word_count: 0,
             id: channel,
             previously_disabled: true,
+            pending_immediate: false,
         }
     }
 
@@ -167,20 +170,44 @@ impl DMAChannel {
         // never gamepak, so the "+2I both regions gamepak" case never applies).
         mem_map.cycle_clock.cycles += 2;
 
-        let value = mem_map.read_u32(self.internal_source_address & !3);
-        let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
-        for byte in value.to_le_bytes() {
-            if fifo.len() < 32 {
-                fifo.push_back(byte);
+        for _ in 0..4 {
+            let value = mem_map.read_u32(self.internal_source_address & !3);
+            let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
+            for byte in value.to_le_bytes() {
+                if fifo.len() < 32 {
+                    fifo.push_back(byte);
+                }
+            }
+
+            match self.control.get_source_address_control() {
+                0 => self.internal_source_address += 4,
+                1 => self.internal_source_address -= 4,
+                2 => {},
+                _ => panic!("Invalid source address control")
             }
         }
+    }
+}
 
-        match self.control.get_source_address_control() {
-            0 => self.internal_source_address += 4,
-            1 => self.internal_source_address -= 4,
-            2 => {},
-            _ => panic!("Invalid source address control")
+#[cfg(test)]
+mod dma_channel_tests {
+    use super::*;
+    use crate::memory::memory_bus::MemoryBus;
+
+    #[test]
+    fn refill_sound_fifo_transfers_four_words() {
+        let mut channel = DMAChannel::new(1);
+        let mut bus = MemoryBus::new_stub();
+        let base = 0x0200_0000u32;
+        for i in 0..4u32 {
+            bus.write_u32(base + i * 4, 0x1000_0000 * (i + 1));
         }
+        channel.internal_source_address = base;
+
+        channel.refill_sound_fifo(&mut bus, true);
+
+        assert_eq!(bus.mem_map.fifo_a.len(), 16);
+        assert_eq!(channel.internal_source_address, base + 16);
     }
 }
 
@@ -219,8 +246,12 @@ impl DMAController {
 
                 match self.dma_channels[i].control.get_dma_start_timing() {
                     0 => {
-                        // start immedietly
-                        self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        if self.dma_channels[i].pending_immediate {
+                            self.dma_channels[i].pending_immediate = false;
+                            self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        } else {
+                            self.dma_channels[i].pending_immediate = true;
+                        }
                     },
                     1 => {
                         // start at vblank
@@ -246,7 +277,7 @@ impl DMAController {
                                 self.sound_control_high.get_dma_sound_b_timer_select() as usize
                             };
                             let fifo_len = if is_fifo_a { mem_map.mem_map.fifo_a.len() } else { mem_map.mem_map.fifo_b.len() };
-                            if timer_overflows[timer] > 0 && fifo_len <= 4 {
+                            if timer_overflows[timer] > 0 && fifo_len <= 16 {
                                 self.dma_channels[i].refill_sound_fifo(mem_map, is_fifo_a);
                             }
                         }
@@ -258,8 +289,11 @@ impl DMAController {
                         panic!("DMA Update fucked up")
                     }
                 }
-            } else if !self.dma_channels[i].previously_disabled {
-                self.dma_channels[i].previously_disabled = true;
+            } else {
+                self.dma_channels[i].pending_immediate = false;
+                if !self.dma_channels[i].previously_disabled {
+                    self.dma_channels[i].previously_disabled = true;
+                }
             }
         }
 
