@@ -164,6 +164,10 @@ impl SquareChannel {
         }
     }
 
+    pub fn is_active(&self) -> bool {
+        self.enabled
+    }
+
     pub fn amplitude(&self) -> u8 {
         if !self.enabled {
             return 0;

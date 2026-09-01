@@ -101,7 +101,7 @@ impl Instruction for AddSubtract {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 1;} // 1s
+    fn cycles(&self) -> u32 {return 0;}
 
 }
 

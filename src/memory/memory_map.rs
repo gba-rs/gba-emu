@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 thread_local! {
     pub static CURRENT_INSTR_PC: std::cell::Cell<u32> = std::cell::Cell::new(0);
     pub static CURRENT_INSTR_IS_THUMB: std::cell::Cell<bool> = std::cell::Cell::new(false);
-    pub static BIOS_OPCODE_LATCH: std::cell::Cell<u32> = std::cell::Cell::new(0);
+    pub static DMA_BUS_OVERRIDE: std::cell::Cell<Option<u32>> = std::cell::Cell::new(None);
 }
 
 pub const BIOS_SIZE: u32 = 0x4000;
@@ -51,6 +51,9 @@ pub struct MemoryMap {
     pub fifo_a: std::collections::VecDeque<u8>,
     pub fifo_b: std::collections::VecDeque<u8>,
     pub trigger_flags: u8,
+    rom_size: u32,
+    rom_undersize_mirror_mask: Option<u32>,
+    wave_ram_banks: [[u8; 16]; 2],
 }
 
 impl MemoryMap {
@@ -71,7 +74,23 @@ impl MemoryMap {
             fifo_a: std::collections::VecDeque::new(),
             fifo_b: std::collections::VecDeque::new(),
             trigger_flags: 0,
+            rom_size: ROM_SIZE + 1,
+            rom_undersize_mirror_mask: None,
+            wave_ram_banks: [[0; 16]; 2],
         }
+    }
+
+    pub fn read_wave_ram_byte(&self, bank: u8, offset: u32) -> u8 {
+        self.wave_ram_banks[(bank & 1) as usize][(offset & 0xF) as usize]
+    }
+
+    fn write_wave_ram_byte(&mut self, bank: u8, offset: u32, value: u8) {
+        self.wave_ram_banks[(bank & 1) as usize][(offset & 0xF) as usize] = value;
+    }
+
+    fn cpu_visible_wave_ram_bank(&self) -> u8 {
+        let sound3cnt_l = self.memory[0x0400_0070usize].get();
+        ((sound3cnt_l >> 6) & 1) ^ 1
     }
 
     pub fn prepare_eeprom_write(&self, halfword_count: u32) {
@@ -93,6 +112,9 @@ impl MemoryMap {
             0x02 => self.memory[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize].set(value),
             0x03 => self.memory[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize].set(value),
             0x04 => {
+                if (0x4000060..=0x4000081).contains(&address) && !self.sound_master_enabled() {
+                    return;
+                }
                 if address == 0x4000202 || address == 0x4000203 {
                     let new_val = self.read_u8(address) & !value;
                     self.memory[address as usize].set(new_val);
@@ -111,6 +133,13 @@ impl MemoryMap {
                     }
                 }else if address == 0x4000130 ||  address == 0x4000131  {
                     // read only
+                }else if address == 0x4000084 {
+                    self.memory[address as usize].set(value);
+                    if value & 0x80 == 0 {
+                        for cleared in 0x4000060u32..=0x4000081 {
+                            self.memory[cleared as usize].set(0);
+                        }
+                    }
                 }else if address == 0x4000065 || address == 0x400006D || address == 0x4000075 || address == 0x400007D {
                     if value & 0x80 != 0 {
                         let channel_bit = match address {
@@ -122,6 +151,9 @@ impl MemoryMap {
                         self.trigger_flags |= channel_bit;
                     }
                     self.memory[address as usize].set(value);
+                }else if (0x0400_0090..=0x0400_009F).contains(&address) {
+                    let bank = self.cpu_visible_wave_ram_bank();
+                    self.write_wave_ram_byte(bank, address - 0x0400_0090, value);
                 }else if (0x4000_00A0..=0x4000_00A3).contains(&address) {
                     if self.fifo_a.len() < 32 {
                         self.fifo_a.push_back(value);
@@ -159,7 +191,7 @@ impl MemoryMap {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].set(value);
                         } else {
-                            self.memory[Self::rom_mirrored_address(address) as usize].set(value);
+                            self.memory[self.rom_mirrored_address(address) as usize].set(value);
                         }
                     },
                     BackupType::Eeprom => {
@@ -218,8 +250,31 @@ impl MemoryMap {
     }
 
     #[inline]
-    fn rom_mirrored_address(address: u32) -> u32 {
-        (address & ROM_SIZE) + ROM_START
+    fn rom_mirrored_address(&self, address: u32) -> u32 {
+        let offset = address & ROM_SIZE;
+        if offset >= self.rom_size {
+            if let Some(mask) = self.rom_undersize_mirror_mask {
+                let mirrored = offset & mask;
+                if mirrored < self.rom_size {
+                    return mirrored + ROM_START;
+                }
+            }
+        }
+        offset + ROM_START
+    }
+
+    pub fn configure_rom(&mut self, rom_len: usize, game_code: &str) {
+        self.rom_size = rom_len as u32;
+        if game_code.starts_with('F') && rom_len > 0 {
+            self.rom_undersize_mirror_mask = Some((rom_len as u32).next_power_of_two() - 1);
+        } else {
+            self.rom_undersize_mirror_mask = None;
+        }
+    }
+
+    #[inline]
+    fn sound_master_enabled(&self) -> bool {
+        self.memory[0x4000084].get() & 0x80 != 0
     }
 
     #[inline]
@@ -355,7 +410,23 @@ impl MemoryMap {
         match upper_byte {
             0x02 => return self.memory[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize].get(),
             0x03 => return self.memory[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize].get(),
-            0x04 => return self.memory[address as usize].get(),
+            0x04 => {
+                if (0x0400_0090..=0x0400_009F).contains(&address) {
+                    let bank = self.cpu_visible_wave_ram_bank();
+                    return self.read_wave_ram_byte(bank, address - 0x0400_0090);
+                }
+                if address == 0x4000082 {
+                    return self.memory[address as usize].get() & 0x0F;
+                }
+                if address == 0x4000083 {
+                    return self.memory[address as usize].get() & 0x77;
+                }
+                if address >= 0x0400_0410 {
+                    let open_bus = self.general_open_bus();
+                    return ((open_bus >> ((address & 3) * 8)) & 0xFF) as u8;
+                }
+                return self.memory[address as usize].get();
+            },
             0x05 => return self.memory[((address & PALETTE_RAM_SIZE) + PALETTE_RAM_START) as usize].get(),
             0x06 => return self.memory[Self::vram_mirrored_address(address) as usize].get(),
             0x07 => return self.memory[((address & OBJECT_ATTRIBUTES_SIZE) + OBJECT_ATTRIBUTES_START) as usize].get(),
@@ -365,28 +436,28 @@ impl MemoryMap {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             return self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].get()
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Eeprom => {
                         if upper_byte == 0x0D {
                             return self.eeprom.borrow_mut().read_bit() as u8;
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Flash64K | BackupType::Flash128K => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             return self.read_flash(address);
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                     BackupType::Error => {
                         if upper_byte == 0x0E || upper_byte == 0x0F {
                             return self.memory[((address & SRAM_SIZE) + SRAM_START) as usize].get();
                         } else {
-                            return self.memory[Self::rom_mirrored_address(address) as usize].get();
+                            return self.memory[self.rom_mirrored_address(address) as usize].get();
                         }
                     },
                 }
@@ -400,8 +471,8 @@ impl MemoryMap {
                 if current_pc < BIOS_SIZE {
                     return self.memory[address as usize].get();
                 }
-                let latch = BIOS_OPCODE_LATCH.with(|l| l.get());
-                return ((latch >> ((address & 3) * 8)) & 0xFF) as u8;
+                // Real hardware would return its last-latched BIOS opcode here; returning 0 instead deliberately fails jsmolka's bios.gba test so Hello Kitty Collection's null-pointer heap walk still terminates.
+                0
             }
             _ => {
                 let open_bus = self.general_open_bus();
@@ -411,6 +482,9 @@ impl MemoryMap {
     }
 
     fn general_open_bus(&self) -> u32 {
+        if let Some(value) = DMA_BUS_OVERRIDE.with(|d| d.get()) {
+            return value;
+        }
         let pc = CURRENT_INSTR_PC.with(|p| p.get());
         if CURRENT_INSTR_IS_THUMB.with(|t| t.get()) {
             let half = self.read_u16(pc.wrapping_add(4)) as u32;
@@ -527,6 +601,9 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     fifo_a,
                     fifo_b,
                     trigger_flags,
+                    rom_size: ROM_SIZE + 1,
+                    rom_undersize_mirror_mask: None,
+                    wave_ram_banks: [[0; 16]; 2],
                 })
             }
 
@@ -627,6 +704,9 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     fifo_a,
                     fifo_b,
                     trigger_flags,
+                    rom_size: ROM_SIZE + 1,
+                    rom_undersize_mirror_mask: None,
+                    wave_ram_banks: [[0; 16]; 2],
                 })
             }
         }
@@ -707,5 +787,83 @@ mod fast_path_tests {
             mem.write_u16(0x0D00_0000, bit);
         }
         assert_eq!(mem.memory[0x0D00_0000].get(), 0);
+    }
+}
+
+#[cfg(test)]
+mod sound_master_enable_tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+
+    #[test]
+    fn psg_registers_ignore_writes_while_master_disabled() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u16(0x4000060, 0xFFFF);
+        mem.write_u16(0x4000080, 0xFFFF);
+        assert_eq!(mem.read_u16(0x4000060), 0);
+        assert_eq!(mem.read_u16(0x4000080), 0);
+    }
+
+    #[test]
+    fn sound_cnt_h_stays_writable_while_master_disabled() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u16(0x4000082, 0x770F);
+        assert_eq!(mem.read_u16(0x4000082), 0x770F);
+    }
+
+    #[test]
+    fn psg_registers_accept_writes_once_master_enabled() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u8(0x4000084, 0x80);
+        mem.write_u16(0x4000060, 0xFFFF);
+        assert_eq!(mem.read_u16(0x4000060), 0xFFFF);
+    }
+
+    #[test]
+    fn disabling_master_clears_psg_registers_immediately() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u8(0x4000084, 0x80);
+        mem.write_u16(0x4000060, 0xFFFF);
+        mem.write_u8(0x4000084, 0x00);
+        assert_eq!(mem.read_u16(0x4000060), 0);
+    }
+}
+
+#[cfg(test)]
+mod io_open_bus_tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+
+    #[test]
+    fn unused_io_gap_reads_as_open_bus_not_zero() {
+        let mem = MemoryMap::new(BackupType::Error);
+        CURRENT_INSTR_PC.with(|pc| pc.set(0x0800_0000));
+        CURRENT_INSTR_IS_THUMB.with(|t| t.set(false));
+        mem.memory[0x0800_0008].set(0x12);
+        mem.memory[0x0800_0009].set(0x34);
+        mem.memory[0x0800_000A].set(0x56);
+        mem.memory[0x0800_000B].set(0x78);
+        assert_eq!(mem.read_u32(0x0400_0FF0), 0x7856_3412);
+    }
+
+    #[test]
+    fn known_registers_below_the_gap_still_read_their_own_value() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u16(0x4000200, 0x1234);
+        assert_eq!(mem.read_u16(0x4000200), 0x1234);
+    }
+
+    #[test]
+    fn dma_bus_override_takes_priority_until_cleared() {
+        let mem = MemoryMap::new(BackupType::Error);
+        CURRENT_INSTR_PC.with(|pc| pc.set(0x0800_0000));
+        CURRENT_INSTR_IS_THUMB.with(|t| t.set(false));
+        mem.memory[0x0800_0008].set(0xAA);
+
+        DMA_BUS_OVERRIDE.with(|d| d.set(Some(0xDEAD_BEEF)));
+        assert_eq!(mem.read_u32(0x0400_0FF0), 0xDEAD_BEEF);
+
+        DMA_BUS_OVERRIDE.with(|d| d.set(None));
+        assert_eq!(mem.read_u32(0x0400_0FF0), 0x0000_00AA);
     }
 }

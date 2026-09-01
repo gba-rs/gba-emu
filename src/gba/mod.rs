@@ -73,7 +73,7 @@ impl GBA {
 
         temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
-        temp.key_status.set_register(0xFFFF);
+        temp.key_status.set_register(0x03FF);
 
         for i in 0..2 {
             temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
@@ -86,6 +86,7 @@ impl GBA {
         // General INternal Memory
         temp.load_bios(&game_pack.bios);
         temp.load_rom(&game_pack.rom);
+        temp.memory_bus.mem_map.configure_rom(game_pack.rom.len(), &game_pack.game_code);
 
         return temp;
     }
@@ -177,14 +178,39 @@ impl GBA {
         self.gpu.obj_window = [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)];
     }
 
+    pub fn frame_until_breakpoint(&mut self, breakpoints: &std::collections::HashSet<u32>, max_steps: u32) -> bool {
+        for _ in 0..max_steps {
+            if breakpoints.contains(&self.cpu.get_pc()) {
+                return false;
+            }
+
+            self.single_step();
+
+            if self.gpu.frame_ready {
+                self.gpu.frame_ready = false;
+                self.gpu.obj_buffer.iter_mut().for_each(|m| { *m = (Rgb15::new(0x8000), 4, 0) });
+                self.gpu.obj_window = [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)];
+                return true;
+            }
+        }
+
+        true
+    }
+
     pub fn single_step(&mut self) {
         // log::info!("Single stepping");
         let cycles = if self.memory_bus.mem_map.halt_state == HaltState::Running {
             // log::info!("Stepping cpu");
-            self.cpu.fetch(&mut self.memory_bus)
+            self.cpu.fetch(&mut self.memory_bus, &mut self.dma_control, &mut self.interrupt_handler)
         } else {
             // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
-            self.gpu.cycles_to_next_state.max(0) as usize
+            let mut skip = self.gpu.cycles_to_next_state.max(0) as usize;
+            for timer in self.timer_handler.timers.iter() {
+                if let Some(until_overflow) = timer.cycles_until_irq_overflow() {
+                    skip = skip.min(until_overflow);
+                }
+            }
+            skip.max(1)
         };
 
         self.gpu.step(cycles, &mut self.memory_bus.mem_map, &mut self.interrupt_handler, &mut self.dma_control);
@@ -294,5 +320,29 @@ mod single_step_tests {
         gba.single_step();
 
         assert!(gba.gpu.cycles_to_next_state.abs() < 1_000_000);
+    }
+
+    #[test]
+    fn frame_until_breakpoint_stops_before_executing_the_breakpointed_instruction() {
+        let mut gba = GBA::default();
+        let pc = gba.cpu.get_pc();
+        let mut breakpoints = std::collections::HashSet::new();
+        breakpoints.insert(pc);
+
+        let completed = gba.frame_until_breakpoint(&breakpoints, 1_000_000);
+
+        assert!(!completed);
+        assert_eq!(gba.cpu.get_pc(), pc);
+    }
+
+    #[test]
+    fn frame_until_breakpoint_runs_a_full_frame_when_no_breakpoint_is_hit() {
+        let mut gba = GBA::default();
+        let breakpoints = std::collections::HashSet::new();
+
+        let completed = gba.frame_until_breakpoint(&breakpoints, 1_000_000);
+
+        assert!(completed);
+        assert!(!gba.gpu.frame_ready);
     }
 }

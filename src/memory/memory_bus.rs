@@ -1,5 +1,5 @@
 use crate::memory::memory_map::MemoryMap;
-use crate::operations::timing::{CycleClock, MemAccessSize};
+use crate::operations::timing::{CycleClock, MemAccessSize, CycleType};
 use crate::gamepak::BackupType;
 use serde::{Serialize, Deserialize};
 
@@ -11,9 +11,12 @@ pub struct MemoryBus {
 
 impl MemoryBus {
     pub fn new(backup_type: BackupType) -> MemoryBus {
+        let mem_map = MemoryMap::new(backup_type);
+        let mut cycle_clock = CycleClock::new();
+        cycle_clock.register(&mem_map.memory);
         return MemoryBus {
-            mem_map: MemoryMap::new(backup_type),
-            cycle_clock: CycleClock::new(),
+            mem_map,
+            cycle_clock,
         };
     }
 
@@ -33,6 +36,39 @@ impl MemoryBus {
 
     pub fn read_u32(&mut self, address: u32) -> u32 {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem32);
+        self.mem_map.read_u32(address)
+    }
+
+    pub fn read_u16_explicit(&mut self, address: u32, access_type: CycleType) -> u16 {
+        self.cycle_clock.update_cycles_explicit(address, MemAccessSize::Mem16, access_type);
+        self.mem_map.read_u16(address)
+    }
+
+    pub fn read_u32_explicit(&mut self, address: u32, access_type: CycleType) -> u32 {
+        self.cycle_clock.update_cycles_explicit(address, MemAccessSize::Mem32, access_type);
+        self.mem_map.read_u32(address)
+    }
+
+    pub fn write_u16_explicit(&mut self, address: u32, value: u16, access_type: CycleType) {
+        self.cycle_clock.update_cycles_explicit(address, MemAccessSize::Mem16, access_type);
+        self.mem_map.write_u16(address, value);
+    }
+
+    pub fn write_u32_explicit(&mut self, address: u32, value: u32, access_type: CycleType) {
+        self.cycle_clock.update_cycles_explicit(address, MemAccessSize::Mem32, access_type);
+        if address < 0x00003FFF {
+            return;
+        }
+        self.mem_map.write_u32(address, value);
+    }
+
+    pub fn read_u16_opcode_fetch(&mut self, address: u32) -> u16 {
+        self.cycle_clock.update_cycles_for_fetch(address, MemAccessSize::Mem16);
+        self.mem_map.read_u16(address)
+    }
+
+    pub fn read_u32_opcode_fetch(&mut self, address: u32) -> u32 {
+        self.cycle_clock.update_cycles_for_fetch(address, MemAccessSize::Mem32);
         self.mem_map.read_u32(address)
     }
 

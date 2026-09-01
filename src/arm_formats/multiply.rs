@@ -29,8 +29,16 @@ impl From<u32> for Multiply {
     }
 }
 
+fn multiplier_extra_cycles(rs: u32) -> u32 {
+    if rs & 0xFFFF_FF00 == 0 || rs & 0xFFFF_FF00 == 0xFFFF_FF00 { 0 }
+    else if rs & 0xFFFF_0000 == 0 || rs & 0xFFFF_0000 == 0xFFFF_0000 { 1 }
+    else if rs & 0xFF00_0000 == 0 || rs & 0xFF00_0000 == 0xFF00_0000 { 2 }
+    else { 3 }
+}
+
 impl Instruction for Multiply {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
+            _mem_bus.cycle_clock.add_internal_cycles(multiplier_extra_cycles(cpu.get_register(self.op2_register)));
             if self.accumulate { // MLA
                 let (value, flags) = arm_arithmetic::mla(
                         cpu.get_register(self.op1_register),
@@ -59,7 +67,9 @@ impl Instruction for Multiply {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;}
+    fn cycles(&self) -> u32 {
+        if self.accumulate { 2 } else { 1 }
+    }
 }
 
 // Unit Tests

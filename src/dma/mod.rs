@@ -1,6 +1,7 @@
 use crate::memory::{dma_registers::*, GbaMem, memory_bus::MemoryBus};
 use crate::interrupts::interrupts::Interrupts;
 use crate::memory::sound_registers::SoundControlHigh;
+use crate::operations::timing::CycleType;
 use std::rc::Rc;
 use std::fmt;
 use serde::{Serialize, Deserialize};
@@ -15,7 +16,10 @@ pub struct DMAChannel {
     pub internal_destination_address: u32,
     pub internal_word_count: u32,
     pub id: usize,
-    pub previously_disabled: bool
+    pub previously_disabled: bool,
+    #[serde(skip)]
+    pub pending_immediate: bool,
+    pub last_bus_value: u32,
 }
 
 impl fmt::Debug for DMAChannel {
@@ -37,7 +41,38 @@ impl DMAChannel {
             internal_word_count: 0,
             id: channel,
             previously_disabled: true,
+            pending_immediate: false,
+            last_bus_value: 0,
         }
+    }
+
+    fn is_dma_protected_region(address: u32) -> bool {
+        address < 0x0200_0000
+    }
+
+    fn put_on_bus(&mut self, value: u32) {
+        self.last_bus_value = value;
+        crate::memory::memory_map::DMA_BUS_OVERRIDE.with(|d| d.set(Some(value)));
+    }
+
+    fn latched_read_u16(&mut self, mem_map: &mut MemoryBus, address: u32, access_type: CycleType) -> u16 {
+        if Self::is_dma_protected_region(address) {
+            self.put_on_bus(self.last_bus_value);
+            return self.last_bus_value as u16;
+        }
+        let value = mem_map.read_u16_explicit(address, access_type);
+        self.put_on_bus(value as u32);
+        value
+    }
+
+    fn latched_read_u32(&mut self, mem_map: &mut MemoryBus, address: u32, access_type: CycleType) -> u32 {
+        if Self::is_dma_protected_region(address) {
+            self.put_on_bus(self.last_bus_value);
+            return self.last_bus_value;
+        }
+        let value = mem_map.read_u32_explicit(address, access_type);
+        self.put_on_bus(value);
+        value
     }
 
     pub fn register(&mut self, mem: &Rc<GbaMem>) {
@@ -104,7 +139,14 @@ impl DMAChannel {
         }
     }
 
-    pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {        
+    pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
+        mem_map.cycle_clock.cycles += 2;
+        let src_is_gamepak = (0x08..=0x0D).contains(&(self.internal_source_address >> 24));
+        let dst_is_gamepak = (0x08..=0x0D).contains(&(self.internal_destination_address >> 24));
+        if src_is_gamepak && dst_is_gamepak {
+            mem_map.cycle_clock.cycles += 2;
+        }
+
         match self.control.get_dma_transfer_type() {
             0 => {  // 16
                 let dest_region = self.internal_destination_address >> 24;
@@ -115,18 +157,20 @@ impl DMAChannel {
                     mem_map.prepare_eeprom_read(self.internal_word_count);
                 }
 
-                for _ in 0..self.internal_word_count {
-                    let value = mem_map.read_u16(self.internal_source_address & !1);
-                    mem_map.write_u16(self.internal_destination_address & !1, value);
+                for i in 0..self.internal_word_count {
+                    let access_type = if i == 0 { CycleType::N } else { CycleType::S };
+                    let value = self.latched_read_u16(mem_map, self.internal_source_address & !1, access_type);
+                    mem_map.write_u16_explicit(self.internal_destination_address & !1, value, access_type);
 
                     self.update_source_address();
                     self.update_destination_address();
                 }
             },
             1 => { // 32
-                for _ in 0..self.internal_word_count {
-                    let value = mem_map.read_u32(self.internal_source_address & !3);
-                    mem_map.write_u32(self.internal_destination_address & !3, value);
+                for i in 0..self.internal_word_count {
+                    let access_type = if i == 0 { CycleType::N } else { CycleType::S };
+                    let value = self.latched_read_u32(mem_map, self.internal_source_address & !3, access_type);
+                    mem_map.write_u32_explicit(self.internal_destination_address & !3, value, access_type);
 
                     self.update_source_address();
                     self.update_destination_address();
@@ -155,20 +199,145 @@ impl DMAChannel {
     }
 
     pub fn refill_sound_fifo(&mut self, mem_map: &mut MemoryBus, is_fifo_a: bool) {
-        let value = mem_map.read_u32(self.internal_source_address & !3);
-        let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
-        for byte in value.to_le_bytes() {
-            if fifo.len() < 32 {
-                fifo.push_back(byte);
+        mem_map.cycle_clock.cycles += 2;
+
+        for i in 0..4 {
+            let access_type = if i == 0 { CycleType::N } else { CycleType::S };
+            let value = self.latched_read_u32(mem_map, self.internal_source_address & !3, access_type);
+            let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
+            for byte in value.to_le_bytes() {
+                if fifo.len() < 32 {
+                    fifo.push_back(byte);
+                }
+            }
+
+            match self.control.get_source_address_control() {
+                0 => self.internal_source_address += 4,
+                1 => self.internal_source_address -= 4,
+                2 => {},
+                _ => panic!("Invalid source address control")
             }
         }
+    }
+}
 
-        match self.control.get_source_address_control() {
-            0 => self.internal_source_address += 4,
-            1 => self.internal_source_address -= 4,
-            2 => {},
-            _ => panic!("Invalid source address control")
+#[cfg(test)]
+mod dma_channel_tests {
+    use super::*;
+    use crate::memory::memory_bus::MemoryBus;
+    use crate::interrupts::interrupts::Interrupts;
+
+    #[test]
+    fn refill_sound_fifo_transfers_four_words() {
+        let mut channel = DMAChannel::new(1);
+        let mut bus = MemoryBus::new_stub();
+        let base = 0x0200_0000u32;
+        for i in 0..4u32 {
+            bus.write_u32(base + i * 4, 0x1000_0000 * (i + 1));
         }
+        channel.internal_source_address = base;
+
+        channel.refill_sound_fifo(&mut bus, true);
+
+        assert_eq!(bus.mem_map.fifo_a.len(), 16);
+        assert_eq!(channel.internal_source_address, base + 16);
+    }
+
+    fn one_shot_word_transfer(channel: &mut DMAChannel) {
+        channel.control.set_dma_transfer_type(1);
+        channel.control.set_source_address_control(0);
+        channel.control.set_destination_address_control(0);
+        channel.control.set_dma_repeat(0);
+        channel.internal_word_count = 1;
+    }
+
+    #[test]
+    fn dma_reading_protected_region_returns_its_own_last_latched_value() {
+        let mut channel = DMAChannel::new(0);
+        let mut bus = MemoryBus::new_stub();
+        channel.register(&bus.mem_map.memory);
+        let mut irq = Interrupts::new();
+        one_shot_word_transfer(&mut channel);
+
+        let scratch = 0x0300_0000u32;
+        bus.write_u32(scratch, 0xCAFEBABE);
+        channel.internal_source_address = scratch;
+        channel.internal_destination_address = 0x0300_1000;
+        channel.transfer(&mut bus, &mut irq);
+
+        one_shot_word_transfer(&mut channel);
+        channel.internal_source_address = 0x0;
+        channel.internal_destination_address = 0x0300_2000;
+        channel.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.read_u32(0x0300_2000), 0xCAFEBABE);
+    }
+
+    #[test]
+    fn each_dma_channel_has_an_independent_latch() {
+        let mut bus = MemoryBus::new_stub();
+        let mut irq = Interrupts::new();
+
+        let mut channel0 = DMAChannel::new(0);
+        channel0.register(&bus.mem_map.memory);
+        one_shot_word_transfer(&mut channel0);
+        bus.write_u32(0x0300_0000, 0x1BADF00D);
+        channel0.internal_source_address = 0x0300_0000;
+        channel0.internal_destination_address = 0x0300_1000;
+        channel0.transfer(&mut bus, &mut irq);
+
+        let mut channel1 = DMAChannel::new(1);
+        channel1.register(&bus.mem_map.memory);
+        one_shot_word_transfer(&mut channel1);
+        bus.write_u32(0x0300_0004, 0x2BADCAFE);
+        channel1.internal_source_address = 0x0300_0004;
+        channel1.internal_destination_address = 0x0300_1004;
+        channel1.transfer(&mut bus, &mut irq);
+
+        one_shot_word_transfer(&mut channel1);
+        channel1.internal_source_address = 0x0;
+        channel1.internal_destination_address = 0x0300_2000;
+        channel1.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.read_u32(0x0300_2000), 0x2BADCAFE);
+    }
+
+    #[test]
+    fn a_dma_transfer_leaves_its_value_on_the_shared_bus() {
+        let mut channel = DMAChannel::new(0);
+        let mut bus = MemoryBus::new_stub();
+        channel.register(&bus.mem_map.memory);
+        let mut irq = Interrupts::new();
+        one_shot_word_transfer(&mut channel);
+
+        let scratch = 0x0300_0000u32;
+        bus.write_u32(scratch, 0x1234_5678);
+        channel.internal_source_address = scratch;
+        channel.internal_destination_address = 0x0300_1000;
+        channel.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.read_u32(0x0400_0FF0), 0x1234_5678);
+    }
+
+    #[test]
+    fn multi_word_rom_read_charges_nonseq_once_then_seq() {
+        let mut channel = DMAChannel::new(0);
+        let mut bus = MemoryBus::new_stub();
+        channel.register(&bus.mem_map.memory);
+        let mut irq = Interrupts::new();
+
+        channel.control.set_dma_transfer_type(0);
+        channel.control.set_source_address_control(0);
+        channel.control.set_destination_address_control(0);
+        channel.control.set_dma_repeat(0);
+        channel.internal_source_address = 0x0800_0000;
+        channel.internal_destination_address = 0x0300_0000;
+        channel.internal_word_count = 3;
+
+        bus.cycle_clock.get_cycles();
+        channel.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.cycle_clock.get_cycles(), 13);
     }
 }
 
@@ -192,6 +361,9 @@ impl DMAController {
     }
 
     pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts, timer_overflows: [usize; 4]) {
+        let vblanking = self.vblanking;
+        let hblanking = self.hblanking;
+
         for i in 0..4 {
             if self.dma_channels[i].control.get_dma_enable() == 1 {
                 if self.dma_channels[i].previously_disabled {
@@ -201,21 +373,23 @@ impl DMAController {
 
                 match self.dma_channels[i].control.get_dma_start_timing() {
                     0 => {
-                        // start immedietly
-                        self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        if self.dma_channels[i].pending_immediate {
+                            self.dma_channels[i].pending_immediate = false;
+                            self.dma_channels[i].transfer(mem_map, irq_ctl);
+                        } else {
+                            self.dma_channels[i].pending_immediate = true;
+                        }
                     },
                     1 => {
                         // start at vblank
-                        if self.vblanking {
+                        if vblanking {
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
-                            self.vblanking = false;
                         }
                     },
                     2 => {
                         // start at hblank
-                        if self.hblanking {
+                        if hblanking {
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
-                            self.hblanking = false;
                         }
                         // self.dma_channels[i].control.set_dma_enable(0);
                     },
@@ -230,7 +404,7 @@ impl DMAController {
                                 self.sound_control_high.get_dma_sound_b_timer_select() as usize
                             };
                             let fifo_len = if is_fifo_a { mem_map.mem_map.fifo_a.len() } else { mem_map.mem_map.fifo_b.len() };
-                            if timer_overflows[timer] > 0 && fifo_len <= 4 {
+                            if timer_overflows[timer] > 0 && fifo_len <= 16 {
                                 self.dma_channels[i].refill_sound_fifo(mem_map, is_fifo_a);
                             }
                         }
@@ -242,8 +416,26 @@ impl DMAController {
                         panic!("DMA Update fucked up")
                     }
                 }
-            } else if !self.dma_channels[i].previously_disabled {
-                self.dma_channels[i].previously_disabled = true;
+            } else {
+                self.dma_channels[i].pending_immediate = false;
+                if !self.dma_channels[i].previously_disabled {
+                    self.dma_channels[i].previously_disabled = true;
+                }
+            }
+        }
+
+        self.vblanking = false;
+        self.hblanking = false;
+    }
+
+    pub fn try_fire_ready_immediate(&mut self, mem_bus: &mut MemoryBus, irq_ctl: &mut Interrupts) {
+        for i in 0..4 {
+            let channel = &self.dma_channels[i];
+            if channel.control.get_dma_enable() == 1
+                && channel.control.get_dma_start_timing() == 0
+                && channel.pending_immediate {
+                self.dma_channels[i].pending_immediate = false;
+                self.dma_channels[i].transfer(mem_bus, irq_ctl);
             }
         }
     }

@@ -4,13 +4,15 @@ use crate::memory::GbaMem;
 use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 
+const TIMER_START_DELAY_CYCLES: usize = 2;
+
 #[derive(Serialize, Deserialize)]
 pub struct Timer {
     pub timer: TimerDataRegister,
     pub controller: TimerControlRegister,
-    pub initial_value: u16,
     pub cycles: usize,
-    pub previously_disabled: bool
+    pub previously_disabled: bool,
+    start_delay_remaining: usize,
 }
 
 impl Timer {
@@ -40,7 +42,22 @@ impl Timer {
         self.frequency() * (0x10000 - self.timer.get_reload() as usize)
     }
 
+    pub fn cycles_until_irq_overflow(&self) -> Option<usize> {
+        if self.controller.get_enable() == 0 || self.controller.get_irq_enable() == 0 || self.controller.get_cascade() == 1 {
+            return None;
+        }
+        let freq = self.frequency();
+        let ticks_remaining = 0x10000 - self.timer.get_data() as usize;
+        Some(ticks_remaining * freq - self.cycles)
+    }
+
     pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> usize {
+        let mut current_cycles = current_cycles;
+        if self.start_delay_remaining > 0 {
+            let absorbed = self.start_delay_remaining.min(current_cycles);
+            self.start_delay_remaining -= absorbed;
+            current_cycles -= absorbed;
+        }
         self.cycles += current_cycles;
         let mut overflows = 0;
         let freq = self.frequency();
@@ -50,12 +67,14 @@ impl Timer {
             self.cycles -= freq;
             timer_data = timer_data.wrapping_add(1);
             if timer_data == 0 {
-                match self.timer.index {
-                    0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
-                    1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
-                    2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
-                    3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
-                    _ => panic!("Error in processing timer")
+                if self.controller.get_irq_enable() == 1 {
+                    match self.timer.index {
+                        0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
+                        1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
+                        2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
+                        3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
+                        _ => panic!("Error in processing timer")
+                    }
                 }
 
                 timer_data = self.timer.get_reload();
@@ -73,15 +92,17 @@ impl Timer {
         for _ in 0..overflows {
             timer_data = timer_data.wrapping_add(1);
             if timer_data == 0 {
-                match self.timer.index {
-                    0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
-                    1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
-                    2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
-                    3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
-                    _ => panic!("Error in processing timer")
+                if self.controller.get_irq_enable() == 1 {
+                    match self.timer.index {
+                        0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
+                        1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
+                        2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
+                        3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
+                        _ => panic!("Error in processing timer")
+                    }
                 }
 
-                timer_data = self.initial_value;
+                timer_data = self.timer.get_reload();
                 new_overflows += 1;
             }
         }
@@ -104,30 +125,30 @@ impl TimerHandler {
                 Timer {
                     timer: TimerDataRegister::new(0),
                     controller: TimerControlRegister::new(0),
-                    initial_value: 0,
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
                 Timer {
                     timer: TimerDataRegister::new(1),
                     controller: TimerControlRegister::new(1),
-                    initial_value: 0,
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
                 Timer {
                     timer: TimerDataRegister::new(2),
                     controller: TimerControlRegister::new(2),
-                    initial_value: 0,
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
                 Timer {
                     timer: TimerDataRegister::new(3),
                     controller: TimerControlRegister::new(3),
-                    initial_value: 0,
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
             ],
             running_timers: 0
@@ -150,6 +171,7 @@ impl TimerHandler {
                 if timer.previously_disabled {
                     timer.reload_data();
                     timer.previously_disabled = false;
+                    timer.start_delay_remaining = TIMER_START_DELAY_CYCLES;
                 }
 
                 if timer.controller.get_cascade() == 0 {
@@ -175,6 +197,39 @@ impl TimerHandler {
 #[cfg(test)]
 mod tests {
     use crate::gba::GBA;
+
+    #[test]
+    fn cascade_timer_reloads_from_reload_register_not_zero_after_overflow() {
+        let mut gba = GBA::default();
+        let timer = &mut gba.timer_handler.timers[1];
+        timer.controller.set_cascade(1);
+        timer.controller.set_irq_enable(1);
+        timer.timer.write_reload(0xFF60);
+        timer.controller.set_enable(1);
+        timer.timer.set_data(0xFFFF);
+
+        gba.timer_handler.timers[1].update_overflow(1, &mut gba.interrupt_handler);
+
+        assert_eq!(gba.timer_handler.timers[1].timer.get_data(), 0xFF60);
+    }
+
+    #[test]
+    fn timer_absorbs_start_delay_before_first_increment() {
+        let mut gba = GBA::default();
+        let timer = &mut gba.timer_handler.timers[0];
+        timer.controller.set_pre_scalar_selection(0);
+        timer.timer.write_reload(0);
+        timer.controller.set_enable(1);
+
+        gba.timer_handler.update(1, &mut gba.interrupt_handler);
+        assert_eq!(gba.timer_handler.timers[0].timer.get_data(), 0);
+
+        gba.timer_handler.update(1, &mut gba.interrupt_handler);
+        assert_eq!(gba.timer_handler.timers[0].timer.get_data(), 0);
+
+        gba.timer_handler.update(1, &mut gba.interrupt_handler);
+        assert_eq!(gba.timer_handler.timers[0].timer.get_data(), 1);
+    }
 
     #[test]
     fn period_cycles_matches_frequency_and_reload() {

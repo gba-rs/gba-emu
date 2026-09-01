@@ -77,8 +77,10 @@ impl Instruction for LoadStoreSignExtended {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;} // 1s + 1n + 1l
-    // unless pc then its 5 2s + 2n + 1l but that isn't known till later.
+    fn cycles(&self) -> u32 {
+        let is_strh = !self.sign_extended && !self.h_flag;
+        if is_strh {0} else {1}
+    }
 }
 
 #[cfg(test)]

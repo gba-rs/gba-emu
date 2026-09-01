@@ -36,7 +36,8 @@ pub const VBLANK_CYCLES: i64 = 83776;
 pub enum GpuState {
     HDraw,
     HBlank,
-    VBlank
+    VBlank,
+    VBlankHBlank
 }
 
 #[derive(Serialize, Deserialize)]
@@ -145,7 +146,8 @@ pub struct GPU {
     pub current_state: GpuState,
     pub frame_ready: bool,
     pub frame_buffer: Vec<u32>,
-    pub obj_buffer: Vec<(Rgb15, u8, u8)>
+    pub obj_buffer: Vec<(Rgb15, u8, u8)>,
+    pub aff_ref_point_history: [Vec<(i32, i32)>; 2]
 }
 
 impl GPU {
@@ -240,7 +242,8 @@ impl GPU {
             current_state: GpuState::HDraw,
             frame_ready: false,
             frame_buffer: vec![0; (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize],
-            obj_buffer: vec![(Rgb15::new(0x8000), 4, 0); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize]
+            obj_buffer: vec![(Rgb15::new(0x8000), 4, 0); (DISPLAY_WIDTH * DISPLAY_HEIGHT) as usize],
+            aff_ref_point_history: [vec![(0, 0); DISPLAY_HEIGHT as usize], vec![(0, 0); DISPLAY_HEIGHT as usize]]
         };
     }
 
@@ -408,23 +411,28 @@ impl GPU {
 
                     self.display_status.set_vblank_flag(1);
                     self.current_state = GpuState::VBlank;
-                    self.cycles_to_next_state = SCANLINE_CYCLES;
+                    self.cycles_to_next_state = HDRAW_CYCLES;
                 }
 
             },
             GpuState::VBlank => {
+                self.display_status.set_hblank_flag(1);
+                if self.display_status.get_hblank_irq_enable() == 1 {
+                    irq_ctl.if_interrupt.set_lcd_h_blank(1);
+                }
+
+                self.current_state = GpuState::VBlankHBlank;
+                self.cycles_to_next_state = HBLANK_CYCLES;
+            },
+            GpuState::VBlankHBlank => {
+                self.display_status.set_hblank_flag(0);
+
                 self.update_vcount((current_scanline + 1) as u8, irq_ctl);
                 current_scanline += 1;
 
                 if current_scanline < DISPLAY_HEIGHT + VBLANK_LENGTH - 1 {
                     self.current_state = GpuState::VBlank;
-
-                    self.display_status.set_hblank_flag(1);
-                    if self.display_status.get_hblank_irq_enable() == 1 {
-                        irq_ctl.if_interrupt.set_lcd_h_blank(1);
-                    }
-                    
-                    self.cycles_to_next_state = SCANLINE_CYCLES;
+                    self.cycles_to_next_state = HDRAW_CYCLES;
                 } else {
                     self.display_status.set_vblank_flag(0);
 
@@ -433,7 +441,7 @@ impl GPU {
                     self.cycles_to_next_state = HDRAW_CYCLES;
                     self.frame_ready = true;
                 }
-            }  
+            }
         }
     }
 
