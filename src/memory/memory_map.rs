@@ -13,6 +13,7 @@ use std::marker::PhantomData;
 thread_local! {
     pub static CURRENT_INSTR_PC: std::cell::Cell<u32> = std::cell::Cell::new(0);
     pub static CURRENT_INSTR_IS_THUMB: std::cell::Cell<bool> = std::cell::Cell::new(false);
+    pub static DMA_BUS_OVERRIDE: std::cell::Cell<Option<u32>> = std::cell::Cell::new(None);
 }
 
 pub const BIOS_SIZE: u32 = 0x4000;
@@ -489,6 +490,9 @@ impl MemoryMap {
     }
 
     fn general_open_bus(&self) -> u32 {
+        if let Some(value) = DMA_BUS_OVERRIDE.with(|d| d.get()) {
+            return value;
+        }
         let pc = CURRENT_INSTR_PC.with(|p| p.get());
         if CURRENT_INSTR_IS_THUMB.with(|t| t.get()) {
             let half = self.read_u16(pc.wrapping_add(4)) as u32;
@@ -855,5 +859,19 @@ mod io_open_bus_tests {
         let mut mem = MemoryMap::new(BackupType::Error);
         mem.write_u16(0x4000200, 0x1234);
         assert_eq!(mem.read_u16(0x4000200), 0x1234);
+    }
+
+    #[test]
+    fn dma_bus_override_takes_priority_until_cleared() {
+        let mem = MemoryMap::new(BackupType::Error);
+        CURRENT_INSTR_PC.with(|pc| pc.set(0x0800_0000));
+        CURRENT_INSTR_IS_THUMB.with(|t| t.set(false));
+        mem.memory[0x0800_0008].set(0xAA);
+
+        DMA_BUS_OVERRIDE.with(|d| d.set(Some(0xDEAD_BEEF)));
+        assert_eq!(mem.read_u32(0x0400_0FF0), 0xDEAD_BEEF);
+
+        DMA_BUS_OVERRIDE.with(|d| d.set(None));
+        assert_eq!(mem.read_u32(0x0400_0FF0), 0x0000_00AA);
     }
 }

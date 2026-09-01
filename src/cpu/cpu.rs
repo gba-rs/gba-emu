@@ -432,6 +432,7 @@ impl CPU {
         // log::debug!("PC: {:X}", pc_contents);
         crate::memory::memory_map::CURRENT_INSTR_PC.with(|pc| pc.set(pc_contents));
         crate::memory::memory_map::CURRENT_INSTR_IS_THUMB.with(|t| t.set(self.get_instruction_set() != InstructionSet::Arm));
+        crate::memory::memory_map::DMA_BUS_OVERRIDE.with(|d| d.set(None));
 
         let read_word = |addr: u32, bus: &mut MemoryBus| -> u32 {
             if is_arm { bus.read_u32(addr) } else { bus.read_u16(addr) as u32 }

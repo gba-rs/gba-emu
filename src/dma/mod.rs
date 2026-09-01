@@ -49,21 +49,28 @@ impl DMAChannel {
         address < 0x0200_0000
     }
 
+    fn put_on_bus(&mut self, value: u32) {
+        self.last_bus_value = value;
+        crate::memory::memory_map::DMA_BUS_OVERRIDE.with(|d| d.set(Some(value)));
+    }
+
     fn latched_read_u16(&mut self, mem_map: &mut MemoryBus, address: u32) -> u16 {
         if Self::is_dma_protected_region(address) {
+            self.put_on_bus(self.last_bus_value);
             return self.last_bus_value as u16;
         }
         let value = mem_map.read_u16(address);
-        self.last_bus_value = value as u32;
+        self.put_on_bus(value as u32);
         value
     }
 
     fn latched_read_u32(&mut self, mem_map: &mut MemoryBus, address: u32) -> u32 {
         if Self::is_dma_protected_region(address) {
+            self.put_on_bus(self.last_bus_value);
             return self.last_bus_value;
         }
         let value = mem_map.read_u32(address);
-        self.last_bus_value = value;
+        self.put_on_bus(value);
         value
     }
 
@@ -195,7 +202,7 @@ impl DMAChannel {
         mem_map.cycle_clock.cycles += 2;
 
         for _ in 0..4 {
-            let value = mem_map.read_u32(self.internal_source_address & !3);
+            let value = self.latched_read_u32(mem_map, self.internal_source_address & !3);
             let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
             for byte in value.to_le_bytes() {
                 if fifo.len() < 32 {
@@ -292,6 +299,23 @@ mod dma_channel_tests {
         channel1.transfer(&mut bus, &mut irq);
 
         assert_eq!(bus.read_u32(0x0300_2000), 0x2BADCAFE);
+    }
+
+    #[test]
+    fn a_dma_transfer_leaves_its_value_on_the_shared_bus() {
+        let mut channel = DMAChannel::new(0);
+        let mut bus = MemoryBus::new_stub();
+        channel.register(&bus.mem_map.memory);
+        let mut irq = Interrupts::new();
+        one_shot_word_transfer(&mut channel);
+
+        let scratch = 0x0300_0000u32;
+        bus.write_u32(scratch, 0x1234_5678);
+        channel.internal_source_address = scratch;
+        channel.internal_destination_address = 0x0300_1000;
+        channel.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.read_u32(0x0400_0FF0), 0x1234_5678);
     }
 }
 
