@@ -18,6 +18,8 @@ use super::{condition::Condition};
 use crate::operations::instruction::Instruction;
 use crate::operations::timing::MemAccessSize;
 use crate::memory::memory_bus::MemoryBus;
+use crate::dma::DMAController;
+use crate::interrupts::interrupts::Interrupts;
 use serde::{Serialize, Deserialize};
 
 
@@ -187,6 +189,41 @@ impl DecodedInstruction {
             DecodedInstruction::SpLoadStore(i) => i.execute(cpu, mem_bus),
             DecodedInstruction::AddOffsetSP(i) => i.execute(cpu, mem_bus),
             DecodedInstruction::UnconditionalBranch(i) => i.execute(cpu, mem_bus),
+        }
+    }
+
+    pub fn execute_with_dma(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus, dma: &mut DMAController, irq: &mut Interrupts) -> u32 {
+        match self {
+            DecodedInstruction::DataProcessing(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::Multiply(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::MultiplyLong(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::SingleDataSwap(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::SingleDataTransfer(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::BranchExchange(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::HalfwordRegisterOffset(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::HalfwordImmediateOffset(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::BlockDataTransfer(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::Branch(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::SoftwareInterrupt(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::MoveShifted(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::AddSubtract(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::ALU(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::ConditionalBranch(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::HiRegisterOp(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::ImmediateOp(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::LoadAddress(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::LoadStoreHalfword(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::LoadStoreImmediateOffset(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::LoadStoreRegisterOffset(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::LoadStoreSignExtended(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::BL(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::MultipleLoadStore(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::LDR(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::PushPop(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::ThumbSoftwareInterrupt(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::SpLoadStore(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::AddOffsetSP(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
+            DecodedInstruction::UnconditionalBranch(i) => i.execute_with_dma(cpu, mem_bus, dma, irq),
         }
     }
 
@@ -423,7 +460,7 @@ impl CPU {
         return pc_contents;
     }
 
-    pub fn fetch(&mut self, bus: &mut MemoryBus) -> usize {
+    pub fn fetch(&mut self, bus: &mut MemoryBus, dma: &mut DMAController, irq: &mut Interrupts) -> usize {
         let is_arm = self.get_instruction_set() == InstructionSet::Arm;
         let current_pc = if is_arm { ARM_PC } else { THUMB_PC };
         let word_size = if is_arm { ARM_WORD_SIZE } else { THUMB_WORD_SIZE } as u32;
@@ -476,7 +513,7 @@ impl CPU {
 
 
                 if check_condition {
-                    let temp_cycles = instr.execute(self, bus);
+                    let temp_cycles = instr.execute_with_dma(self, bus, dma, irq);
                     let branched = !((self.get_instruction_set() == InstructionSet::Arm) == is_arm && self.get_pc() == pc_after_advance);
                     if !branched && self.prefetch_depth == 2 {
                         bus.cycle_clock.update_cycles_for_fetch(far_addr, far_access_size);
@@ -684,10 +721,12 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(15, 0x02000000);
         let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
         bus.write_u32(0x02000000, 0x012081E0);
         bus.write_u32(0x02000004, 0x012081E0);
-        cpu.fetch(&mut bus);
-        cpu.fetch(&mut bus);
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
     }
 
     #[test]
@@ -695,9 +734,11 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(15, 0x0200_0000);
         let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
         bus.write_u32(0x0200_0000, 0xEE80_1000);
 
-        cpu.fetch(&mut bus);
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
 
         assert_eq!(cpu.get_operating_mode(), OperatingMode::Undefined);
         assert_eq!(cpu.get_instruction_set(), InstructionSet::Arm);
@@ -709,6 +750,8 @@ mod tests {
     fn fetch_protects_instruction_two_positions_ahead_from_self_modification() {
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
         let base = 0x0200_0000u32;
 
         cpu.set_register(15, base);
@@ -722,7 +765,7 @@ mod tests {
         bus.write_u32(base + 0xC, 0xE3A0_3063);
 
         for _ in 0..4 {
-            cpu.fetch(&mut bus);
+            cpu.fetch(&mut bus, &mut dma, &mut irq);
         }
 
         assert_eq!(cpu.get_register(3), 0x63);
@@ -732,6 +775,8 @@ mod tests {
     fn taken_branch_from_a_warm_pipeline_does_not_charge_for_the_discarded_far_lookahead() {
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
         let base = 0x0200_0000u32;
         let mov_r5_r5 = 0xE1A0_5005;
         let branch = 0xEA00_003E;
@@ -741,9 +786,9 @@ mod tests {
         bus.write_u32(base + 0x4, mov_r5_r5);
         bus.write_u32(base + 0x8, branch);
 
-        cpu.fetch(&mut bus);
-        cpu.fetch(&mut bus);
-        let branch_cycles = cpu.fetch(&mut bus);
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
+        let branch_cycles = cpu.fetch(&mut bus, &mut dma, &mut irq);
 
         assert_eq!(branch_cycles, 0);
     }
@@ -753,8 +798,10 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.set_register(15, 0x02000000);
         let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
         bus.write_u32(0x02000000, 0xE1A00000);
-        cpu.fetch(&mut bus);
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
         assert_eq!(bus.cycle_clock.get_cycles(), 0);
     }
 

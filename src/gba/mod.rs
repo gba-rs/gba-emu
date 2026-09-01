@@ -201,7 +201,7 @@ impl GBA {
         // log::info!("Single stepping");
         let cycles = if self.memory_bus.mem_map.halt_state == HaltState::Running {
             // log::info!("Stepping cpu");
-            self.cpu.fetch(&mut self.memory_bus)
+            self.cpu.fetch(&mut self.memory_bus, &mut self.dma_control, &mut self.interrupt_handler)
         } else {
             // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
             // Real hardware wakes exactly when the earliest pending event (next GPU state

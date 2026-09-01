@@ -409,6 +409,21 @@ impl DMAController {
         self.hblanking = false;
     }
 
+    // GBATEK: DMA can grab the bus between a multi-register LDM/STM's individual
+    // register transfers, so an already-armed immediate transfer fires there instead
+    // of waiting for the instruction to fully finish.
+    pub fn try_fire_ready_immediate(&mut self, mem_bus: &mut MemoryBus, irq_ctl: &mut Interrupts) {
+        for i in 0..4 {
+            let channel = &self.dma_channels[i];
+            if channel.control.get_dma_enable() == 1
+                && channel.control.get_dma_start_timing() == 0
+                && channel.pending_immediate {
+                self.dma_channels[i].pending_immediate = false;
+                self.dma_channels[i].transfer(mem_bus, irq_ctl);
+            }
+        }
+    }
+
     pub fn new() -> DMAController {
         return DMAController {
             dma_channels: [
