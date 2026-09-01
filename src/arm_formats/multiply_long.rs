@@ -31,8 +31,6 @@ impl From<u32> for MultiplyLong {
     }
 }
 
-// GBATEK: extra internal cycles depend on how many of Rs's high bits are all zero
-// (unsigned) or all zero/one (signed).
 fn multiplier_extra_cycles(rs: u32, unsigned: bool) -> u32 {
     let top_one_ok = !unsigned;
     if rs & 0xFFFF_FF00 == 0 || (top_one_ok && rs & 0xFFFF_FF00 == 0xFFFF_FF00) { 0 }

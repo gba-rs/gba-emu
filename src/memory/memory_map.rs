@@ -471,15 +471,7 @@ impl MemoryMap {
                 if current_pc < BIOS_SIZE {
                     return self.memory[address as usize].get();
                 }
-                // Real hardware returns its last-latched BIOS opcode here (verified against
-                // jsmolka's bios.gba test, which expects a specific nonzero value after a
-                // Halt/IntrWait+IRQ sequence). Some commercial games (e.g. Hello Kitty
-                // Collection's heap allocator) dereference a null "next" pointer in the same
-                // BIOS-protected range and rely on this read coming back zero to terminate a
-                // list walk gracefully. The two requirements are mutually exclusive -- the
-                // latch is a single 32-bit value selected only by address&3, so there is no
-                // way to distinguish these callers by address. Compatibility with real games
-                // wins here at the cost of failing that one synthetic BIOS quirk check.
+                // Real hardware would return its last-latched BIOS opcode here; returning 0 instead deliberately fails jsmolka's bios.gba test so Hello Kitty Collection's null-pointer heap walk still terminates.
                 0
             }
             _ => {

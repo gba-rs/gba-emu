@@ -85,7 +85,6 @@ impl CycleClock {
         }
     }
 
-    /// GBATEK: the prefetch buffer only serves opcode fetches from GamePak ROM, never data reads.
     pub fn update_cycles_for_fetch(&mut self, address: u32, access_size: MemAccessSize) {
         let size_bytes = Self::access_size_bytes(access_size);
         let region = Self::gamepak_rom_region(address);
@@ -113,16 +112,12 @@ impl CycleClock {
         self.prefetch_idle_cycle_carry = 0;
     }
 
-    /// GBATEK "Prefetch Disable Bug": with prefetch off, an opcode with internal cycles
-    /// that don't touch R15 (shift/rotate-by-register, multiply, ldr/ldm/pop/swp) makes
-    /// its own next opcode fetch cost 1N instead of the 1S it would otherwise get.
     pub fn mark_prefetch_disable_bug_opcode(&mut self) {
         if self.wait_state_control.get_gamepak_prefetch_buffer() == 0 {
             self.force_next_fetch_nonseq = true;
         }
     }
 
-    /// Idle bus time (non-ROM accesses) lets the prefetch unit fill ahead of the opcode stream.
     fn grow_prefetch_credit(&mut self, idle_cycles: u32) {
         if self.wait_state_control.get_gamepak_prefetch_buffer() == 0 {
             return;
@@ -150,10 +145,6 @@ impl CycleClock {
         self.charge_cycles(address, access_size, access_type);
     }
 
-    /// Bypasses the address-continuity heuristic in favor of an explicitly known
-    /// N/S classification -- needed by DMA, whose GBATEK-documented formula
-    /// (2N + 2(n-1)S) doesn't fit that heuristic once reads and writes to two
-    /// different addresses interleave every unit.
     pub fn update_cycles_explicit(&mut self, address: u32, access_size: MemAccessSize, access_type: CycleType) {
         self.charge_cycles(address, access_size, access_type);
     }
@@ -242,7 +233,6 @@ impl CycleClock {
         }
     }
 
-    /// GBATEK: internal-only cycles (e.g. multiply) are also idle ROM-bus time the prefetch unit can use.
     pub fn add_internal_cycles(&mut self, n: u32) {
         self.cycles += n;
         self.grow_prefetch_credit(n);

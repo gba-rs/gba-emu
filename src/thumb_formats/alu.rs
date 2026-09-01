@@ -72,7 +72,6 @@ impl fmt::Debug for ALU {
     }
 }
 
-// GBATEK: extra internal cycles for MUL depend on how many of Rs's high bits are all zero or all one.
 fn multiplier_extra_cycles(rs: u32) -> u32 {
     if rs & 0xFFFF_FF00 == 0 || rs & 0xFFFF_FF00 == 0xFFFF_FF00 { 0 }
     else if rs & 0xFFFF_0000 == 0 || rs & 0xFFFF_0000 == 0xFFFF_0000 { 1 }

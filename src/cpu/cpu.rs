@@ -541,9 +541,6 @@ impl CPU {
             }
         };
 
-        // Use get_pc() (not the captured current_pc index), and also check the instruction set
-        // wasn't switched (e.g. by BX), since either changes which register slot the PC lives in
-        // and whether pc_after_advance is even the right comparison.
         let mode_unchanged = (self.get_instruction_set() == InstructionSet::Arm) == is_arm;
         if mode_unchanged && self.get_pc() == pc_after_advance {
             self.prefetch[0] = near_lookahead;

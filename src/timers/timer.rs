@@ -42,9 +42,6 @@ impl Timer {
         self.frequency() * (0x10000 - self.timer.get_reload() as usize)
     }
 
-    // Cycles until this timer next overflows and raises its IRQ, for HALT wake-up
-    // purposes. None if it can't wake the CPU on its own (disabled, IRQ not enabled,
-    // or cascaded off another timer's overflow rather than the cycle prescaler).
     pub fn cycles_until_irq_overflow(&self) -> Option<usize> {
         if self.controller.get_enable() == 0 || self.controller.get_irq_enable() == 0 || self.controller.get_cascade() == 1 {
             return None;

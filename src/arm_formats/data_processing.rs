@@ -397,7 +397,7 @@ impl Instruction for DataProcessing {
     fn cycles(&self) -> u32 {
         let mut cost = 0u32;
         if !self.operand2.immediate && !self.operand2.shift.immediate {
-            cost += 1; // +1I: shift amount taken from a register
+            cost += 1;
         }
         cost
     }

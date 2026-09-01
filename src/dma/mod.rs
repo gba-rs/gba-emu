@@ -140,7 +140,6 @@ impl DMAChannel {
     }
 
     pub fn transfer(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts) {
-        // GBATEK: starting a DMA costs 2I; +2I more if source and destination are both gamepak memory.
         mem_map.cycle_clock.cycles += 2;
         let src_is_gamepak = (0x08..=0x0D).contains(&(self.internal_source_address >> 24));
         let dst_is_gamepak = (0x08..=0x0D).contains(&(self.internal_destination_address >> 24));
@@ -200,8 +199,6 @@ impl DMAChannel {
     }
 
     pub fn refill_sound_fifo(&mut self, mem_map: &mut MemoryBus, is_fifo_a: bool) {
-        // GBATEK: starting a DMA costs 2I (destination here is always the IO FIFO register,
-        // never gamepak, so the "+2I both regions gamepak" case never applies).
         mem_map.cycle_clock.cycles += 2;
 
         for i in 0..4 {
@@ -364,9 +361,6 @@ impl DMAController {
     }
 
     pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts, timer_overflows: [usize; 4]) {
-        // Snapshot these so every channel independently sees the same HBlank/VBlank event
-        // this update() call; consuming the flag on the first matching channel would
-        // otherwise hide it from any other channel also configured for the same trigger.
         let vblanking = self.vblanking;
         let hblanking = self.hblanking;
 
@@ -434,9 +428,6 @@ impl DMAController {
         self.hblanking = false;
     }
 
-    // GBATEK: DMA can grab the bus between a multi-register LDM/STM's individual
-    // register transfers, so an already-armed immediate transfer fires there instead
-    // of waiting for the instruction to fully finish.
     pub fn try_fire_ready_immediate(&mut self, mem_bus: &mut MemoryBus, irq_ctl: &mut Interrupts) {
         for i in 0..4 {
             let channel = &self.dma_channels[i];

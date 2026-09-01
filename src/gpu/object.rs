@@ -523,9 +523,6 @@ mod tests {
         configure_sprite(&mut gpu.objects[0], 0b00, 2);
         gpu.objects[0].attr2.set_character_name(512);
 
-        // Tile 512 is the first tile of the OBJ-exclusive region in bitmap
-        // modes (0x06014000); tiles 0-511 physically overlap the bitmap
-        // framebuffer and are not valid OBJ tiles there.
         mem_map.memory[0x0601_4000].set(0x05);
         mem_map.memory[0x0500_020A].set(0x34);
         mem_map.memory[0x0500_020B].set(0x12);

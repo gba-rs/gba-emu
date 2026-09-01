@@ -204,9 +204,6 @@ impl GBA {
             self.cpu.fetch(&mut self.memory_bus, &mut self.dma_control, &mut self.interrupt_handler)
         } else {
             // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
-            // Real hardware wakes exactly when the earliest pending event (next GPU state
-            // change, or a running IRQ-enabled timer's overflow) occurs, not just at the
-            // next GPU boundary.
             let mut skip = self.gpu.cycles_to_next_state.max(0) as usize;
             for timer in self.timer_handler.timers.iter() {
                 if let Some(until_overflow) = timer.cycles_until_irq_overflow() {

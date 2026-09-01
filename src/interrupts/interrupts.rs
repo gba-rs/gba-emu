@@ -30,8 +30,6 @@ impl Interrupts {
         return (self.ie_interrupt.get_register() & self.if_interrupt.get_register()) != 0;
     }
 
-    // STOP mode halts far more of the system than HALT does, and per GBATEK can only be
-    // woken by a Keypad or Game Pak interrupt, not any arbitrary IRQ.
     fn should_wake_from_stop(&self) -> bool {
         let pending = (self.ie_interrupt.get_register() & self.if_interrupt.get_register()) as u16;
         pending & ((1 << 12) | (1 << 13)) != 0
@@ -56,7 +54,7 @@ impl Interrupts {
                 cpu.cpsr.control_bits.irq_disable = true;
                 cpu.set_register(15, 0x18);
                 cpu.flush_prefetch();
-                mem_bus.cycle_clock.cycles += 3; // exception entry flushes the pipeline: 2S + 1N
+                mem_bus.cycle_clock.cycles += 3;
             }
         }
     }
