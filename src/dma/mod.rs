@@ -18,6 +18,7 @@ pub struct DMAChannel {
     pub previously_disabled: bool,
     #[serde(skip)]
     pub pending_immediate: bool,
+    pub last_bus_value: u32,
 }
 
 impl fmt::Debug for DMAChannel {
@@ -40,7 +41,30 @@ impl DMAChannel {
             id: channel,
             previously_disabled: true,
             pending_immediate: false,
+            last_bus_value: 0,
         }
+    }
+
+    fn is_dma_protected_region(address: u32) -> bool {
+        address < 0x0200_0000
+    }
+
+    fn latched_read_u16(&mut self, mem_map: &mut MemoryBus, address: u32) -> u16 {
+        if Self::is_dma_protected_region(address) {
+            return self.last_bus_value as u16;
+        }
+        let value = mem_map.read_u16(address);
+        self.last_bus_value = value as u32;
+        value
+    }
+
+    fn latched_read_u32(&mut self, mem_map: &mut MemoryBus, address: u32) -> u32 {
+        if Self::is_dma_protected_region(address) {
+            return self.last_bus_value;
+        }
+        let value = mem_map.read_u32(address);
+        self.last_bus_value = value;
+        value
     }
 
     pub fn register(&mut self, mem: &Rc<GbaMem>) {
@@ -127,7 +151,7 @@ impl DMAChannel {
                 }
 
                 for _ in 0..self.internal_word_count {
-                    let value = mem_map.read_u16(self.internal_source_address & !1);
+                    let value = self.latched_read_u16(mem_map, self.internal_source_address & !1);
                     mem_map.write_u16(self.internal_destination_address & !1, value);
 
                     self.update_source_address();
@@ -136,7 +160,7 @@ impl DMAChannel {
             },
             1 => { // 32
                 for _ in 0..self.internal_word_count {
-                    let value = mem_map.read_u32(self.internal_source_address & !3);
+                    let value = self.latched_read_u32(mem_map, self.internal_source_address & !3);
                     mem_map.write_u32(self.internal_destination_address & !3, value);
 
                     self.update_source_address();
@@ -193,6 +217,7 @@ impl DMAChannel {
 mod dma_channel_tests {
     use super::*;
     use crate::memory::memory_bus::MemoryBus;
+    use crate::interrupts::interrupts::Interrupts;
 
     #[test]
     fn refill_sound_fifo_transfers_four_words() {
@@ -208,6 +233,65 @@ mod dma_channel_tests {
 
         assert_eq!(bus.mem_map.fifo_a.len(), 16);
         assert_eq!(channel.internal_source_address, base + 16);
+    }
+
+    fn one_shot_word_transfer(channel: &mut DMAChannel) {
+        channel.control.set_dma_transfer_type(1);
+        channel.control.set_source_address_control(0);
+        channel.control.set_destination_address_control(0);
+        channel.control.set_dma_repeat(0);
+        channel.internal_word_count = 1;
+    }
+
+    #[test]
+    fn dma_reading_protected_region_returns_its_own_last_latched_value() {
+        let mut channel = DMAChannel::new(0);
+        let mut bus = MemoryBus::new_stub();
+        channel.register(&bus.mem_map.memory);
+        let mut irq = Interrupts::new();
+        one_shot_word_transfer(&mut channel);
+
+        let scratch = 0x0300_0000u32;
+        bus.write_u32(scratch, 0xCAFEBABE);
+        channel.internal_source_address = scratch;
+        channel.internal_destination_address = 0x0300_1000;
+        channel.transfer(&mut bus, &mut irq);
+
+        one_shot_word_transfer(&mut channel);
+        channel.internal_source_address = 0x0;
+        channel.internal_destination_address = 0x0300_2000;
+        channel.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.read_u32(0x0300_2000), 0xCAFEBABE);
+    }
+
+    #[test]
+    fn each_dma_channel_has_an_independent_latch() {
+        let mut bus = MemoryBus::new_stub();
+        let mut irq = Interrupts::new();
+
+        let mut channel0 = DMAChannel::new(0);
+        channel0.register(&bus.mem_map.memory);
+        one_shot_word_transfer(&mut channel0);
+        bus.write_u32(0x0300_0000, 0x1BADF00D);
+        channel0.internal_source_address = 0x0300_0000;
+        channel0.internal_destination_address = 0x0300_1000;
+        channel0.transfer(&mut bus, &mut irq);
+
+        let mut channel1 = DMAChannel::new(1);
+        channel1.register(&bus.mem_map.memory);
+        one_shot_word_transfer(&mut channel1);
+        bus.write_u32(0x0300_0004, 0x2BADCAFE);
+        channel1.internal_source_address = 0x0300_0004;
+        channel1.internal_destination_address = 0x0300_1004;
+        channel1.transfer(&mut bus, &mut irq);
+
+        one_shot_word_transfer(&mut channel1);
+        channel1.internal_source_address = 0x0;
+        channel1.internal_destination_address = 0x0300_2000;
+        channel1.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.read_u32(0x0300_2000), 0x2BADCAFE);
     }
 }
 
