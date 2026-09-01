@@ -111,6 +111,9 @@ impl MemoryMap {
             0x02 => self.memory[((address & ON_BOARD_WRAM_SIZE) + ON_BOARD_WRAM_START) as usize].set(value),
             0x03 => self.memory[((address & ON_CHIP_WRAM_SIZE) + ON_CHIP_WRAM_START) as usize].set(value),
             0x04 => {
+                if (0x4000060..=0x4000081).contains(&address) && !self.sound_master_enabled() {
+                    return;
+                }
                 if address == 0x4000202 || address == 0x4000203 {
                     let new_val = self.read_u8(address) & !value;
                     self.memory[address as usize].set(new_val);
@@ -129,6 +132,13 @@ impl MemoryMap {
                     }
                 }else if address == 0x4000130 ||  address == 0x4000131  {
                     // read only
+                }else if address == 0x4000084 {
+                    self.memory[address as usize].set(value);
+                    if value & 0x80 == 0 {
+                        for cleared in 0x4000060u32..=0x4000081 {
+                            self.memory[cleared as usize].set(0);
+                        }
+                    }
                 }else if address == 0x4000065 || address == 0x400006D || address == 0x4000075 || address == 0x400007D {
                     if value & 0x80 != 0 {
                         let channel_bit = match address {
@@ -259,6 +269,11 @@ impl MemoryMap {
         } else {
             self.rom_undersize_mirror_mask = None;
         }
+    }
+
+    #[inline]
+    fn sound_master_enabled(&self) -> bool {
+        self.memory[0x4000084].get() & 0x80 != 0
     }
 
     #[inline]
@@ -398,6 +413,12 @@ impl MemoryMap {
                 if (0x0400_0090..=0x0400_009F).contains(&address) {
                     let bank = self.cpu_visible_wave_ram_bank();
                     return self.read_wave_ram_byte(bank, address - 0x0400_0090);
+                }
+                if address == 0x4000082 {
+                    return self.memory[address as usize].get() & 0x0F;
+                }
+                if address == 0x4000083 {
+                    return self.memory[address as usize].get() & 0x77;
                 }
                 return self.memory[address as usize].get();
             },
@@ -766,5 +787,44 @@ mod fast_path_tests {
             mem.write_u16(0x0D00_0000, bit);
         }
         assert_eq!(mem.memory[0x0D00_0000].get(), 0);
+    }
+}
+
+#[cfg(test)]
+mod sound_master_enable_tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+
+    #[test]
+    fn psg_registers_ignore_writes_while_master_disabled() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u16(0x4000060, 0xFFFF);
+        mem.write_u16(0x4000080, 0xFFFF);
+        assert_eq!(mem.read_u16(0x4000060), 0);
+        assert_eq!(mem.read_u16(0x4000080), 0);
+    }
+
+    #[test]
+    fn sound_cnt_h_stays_writable_while_master_disabled() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u16(0x4000082, 0x770F);
+        assert_eq!(mem.read_u16(0x4000082), 0x770F);
+    }
+
+    #[test]
+    fn psg_registers_accept_writes_once_master_enabled() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u8(0x4000084, 0x80);
+        mem.write_u16(0x4000060, 0xFFFF);
+        assert_eq!(mem.read_u16(0x4000060), 0xFFFF);
+    }
+
+    #[test]
+    fn disabling_master_clears_psg_registers_immediately() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u8(0x4000084, 0x80);
+        mem.write_u16(0x4000060, 0xFFFF);
+        mem.write_u8(0x4000084, 0x00);
+        assert_eq!(mem.read_u16(0x4000060), 0);
     }
 }
