@@ -41,6 +41,10 @@ impl WaveChannel {
         self.low.get_sound_channel_3_off() != 0
     }
 
+    pub fn is_active(&self) -> bool {
+        self.enabled && self.dac_enabled()
+    }
+
     pub fn get_dimension(&self) -> u8 {
         self.low.get_wave_ram_dimension()
     }

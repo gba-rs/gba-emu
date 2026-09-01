@@ -161,16 +161,19 @@ impl Apu {
 
         let enable_right = self.sound_control_low.get_sound_enable_flags_right();
         let enable_left = self.sound_control_low.get_sound_enable_flags_left();
-        let amplitudes = [
-            self.square1.amplitude(),
-            self.square2.amplitude(),
-            self.wave.amplitude(mem_bus),
-            self.noise.amplitude(),
+        let channels = [
+            (self.square1.is_active(), self.square1.amplitude()),
+            (self.square2.is_active(), self.square2.amplitude()),
+            (self.wave.is_active(), self.wave.amplitude(mem_bus)),
+            (self.noise.is_active(), self.noise.amplitude()),
         ];
 
         let mut psg_right_raw: i32 = 0;
         let mut psg_left_raw: i32 = 0;
-        for (i, amplitude) in amplitudes.iter().enumerate() {
+        for (i, (is_active, amplitude)) in channels.iter().enumerate() {
+            if !is_active {
+                continue;
+            }
             let bit = 1 << i;
             let centered = (*amplitude as i32) * 16 - 128;
             if enable_right & bit != 0 { psg_right_raw += centered; }
@@ -291,6 +294,31 @@ mod tests {
         gba.apu.mix_and_emit_sample(&gba.memory_bus);
         let left = gba.apu.sample_buffer[0] as i32;
         assert!(left.unsigned_abs() <= (i8::MIN.unsigned_abs() as u32) * 4 * MIX_SCALE as u32);
+    }
+
+    #[test]
+    fn untriggered_psg_channel_enabled_in_mixer_contributes_silence() {
+        let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
+        gba.apu.sound_control_low.set_sound_master_volume_left(7);
+        gba.apu.sound_control_low.set_sound_master_volume_right(7);
+        gba.apu.sound_control_low.set_sound_enable_flags_left(0xF);
+        gba.apu.sound_control_low.set_sound_enable_flags_right(0xF);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        assert_eq!(&gba.apu.sample_buffer[..], &[0, 0]);
+    }
+
+    #[test]
+    fn active_channel_at_zero_duty_still_contributes_to_mix() {
+        let mut gba = GBA::default();
+        gba.apu.sound_control_x.set_psg_fifo_master_enable(1);
+        gba.apu.sound_control_low.set_sound_master_volume_left(7);
+        gba.apu.sound_control_low.set_sound_enable_flags_left(0x1);
+        gba.memory_bus.write_u8(0x0400_0063, 0xF0);
+        gba.apu.square1.on_trigger();
+        assert_eq!(gba.apu.square1.amplitude(), 0);
+        gba.apu.mix_and_emit_sample(&gba.memory_bus);
+        assert_ne!(gba.apu.sample_buffer[0], 0);
     }
 
     #[test]
