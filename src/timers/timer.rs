@@ -4,12 +4,15 @@ use crate::memory::GbaMem;
 use std::rc::Rc;
 use serde::{Serialize, Deserialize};
 
+const TIMER_START_DELAY_CYCLES: usize = 2;
+
 #[derive(Serialize, Deserialize)]
 pub struct Timer {
     pub timer: TimerDataRegister,
     pub controller: TimerControlRegister,
     pub cycles: usize,
-    pub previously_disabled: bool
+    pub previously_disabled: bool,
+    start_delay_remaining: usize,
 }
 
 impl Timer {
@@ -52,6 +55,12 @@ impl Timer {
     }
 
     pub fn update(&mut self, current_cycles: usize, irq_ctrl: &mut Interrupts) -> usize {
+        let mut current_cycles = current_cycles;
+        if self.start_delay_remaining > 0 {
+            let absorbed = self.start_delay_remaining.min(current_cycles);
+            self.start_delay_remaining -= absorbed;
+            current_cycles -= absorbed;
+        }
         self.cycles += current_cycles;
         let mut overflows = 0;
         let freq = self.frequency();
@@ -120,25 +129,29 @@ impl TimerHandler {
                     timer: TimerDataRegister::new(0),
                     controller: TimerControlRegister::new(0),
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
                 Timer {
                     timer: TimerDataRegister::new(1),
                     controller: TimerControlRegister::new(1),
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
                 Timer {
                     timer: TimerDataRegister::new(2),
                     controller: TimerControlRegister::new(2),
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
                 Timer {
                     timer: TimerDataRegister::new(3),
                     controller: TimerControlRegister::new(3),
                     cycles: 0,
-                    previously_disabled: true
+                    previously_disabled: true,
+                    start_delay_remaining: 0,
                 },
             ],
             running_timers: 0
@@ -161,6 +174,7 @@ impl TimerHandler {
                 if timer.previously_disabled {
                     timer.reload_data();
                     timer.previously_disabled = false;
+                    timer.start_delay_remaining = TIMER_START_DELAY_CYCLES;
                 }
 
                 if timer.controller.get_cascade() == 0 {
@@ -200,6 +214,24 @@ mod tests {
         gba.timer_handler.timers[1].update_overflow(1, &mut gba.interrupt_handler);
 
         assert_eq!(gba.timer_handler.timers[1].timer.get_data(), 0xFF60);
+    }
+
+    #[test]
+    fn timer_absorbs_start_delay_before_first_increment() {
+        let mut gba = GBA::default();
+        let timer = &mut gba.timer_handler.timers[0];
+        timer.controller.set_pre_scalar_selection(0);
+        timer.timer.write_reload(0);
+        timer.controller.set_enable(1);
+
+        gba.timer_handler.update(1, &mut gba.interrupt_handler);
+        assert_eq!(gba.timer_handler.timers[0].timer.get_data(), 0);
+
+        gba.timer_handler.update(1, &mut gba.interrupt_handler);
+        assert_eq!(gba.timer_handler.timers[0].timer.get_data(), 0);
+
+        gba.timer_handler.update(1, &mut gba.interrupt_handler);
+        assert_eq!(gba.timer_handler.timers[0].timer.get_data(), 1);
     }
 
     #[test]
