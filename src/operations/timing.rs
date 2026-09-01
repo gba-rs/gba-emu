@@ -215,6 +215,12 @@ impl CycleClock {
         }
     }
 
+    /// GBATEK: internal-only cycles (e.g. multiply) are also idle ROM-bus time the prefetch unit can use.
+    pub fn add_internal_cycles(&mut self, n: u32) {
+        self.cycles += n;
+        self.grow_prefetch_credit(n);
+    }
+
     pub fn get_cycles(&mut self) -> u32 {
         let temp = self.cycles;
         self.cycles = 0;

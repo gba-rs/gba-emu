@@ -222,7 +222,7 @@ impl Instruction for ALU {
                 let (value, flags) = arm_arithmetic::mul(op1, op2);
                 cpu.set_register(self.rd, value);
                 cpu.cpsr.flags = flags;
-                _mem_bus.cycle_clock.cycles += multiplier_extra_cycles(op2);
+                _mem_bus.cycle_clock.add_internal_cycles(multiplier_extra_cycles(op2));
             },
             OpCodes::BIC=>{
                 let (value, (n, z)) = logical::bic(op1, op2);

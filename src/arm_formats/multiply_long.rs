@@ -43,7 +43,7 @@ fn multiplier_extra_cycles(rs: u32, unsigned: bool) -> u32 {
 
 impl Instruction for MultiplyLong {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
-        _mem_bus.cycle_clock.cycles += multiplier_extra_cycles(cpu.get_register(self.op2_register), self.unsigned);
+        _mem_bus.cycle_clock.add_internal_cycles(multiplier_extra_cycles(cpu.get_register(self.op2_register), self.unsigned));
         let (rdhi, rdlo, flags) = arm_arithmetic::mull(
             cpu.get_register(self.op1_register),
             cpu.get_register(self.op2_register), self.unsigned);
