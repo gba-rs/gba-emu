@@ -172,6 +172,9 @@ impl From<u32> for DataProcessingOperand {
 
 impl Instruction for DataProcessing {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
+        if !self.operand2.immediate && !self.operand2.shift.immediate {
+            mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
+        }
         let (op2, carry_out) = self.barrel_shifter(cpu);
         let mut op1 = cpu.get_register(self.op1_register);
         if self.op1_register == 15 {

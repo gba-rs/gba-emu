@@ -30,6 +30,9 @@ impl From<u16> for MultipleLoadStore {
 
 impl Instruction for MultipleLoadStore {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
+        if self.load {
+            mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
+        }
         let base = cpu.get_register(self.rb);
         let mut offset = 0;
         if self.load {

@@ -35,6 +35,7 @@ impl fmt::Debug for SingleDataSwap {
 
 impl Instruction for SingleDataSwap {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32{
+        mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
         // mem read then mem write
         let swap_address = cpu.get_register(self.base_register);
         let source_value = cpu.get_register(self.source_register);

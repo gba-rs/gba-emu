@@ -29,6 +29,9 @@ impl From<u16> for PushPop {
 
 impl Instruction for PushPop {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
+        if self.load {
+            mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
+        }
         let stack_pointer: u32 = cpu.get_register(THUMB_SP);
         let mut offset: i32 = 0;
         if self.load {          // LDMIA (Load Multiple Increment After) = POP

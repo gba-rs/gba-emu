@@ -12,6 +12,7 @@ pub struct CycleClock {
     prefetch_next_address: u32,
     prefetch_credit_bytes: u32,
     prefetch_idle_cycle_carry: u32,
+    force_next_fetch_nonseq: bool,
 }
 
 const PREFETCH_BUFFER_CAPACITY_BYTES: u32 = 16;
@@ -52,6 +53,7 @@ impl CycleClock {
             prefetch_next_address: 0,
             prefetch_credit_bytes: 0,
             prefetch_idle_cycle_carry: 0,
+            force_next_fetch_nonseq: false,
         };
     }
 
@@ -101,10 +103,23 @@ impl CycleClock {
             }
         }
 
+        if self.force_next_fetch_nonseq {
+            self.force_next_fetch_nonseq = false;
+            self.prev_address = address.wrapping_sub(0x1000_0000);
+        }
         self.update_cycles(address, access_size);
         self.prefetch_next_address = address + size_bytes;
         self.prefetch_credit_bytes = 0;
         self.prefetch_idle_cycle_carry = 0;
+    }
+
+    /// GBATEK "Prefetch Disable Bug": with prefetch off, an opcode with internal cycles
+    /// that don't touch R15 (shift/rotate-by-register, multiply, ldr/ldm/pop/swp) makes
+    /// its own next opcode fetch cost 1N instead of the 1S it would otherwise get.
+    pub fn mark_prefetch_disable_bug_opcode(&mut self) {
+        if self.wait_state_control.get_gamepak_prefetch_buffer() == 0 {
+            self.force_next_fetch_nonseq = true;
+        }
     }
 
     /// Idle bus time (non-ROM accesses) lets the prefetch unit fill ahead of the opcode stream.
@@ -219,6 +234,7 @@ impl CycleClock {
     pub fn add_internal_cycles(&mut self, n: u32) {
         self.cycles += n;
         self.grow_prefetch_credit(n);
+        self.mark_prefetch_disable_bug_opcode();
     }
 
     pub fn get_cycles(&mut self) -> u32 {
@@ -250,6 +266,7 @@ impl Default for CycleClock {
             prefetch_next_address: 0,
             prefetch_credit_bytes: 0,
             prefetch_idle_cycle_carry: 0,
+            force_next_fetch_nonseq: false,
         }
     }
 }
@@ -343,5 +360,46 @@ mod tests {
             }
         }
         assert_eq!(free_fetches, 8);
+    }
+
+    #[test]
+    fn prefetch_disable_bug_forces_the_next_fetch_nonsequential() {
+        let mut gba = GBA::default();
+
+        gba.memory_bus.cycle_clock.update_cycles_for_fetch(0x0800_0000, MemAccessSize::Mem16);
+        gba.memory_bus.cycle_clock.get_cycles();
+
+        gba.memory_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
+        gba.memory_bus.cycle_clock.update_cycles_for_fetch(0x0800_0002, MemAccessSize::Mem16);
+        let bugged_cost = gba.memory_bus.cycle_clock.get_cycles();
+
+        gba.memory_bus.cycle_clock.update_cycles_for_fetch(0x0800_0004, MemAccessSize::Mem16);
+        let normal_sequential_cost = gba.memory_bus.cycle_clock.get_cycles();
+
+        assert!(bugged_cost > normal_sequential_cost);
+    }
+
+    #[test]
+    fn prefetch_disable_bug_does_not_apply_when_prefetch_is_enabled() {
+        let mut gba = GBA::default();
+        gba.memory_bus.write_u16(0x4000204, 0x4000);
+        gba.memory_bus.cycle_clock.get_cycles();
+
+        gba.memory_bus.cycle_clock.update_cycles_for_fetch(0x0800_0000, MemAccessSize::Mem16);
+        gba.memory_bus.cycle_clock.get_cycles();
+        gba.memory_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
+        gba.memory_bus.cycle_clock.update_cycles_for_fetch(0x0800_0002, MemAccessSize::Mem16);
+        let cost_with_mark = gba.memory_bus.cycle_clock.get_cycles();
+
+        let mut gba2 = GBA::default();
+        gba2.memory_bus.write_u16(0x4000204, 0x4000);
+        gba2.memory_bus.cycle_clock.get_cycles();
+
+        gba2.memory_bus.cycle_clock.update_cycles_for_fetch(0x0800_0000, MemAccessSize::Mem16);
+        gba2.memory_bus.cycle_clock.get_cycles();
+        gba2.memory_bus.cycle_clock.update_cycles_for_fetch(0x0800_0002, MemAccessSize::Mem16);
+        let cost_without_mark = gba2.memory_bus.cycle_clock.get_cycles();
+
+        assert_eq!(cost_with_mark, cost_without_mark);
     }
 }

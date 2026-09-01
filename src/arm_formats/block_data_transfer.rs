@@ -95,6 +95,7 @@ impl fmt::Debug for BlockDataTransfer {
 impl Instruction for BlockDataTransfer {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
         if self.load {
+            mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
             self.load_data(cpu, mem_bus, None);
         } else {
             self.save_data(cpu, mem_bus, None);
@@ -105,6 +106,7 @@ impl Instruction for BlockDataTransfer {
     fn execute_with_dma(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus, dma: &mut DMAController, irq: &mut Interrupts) -> u32 {
         let mut hook = DmaHook { dma, irq };
         if self.load {
+            mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
             self.load_data(cpu, mem_bus, Some(&mut hook));
         } else {
             self.save_data(cpu, mem_bus, Some(&mut hook));
