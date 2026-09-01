@@ -146,11 +146,23 @@ impl CycleClock {
     }
 
     pub fn update_cycles(&mut self, address: u32, access_size: MemAccessSize) {
+        let access_type = self.is_sequential(address, access_size);
+        self.charge_cycles(address, access_size, access_type);
+    }
+
+    /// Bypasses the address-continuity heuristic in favor of an explicitly known
+    /// N/S classification -- needed by DMA, whose GBATEK-documented formula
+    /// (2N + 2(n-1)S) doesn't fit that heuristic once reads and writes to two
+    /// different addresses interleave every unit.
+    pub fn update_cycles_explicit(&mut self, address: u32, access_size: MemAccessSize, access_type: CycleType) {
+        self.charge_cycles(address, access_size, access_type);
+    }
+
+    fn charge_cycles(&mut self, address: u32, access_size: MemAccessSize, access_type: CycleType) {
         let nonseq_cycles = [4, 3, 2, 8];
         let ws0_seq_cycles = [2, 1];
         let ws1_seq_cycles = [4, 1];
         let ws2_seq_cycles = [8, 1];
-        let access_type = self.is_sequential(address, access_size);
         self.prev_address = address;
         let cycles_before = self.cycles;
         let is_rom_access = Self::gamepak_rom_region(address).is_some();

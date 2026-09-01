@@ -1,6 +1,7 @@
 use crate::memory::{dma_registers::*, GbaMem, memory_bus::MemoryBus};
 use crate::interrupts::interrupts::Interrupts;
 use crate::memory::sound_registers::SoundControlHigh;
+use crate::operations::timing::CycleType;
 use std::rc::Rc;
 use std::fmt;
 use serde::{Serialize, Deserialize};
@@ -54,22 +55,22 @@ impl DMAChannel {
         crate::memory::memory_map::DMA_BUS_OVERRIDE.with(|d| d.set(Some(value)));
     }
 
-    fn latched_read_u16(&mut self, mem_map: &mut MemoryBus, address: u32) -> u16 {
+    fn latched_read_u16(&mut self, mem_map: &mut MemoryBus, address: u32, access_type: CycleType) -> u16 {
         if Self::is_dma_protected_region(address) {
             self.put_on_bus(self.last_bus_value);
             return self.last_bus_value as u16;
         }
-        let value = mem_map.read_u16(address);
+        let value = mem_map.read_u16_explicit(address, access_type);
         self.put_on_bus(value as u32);
         value
     }
 
-    fn latched_read_u32(&mut self, mem_map: &mut MemoryBus, address: u32) -> u32 {
+    fn latched_read_u32(&mut self, mem_map: &mut MemoryBus, address: u32, access_type: CycleType) -> u32 {
         if Self::is_dma_protected_region(address) {
             self.put_on_bus(self.last_bus_value);
             return self.last_bus_value;
         }
-        let value = mem_map.read_u32(address);
+        let value = mem_map.read_u32_explicit(address, access_type);
         self.put_on_bus(value);
         value
     }
@@ -157,18 +158,20 @@ impl DMAChannel {
                     mem_map.prepare_eeprom_read(self.internal_word_count);
                 }
 
-                for _ in 0..self.internal_word_count {
-                    let value = self.latched_read_u16(mem_map, self.internal_source_address & !1);
-                    mem_map.write_u16(self.internal_destination_address & !1, value);
+                for i in 0..self.internal_word_count {
+                    let access_type = if i == 0 { CycleType::N } else { CycleType::S };
+                    let value = self.latched_read_u16(mem_map, self.internal_source_address & !1, access_type);
+                    mem_map.write_u16_explicit(self.internal_destination_address & !1, value, access_type);
 
                     self.update_source_address();
                     self.update_destination_address();
                 }
             },
             1 => { // 32
-                for _ in 0..self.internal_word_count {
-                    let value = self.latched_read_u32(mem_map, self.internal_source_address & !3);
-                    mem_map.write_u32(self.internal_destination_address & !3, value);
+                for i in 0..self.internal_word_count {
+                    let access_type = if i == 0 { CycleType::N } else { CycleType::S };
+                    let value = self.latched_read_u32(mem_map, self.internal_source_address & !3, access_type);
+                    mem_map.write_u32_explicit(self.internal_destination_address & !3, value, access_type);
 
                     self.update_source_address();
                     self.update_destination_address();
@@ -201,8 +204,9 @@ impl DMAChannel {
         // never gamepak, so the "+2I both regions gamepak" case never applies).
         mem_map.cycle_clock.cycles += 2;
 
-        for _ in 0..4 {
-            let value = self.latched_read_u32(mem_map, self.internal_source_address & !3);
+        for i in 0..4 {
+            let access_type = if i == 0 { CycleType::N } else { CycleType::S };
+            let value = self.latched_read_u32(mem_map, self.internal_source_address & !3, access_type);
             let fifo = if is_fifo_a { &mut mem_map.mem_map.fifo_a } else { &mut mem_map.mem_map.fifo_b };
             for byte in value.to_le_bytes() {
                 if fifo.len() < 32 {
@@ -316,6 +320,27 @@ mod dma_channel_tests {
         channel.transfer(&mut bus, &mut irq);
 
         assert_eq!(bus.read_u32(0x0400_0FF0), 0x1234_5678);
+    }
+
+    #[test]
+    fn multi_word_rom_read_charges_nonseq_once_then_seq() {
+        let mut channel = DMAChannel::new(0);
+        let mut bus = MemoryBus::new_stub();
+        channel.register(&bus.mem_map.memory);
+        let mut irq = Interrupts::new();
+
+        channel.control.set_dma_transfer_type(0);
+        channel.control.set_source_address_control(0);
+        channel.control.set_destination_address_control(0);
+        channel.control.set_dma_repeat(0);
+        channel.internal_source_address = 0x0800_0000;
+        channel.internal_destination_address = 0x0300_0000;
+        channel.internal_word_count = 3;
+
+        bus.cycle_clock.get_cycles();
+        channel.transfer(&mut bus, &mut irq);
+
+        assert_eq!(bus.cycle_clock.get_cycles(), 13);
     }
 }
 
