@@ -435,7 +435,7 @@ impl CPU {
         crate::memory::memory_map::DMA_BUS_OVERRIDE.with(|d| d.set(None));
 
         let read_word = |addr: u32, bus: &mut MemoryBus| -> u32 {
-            if is_arm { bus.read_u32(addr) } else { bus.read_u16(addr) as u32 }
+            if is_arm { bus.read_u32_opcode_fetch(addr) } else { bus.read_u16_opcode_fetch(addr) as u32 }
         };
         let peek_word = |addr: u32, bus: &MemoryBus| -> u32 {
             if is_arm { bus.mem_map.read_u32(addr) } else { bus.mem_map.read_u16(addr) as u32 }
@@ -479,13 +479,13 @@ impl CPU {
                     let temp_cycles = instr.execute(self, bus);
                     let branched = !((self.get_instruction_set() == InstructionSet::Arm) == is_arm && self.get_pc() == pc_after_advance);
                     if !branched && self.prefetch_depth == 2 {
-                        bus.cycle_clock.update_cycles(far_addr, far_access_size);
+                        bus.cycle_clock.update_cycles_for_fetch(far_addr, far_access_size);
                     }
                     let unclaimed_cycles = bus.cycle_clock.get_cycles();
                     (instr.cycles() + temp_cycles + unclaimed_cycles) as usize
                 } else {
                     if self.prefetch_depth == 2 {
-                        bus.cycle_clock.update_cycles(far_addr, far_access_size);
+                        bus.cycle_clock.update_cycles_for_fetch(far_addr, far_access_size);
                     }
                     let unclaimed_cycles = bus.cycle_clock.get_cycles();
                     1usize + unclaimed_cycles as usize

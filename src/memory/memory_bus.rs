@@ -11,9 +11,12 @@ pub struct MemoryBus {
 
 impl MemoryBus {
     pub fn new(backup_type: BackupType) -> MemoryBus {
+        let mem_map = MemoryMap::new(backup_type);
+        let mut cycle_clock = CycleClock::new();
+        cycle_clock.register(&mem_map.memory);
         return MemoryBus {
-            mem_map: MemoryMap::new(backup_type),
-            cycle_clock: CycleClock::new(),
+            mem_map,
+            cycle_clock,
         };
     }
 
@@ -33,6 +36,16 @@ impl MemoryBus {
 
     pub fn read_u32(&mut self, address: u32) -> u32 {
         self.cycle_clock.update_cycles(address, MemAccessSize::Mem32);
+        self.mem_map.read_u32(address)
+    }
+
+    pub fn read_u16_opcode_fetch(&mut self, address: u32) -> u16 {
+        self.cycle_clock.update_cycles_for_fetch(address, MemAccessSize::Mem16);
+        self.mem_map.read_u16(address)
+    }
+
+    pub fn read_u32_opcode_fetch(&mut self, address: u32) -> u32 {
+        self.cycle_clock.update_cycles_for_fetch(address, MemAccessSize::Mem32);
         self.mem_map.read_u32(address)
     }
 
