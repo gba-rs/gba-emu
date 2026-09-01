@@ -420,6 +420,10 @@ impl MemoryMap {
                 if address == 0x4000083 {
                     return self.memory[address as usize].get() & 0x77;
                 }
+                if address >= 0x0400_0410 {
+                    let open_bus = self.general_open_bus();
+                    return ((open_bus >> ((address & 3) * 8)) & 0xFF) as u8;
+                }
                 return self.memory[address as usize].get();
             },
             0x05 => return self.memory[((address & PALETTE_RAM_SIZE) + PALETTE_RAM_START) as usize].get(),
@@ -826,5 +830,30 @@ mod sound_master_enable_tests {
         mem.write_u16(0x4000060, 0xFFFF);
         mem.write_u8(0x4000084, 0x00);
         assert_eq!(mem.read_u16(0x4000060), 0);
+    }
+}
+
+#[cfg(test)]
+mod io_open_bus_tests {
+    use super::*;
+    use crate::gamepak::BackupType;
+
+    #[test]
+    fn unused_io_gap_reads_as_open_bus_not_zero() {
+        let mem = MemoryMap::new(BackupType::Error);
+        CURRENT_INSTR_PC.with(|pc| pc.set(0x0800_0000));
+        CURRENT_INSTR_IS_THUMB.with(|t| t.set(false));
+        mem.memory[0x0800_0008].set(0x12);
+        mem.memory[0x0800_0009].set(0x34);
+        mem.memory[0x0800_000A].set(0x56);
+        mem.memory[0x0800_000B].set(0x78);
+        assert_eq!(mem.read_u32(0x0400_0FF0), 0x7856_3412);
+    }
+
+    #[test]
+    fn known_registers_below_the_gap_still_read_their_own_value() {
+        let mut mem = MemoryMap::new(BackupType::Error);
+        mem.write_u16(0x4000200, 0x1234);
+        assert_eq!(mem.read_u16(0x4000200), 0x1234);
     }
 }
