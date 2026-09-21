@@ -128,7 +128,6 @@ impl DMAChannel {
     }
 
     fn reload_wordcount(&mut self) {
-        // FIFO DMA transfers four words regardless of CNT_L.
         if (self.id == 1 || self.id == 2) && self.control.get_dma_start_timing() == 3 {
             self.internal_word_count = 4;
             return;
@@ -383,11 +382,6 @@ impl DMAController {
                             self.dma_channels[i].pending_immediate = false;
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
                         } else if just_enabled {
-                            // Immediate DMA is requested by the enable edge,
-                            // not by changing timing on an already live channel.
-                            // Classic NES switches FIFO DMA to immediate before
-                            // disabling it; a new transfer here reads past the
-                            // PCM buffer and injects code bytes into the audio.
                             self.dma_channels[i].pending_immediate = true;
                         }
                     },

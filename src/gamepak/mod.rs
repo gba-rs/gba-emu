@@ -63,7 +63,6 @@ impl GamePack {
         let title = GamePack::parse_header_str(&rom_bytes, 0xA0, 0xAC, "Title");
         let game_code = GamePack::parse_header_str(&rom_bytes, 0xAC, 0xB0, "Game Code");
         let maker_code = GamePack::parse_header_str(&rom_bytes, 0xB0, 0xB2, "Maker Code");
-        // Classic NES / Famicom Mini deliberately probe SRAM, but use EEPROM.
         let backup_type = if game_code.starts_with('F') {
             BackupType::Eeprom
         } else {
@@ -155,7 +154,6 @@ impl GamePack {
     }
 
     pub fn detect_backup_type(rom: &[u8]) -> BackupType {
-        // Preserve marker priority, regardless of its position in the cartridge.
         let mut best = MEM_STRINGS.len();
         for offset in memchr::memchr3_iter(b'S', b'E', b'F', rom) {
             let tail = &rom[offset..];

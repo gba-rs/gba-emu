@@ -4,9 +4,6 @@ use serde::{Serialize, Deserialize};
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub struct DirectSoundChannel {
     pub current_sample: i8,
-    // Keep the existing serialized slot: bit 31 identifies a packed output
-    // shifter, bits 0..1 count its remaining bytes, bits 2..25 hold those bytes.
-    // Legacy states stored an independent timer phase here; discard that phase.
     cycle_counter: usize,
 }
 
@@ -23,10 +20,6 @@ impl DirectSoundChannel {
         let mut word = (packed >> 2) & 0xff_ffff;
         let mut request_dma = false;
         for _ in 0..overflows {
-            // The FIFO is word-oriented with a separate output shifter. Check
-            // its request level before loading the shifter, not after popping
-            // an individual byte. The byte-queue approximation requested DMA
-            // two samples early and read past Classic NES's PCM ring buffer.
             request_dma |= fifo.len() < 16;
             if remaining == 0 {
                 word = 0;
@@ -58,7 +51,7 @@ mod tests {
         let mut fifo: VecDeque<u8> = vec![10, 20, 30].into();
         channel.clock(2, &mut fifo);
         assert_eq!(channel.current_sample, 20);
-        assert!(fifo.is_empty()); // The third byte is already in the shifter.
+        assert!(fifo.is_empty());
         channel.clock(1, &mut fifo);
         assert_eq!(channel.current_sample, 30);
     }

@@ -1,4 +1,3 @@
-//! Keep the legacy fixed-length state encoding while decoding directly onto the heap.
 use super::gpu::WINDOW_SIZE;
 use serde::{
     de::{Error, SeqAccess, Visitor},

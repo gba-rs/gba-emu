@@ -15,7 +15,6 @@ const REGIONS: [(usize, usize); 9] = [
 const MAGIC: &[u8; 8] = b"GBAMEM01";
 const LEGACY_SIZE: usize = 0x100000F0;
 
-/// Physical backing only. Bus mirroring and side effects remain in MemoryMap.
 pub struct GbaMem {
     data: Box<[Cell<u8>]>,
     pages: Box<[usize]>,
@@ -27,7 +26,6 @@ pub struct GbaMem {
 impl GbaMem {
     pub fn new(rom_len: usize) -> Self {
         assert!(rom_len <= 0x2000000, "ROM exceeds 32 MiB");
-        // 64 KiB translation pages avoid a region match on every GPU/register byte.
         let mut pages = vec![usize::MAX; 0x1001];
         let mut length = 0;
         for &(start, len) in &REGIONS {
@@ -65,7 +63,6 @@ impl GbaMem {
         self.rom_len
     }
 
-    /// Resolve a register binding once, instead of translating each register read.
     pub fn resolve(&self, address: usize) -> usize {
         let page = self.pages[address >> 16];
         assert_ne!(page, usize::MAX, "unmapped register binding");
@@ -122,7 +119,6 @@ impl GbaMem {
         result
     }
 
-    /// Versioned mutable-memory payload; ROM and BIOS are reattached by the frontend.
     pub fn snapshot(&self, rom_size: u32, mirror: Option<u32>, wave: &[[u8; 16]; 2]) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(540000);
         bytes.extend_from_slice(MAGIC);

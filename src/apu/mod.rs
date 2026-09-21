@@ -81,7 +81,6 @@ impl Apu {
         let timer_a = self.sound_control_high.get_dma_sound_a_timer_select() as usize;
         let timer_b = self.sound_control_high.get_dma_sound_b_timer_select() as usize;
 
-        // Reset empties the queue; it does not force the current DAC latch to zero.
         if self.sound_control_high.get_dma_sound_a_reset_fifo() != 0 {
             mem_bus.mem_map.fifo_a.clear();
             self.sound_control_high.set_dma_sound_a_reset_fifo(0);

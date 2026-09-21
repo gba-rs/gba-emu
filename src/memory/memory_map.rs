@@ -292,7 +292,6 @@ impl MemoryMap {
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {
-        // FIFO writes enqueue exactly the addressed bytes, low byte first.
         if (0x0400_00A0..=0x0400_00A6).contains(&address) {
             for (i, byte) in value.to_le_bytes().iter().enumerate() {
                 self.write_u8(address + i as u32, *byte);

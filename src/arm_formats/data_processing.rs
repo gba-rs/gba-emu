@@ -365,10 +365,6 @@ impl Instruction for DataProcessing {
 
         if self.set_condition {
             if self.destination_register == 15 {
-                // Exception return restores the whole CPSR. Do not then
-                // replace its flags with N/Z/C derived from the return PC.
-                // Classic NES uses SWIEQ Halt / BEQ to wait before reusing a
-                // display buffer; corrupting Z lets it overwrite a live one.
                 cpu.cpsr = cpu.get_spsr();
             } else if logical_op {
                 match carry_out {
@@ -416,8 +412,6 @@ mod tests {
             let mut bus = MemoryBus::new_stub();
             cpu.set_operating_mode(OperatingMode::Supervisor);
             cpu.set_register(14, link);
-            // N/Z/C/V set, return to Thumb System mode. Neither the return
-            // address nor the shifter carry is allowed to replace these flags.
             let saved = 0xF000_003F;
             cpu.set_spsr(ProgramStatusRegister::from(saved));
             DataProcessing::from(opcode).execute(&mut cpu, &mut bus);

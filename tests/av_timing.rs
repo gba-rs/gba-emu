@@ -97,9 +97,6 @@ fn stopping_fifo_dma_does_not_start_an_extra_transfer() {
     gba.dma_control
         .update(&mut gba.memory_bus, &mut gba.interrupt_handler, [false; 2]);
     assert_eq!(gba.dma_control.dma_channels[1].internal_word_count, 4);
-    // Actual Classic NES sound-driver stop sequence: change timing, then clear
-    // enable. The enable bit stays high during the timing change, so it must not
-    // request an immediate transfer beyond the end of the PCM buffer.
     gba.memory_bus.mem_map.fifo_a.extend([12, 14, 16]);
     gba.memory_bus.write_u32(0x0400_00c4, 0x8440_0004);
     gba.dma_control
@@ -119,7 +116,7 @@ fn immediate_dma_requires_a_new_enable_edge_and_ignores_repeat() {
     gba.memory_bus.write_u32(0x0300_1000, 0x44332211);
     gba.memory_bus.write_u32(0x0400_00bc, 0x0300_1000);
     gba.memory_bus.write_u32(0x0400_00c0, 0x0300_2000);
-    gba.memory_bus.write_u32(0x0400_00c4, 0x8600_0001); // immediate, repeat, 32-bit
+    gba.memory_bus.write_u32(0x0400_00c4, 0x8600_0001);
     gba.dma_control.update(&mut gba.memory_bus, &mut gba.interrupt_handler, [false; 2]);
     assert_eq!(gba.memory_bus.mem_map.read_u32(0x0300_2000), 0);
     gba.dma_control.update(&mut gba.memory_bus, &mut gba.interrupt_handler, [false; 2]);
@@ -194,7 +191,7 @@ fn pcm_consumption_follows_timer_phase_and_restart() {
         let overflows = gba.timer_handler.update(cycles, &mut gba.interrupt_handler);
         gba.apu.step(cycles, overflows, &mut gba.memory_bus);
     };
-    tick(&mut gba, 5); // Two startup cycles, then three timer ticks.
+    tick(&mut gba, 5);
     assert_eq!(gba.apu.direct_sound_a.current_sample, 0);
     tick(&mut gba, 1);
     assert_eq!(gba.apu.direct_sound_a.current_sample, 10);

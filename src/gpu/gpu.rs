@@ -342,7 +342,6 @@ impl GPU {
         let mut current_scanline = self.vertical_count.get_current_scanline() as u32;
         match self.current_state {
             GpuState::HDraw => {
-                // Finish visible pixels before HBlank DMA/IRQ changes the next line.
                 if current_scanline < DISPLAY_HEIGHT {
                     self.render_scanline(mem_map);
                     self.composite_background(mem_map);

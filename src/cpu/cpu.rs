@@ -534,9 +534,6 @@ impl CPU {
             }
         };
 
-        // Every instruction consumes its sequential fetch, even when its
-        // condition fails or a branch discards the fetched opcode. Read the
-        // lookahead before execution to preserve self-modifying-code behavior.
         bus.cycle_clock.update_cycles_for_fetch(far_addr, far_access_size);
         cycles += bus.cycle_clock.get_cycles() as usize;
         let mode_unchanged = (self.get_instruction_set() == InstructionSet::Arm) == is_arm;
@@ -544,11 +541,7 @@ impl CPU {
             self.prefetch[0] = near_lookahead;
             self.prefetch[1] = far_lookahead;
         } else {
-            // Refill at the destination now: a taken branch is 2S+1N, not
-            // a zero-cycle instruction followed by a partial refill later.
             let target = self.get_pc();
-            // Opcode fetches entering the BIOS must use the destination PC,
-            // not the caller's PC used to protect BIOS data reads.
             crate::memory::memory_map::CURRENT_INSTR_PC.with(|pc| pc.set(target));
             crate::memory::memory_map::CURRENT_INSTR_IS_THUMB.with(|t| t.set(self.get_instruction_set() != InstructionSet::Arm));
             if self.get_instruction_set() == InstructionSet::Arm {
@@ -794,7 +787,6 @@ mod tests {
         cpu.fetch(&mut bus, &mut dma, &mut irq);
         let branch_cycles = cpu.fetch(&mut bus, &mut dma, &mut irq);
 
-        // EWRAM requires six clocks for each ARM instruction fetch.
         assert_eq!(branch_cycles, 18);
         assert_eq!(cpu.prefetch_depth, 2);
         assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 6);
@@ -809,9 +801,9 @@ mod tests {
         let base = 0x0300_0000;
         cpu.set_register(15, base);
         cpu.cpsr.flags.zero = true;
-        bus.write_u32(base, 0xE1A0_0000); // MOV r0, r0
+        bus.write_u32(base, 0xE1A0_0000);
         bus.write_u32(base + 4, 0xE1A0_0000);
-        bus.write_u32(base + 8, 0x13A0_0063); // MOVNE r0, #99 (not executed)
+        bus.write_u32(base + 8, 0x13A0_0063);
         bus.cycle_clock.get_cycles();
         cpu.fetch(&mut bus, &mut dma, &mut irq);
         assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 1);
@@ -828,11 +820,11 @@ mod tests {
         let base = 0x0300_0000;
         cpu.set_instruction_set(InstructionSet::Thumb);
         cpu.set_register(THUMB_PC, base);
-        bus.write_u16(base, 0x2000); // MOV r0, #0
+        bus.write_u16(base, 0x2000);
         bus.write_u16(base + 2, 0x2000);
-        bus.write_u16(base + 4, 0xE000); // B base+8
-        bus.write_u16(base + 6, 0x2063); // skipped
-        bus.write_u16(base + 8, 0x2007); // MOV r0, #7
+        bus.write_u16(base + 4, 0xE000);
+        bus.write_u16(base + 6, 0x2063);
+        bus.write_u16(base + 8, 0x2007);
         bus.cycle_clock.get_cycles();
         cpu.fetch(&mut bus, &mut dma, &mut irq);
         assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 1);
@@ -850,7 +842,7 @@ mod tests {
         let mut irq = Interrupts::new();
         let base = 0x0300_0000;
         cpu.set_register(15, base);
-        bus.write_u32(base, 0xEF00_0000); // SWI 0
+        bus.write_u32(base, 0xEF00_0000);
         bus.mem_map.write_block(8, &0xE3A0_0042u32.to_le_bytes().to_vec());
         cpu.fetch(&mut bus, &mut dma, &mut irq);
         assert_eq!(cpu.get_pc(), 8);
@@ -868,16 +860,16 @@ mod tests {
         cpu.set_operating_mode(OperatingMode::System);
         cpu.set_register(15, base);
         for (index, opcode) in [
-            0xE3A0_0000, // MOV r0, #0
-            0xE350_0000, // CMP r0, #0
-            0x0F00_0000, // SWIEQ
-            0x0A00_0000, // BEQ base+20: the Classic NES wait-loop pattern
-            0xE3A0_1063, // MOV r1, #99 (must be skipped)
-            0xE3A0_2007, // MOV r2, #7
+            0xE3A0_0000,
+            0xE350_0000,
+            0x0F00_0000,
+            0x0A00_0000,
+            0xE3A0_1063,
+            0xE3A0_2007,
         ].iter().enumerate() {
             bus.write_u32(base + index as u32 * 4, *opcode);
         }
-        bus.mem_map.write_block(8, &0xE1B0_F00Eu32.to_le_bytes().to_vec()); // MOVS pc, lr
+        bus.mem_map.write_block(8, &0xE1B0_F00Eu32.to_le_bytes().to_vec());
         for _ in 0..6 {
             cpu.fetch(&mut bus, &mut dma, &mut irq);
         }
