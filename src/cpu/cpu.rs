@@ -481,7 +481,7 @@ impl CPU {
         let instruction: u32 = if self.prefetch_depth >= 1 { self.prefetch[0] } else { read_word(pc_contents, bus) };
         let near_lookahead = if self.prefetch_depth == 2 { self.prefetch[1] } else { read_word(pc_after_advance, bus) };
         let far_addr = pc_after_advance + word_size;
-        let far_lookahead = if self.prefetch_depth >= 1 { Some(peek_word(far_addr, bus)) } else { None };
+        let far_lookahead = peek_word(far_addr, bus);
         let far_access_size = if is_arm { MemAccessSize::Mem32 } else { MemAccessSize::Mem16 };
 
         self.set_register(current_pc, pc_after_advance);
@@ -490,7 +490,7 @@ impl CPU {
         let check_condition = if self.get_instruction_set() == InstructionSet::Arm { self.check_condition(&condition) } else { true };//fine
 
         let decode_result = self.decode(instruction);
-        let cycles: usize = match decode_result {
+        let mut cycles: usize = match decode_result {
             Ok(instr) => {
                 // info!("{:?}, {:?}, {:X}, {:X}, {:?}", self.get_operating_mode(), self.get_instruction_set(), pc_contents, instruction, instr.asm());
                 // info!("r0={:X} r1={:X} r2={:X} r3={:X} r4={:X} r5={:X} r6={:X} r7={:X} r8={:X} r9={:X} r10={:X} r11={:X} r12={:X} r13={:X} r14={:X} r15={:X}", 
@@ -514,18 +514,11 @@ impl CPU {
 
                 if check_condition {
                     let temp_cycles = instr.execute_with_dma(self, bus, dma, irq);
-                    let branched = !((self.get_instruction_set() == InstructionSet::Arm) == is_arm && self.get_pc() == pc_after_advance);
-                    if !branched && self.prefetch_depth == 2 {
-                        bus.cycle_clock.update_cycles_for_fetch(far_addr, far_access_size);
-                    }
                     let unclaimed_cycles = bus.cycle_clock.get_cycles();
                     (instr.cycles() + temp_cycles + unclaimed_cycles) as usize
                 } else {
-                    if self.prefetch_depth == 2 {
-                        bus.cycle_clock.update_cycles_for_fetch(far_addr, far_access_size);
-                    }
                     let unclaimed_cycles = bus.cycle_clock.get_cycles();
-                    1usize + unclaimed_cycles as usize
+                    unclaimed_cycles as usize
                 }
             },
             Err(_) => {
@@ -537,23 +530,37 @@ impl CPU {
                 self.set_spsr(old_cpsr);
                 self.set_register(ARM_LR, return_address);
                 self.set_register(ARM_PC, 0x04);
-                1usize + bus.cycle_clock.get_cycles() as usize
+                bus.cycle_clock.get_cycles() as usize
             }
         };
 
+        // Every instruction consumes its sequential fetch, even when its
+        // condition fails or a branch discards the fetched opcode. Read the
+        // lookahead before execution to preserve self-modifying-code behavior.
+        bus.cycle_clock.update_cycles_for_fetch(far_addr, far_access_size);
+        cycles += bus.cycle_clock.get_cycles() as usize;
         let mode_unchanged = (self.get_instruction_set() == InstructionSet::Arm) == is_arm;
         if mode_unchanged && self.get_pc() == pc_after_advance {
             self.prefetch[0] = near_lookahead;
-            match far_lookahead {
-                Some(word) => {
-                    self.prefetch[1] = word;
-                    self.prefetch_depth = 2;
-                }
-                None => self.prefetch_depth = 1,
-            }
+            self.prefetch[1] = far_lookahead;
         } else {
-            self.prefetch_depth = 0;
+            // Refill at the destination now: a taken branch is 2S+1N, not
+            // a zero-cycle instruction followed by a partial refill later.
+            let target = self.get_pc();
+            // Opcode fetches entering the BIOS must use the destination PC,
+            // not the caller's PC used to protect BIOS data reads.
+            crate::memory::memory_map::CURRENT_INSTR_PC.with(|pc| pc.set(target));
+            crate::memory::memory_map::CURRENT_INSTR_IS_THUMB.with(|t| t.set(self.get_instruction_set() != InstructionSet::Arm));
+            if self.get_instruction_set() == InstructionSet::Arm {
+                self.prefetch[0] = bus.read_u32_opcode_fetch(target);
+                self.prefetch[1] = bus.read_u32_opcode_fetch(target.wrapping_add(4));
+            } else {
+                self.prefetch[0] = bus.read_u16_opcode_fetch(target) as u32;
+                self.prefetch[1] = bus.read_u16_opcode_fetch(target.wrapping_add(2)) as u32;
+            }
+            cycles += bus.cycle_clock.get_cycles() as usize;
         }
+        self.prefetch_depth = 2;
 
         return cycles;
     }
@@ -769,7 +776,7 @@ mod tests {
     }
 
     #[test]
-    fn taken_branch_from_a_warm_pipeline_does_not_charge_for_the_discarded_far_lookahead() {
+    fn taken_branch_charges_the_discarded_fetch_and_refills_the_pipeline() {
         let mut cpu = CPU::new();
         let mut bus = MemoryBus::new_stub();
         let mut dma = DMAController::new();
@@ -787,7 +794,96 @@ mod tests {
         cpu.fetch(&mut bus, &mut dma, &mut irq);
         let branch_cycles = cpu.fetch(&mut bus, &mut dma, &mut irq);
 
-        assert_eq!(branch_cycles, 0);
+        // EWRAM requires six clocks for each ARM instruction fetch.
+        assert_eq!(branch_cycles, 18);
+        assert_eq!(cpu.prefetch_depth, 2);
+        assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 6);
+    }
+
+    #[test]
+    fn failed_arm_condition_consumes_one_fetch_without_an_extra_internal_cycle() {
+        let mut cpu = CPU::new();
+        let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
+        let base = 0x0300_0000;
+        cpu.set_register(15, base);
+        cpu.cpsr.flags.zero = true;
+        bus.write_u32(base, 0xE1A0_0000); // MOV r0, r0
+        bus.write_u32(base + 4, 0xE1A0_0000);
+        bus.write_u32(base + 8, 0x13A0_0063); // MOVNE r0, #99 (not executed)
+        bus.cycle_clock.get_cycles();
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
+        assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 1);
+        assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 1);
+        assert_eq!(cpu.get_register(0), 0);
+    }
+
+    #[test]
+    fn thumb_branch_refill_is_charged_once_at_the_branch() {
+        let mut cpu = CPU::new();
+        let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
+        let base = 0x0300_0000;
+        cpu.set_instruction_set(InstructionSet::Thumb);
+        cpu.set_register(THUMB_PC, base);
+        bus.write_u16(base, 0x2000); // MOV r0, #0
+        bus.write_u16(base + 2, 0x2000);
+        bus.write_u16(base + 4, 0xE000); // B base+8
+        bus.write_u16(base + 6, 0x2063); // skipped
+        bus.write_u16(base + 8, 0x2007); // MOV r0, #7
+        bus.cycle_clock.get_cycles();
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
+        assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 1);
+        assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 3);
+        assert_eq!(cpu.get_pc(), base + 8);
+        assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 1);
+        assert_eq!(cpu.get_register(0), 7);
+    }
+
+    #[test]
+    fn swi_refill_fetches_bios_opcodes_with_the_destination_pc() {
+        let mut cpu = CPU::new();
+        let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
+        let base = 0x0300_0000;
+        cpu.set_register(15, base);
+        bus.write_u32(base, 0xEF00_0000); // SWI 0
+        bus.mem_map.write_block(8, &0xE3A0_0042u32.to_le_bytes().to_vec());
+        cpu.fetch(&mut bus, &mut dma, &mut irq);
+        assert_eq!(cpu.get_pc(), 8);
+        assert_eq!(cpu.fetch(&mut bus, &mut dma, &mut irq), 1);
+        assert_eq!(cpu.get_register(0), 0x42);
+    }
+
+    #[test]
+    fn conditional_branch_after_swi_uses_the_callers_restored_zero_flag() {
+        let mut cpu = CPU::new();
+        let mut bus = MemoryBus::new_stub();
+        let mut dma = DMAController::new();
+        let mut irq = Interrupts::new();
+        let base = 0x0300_0000;
+        cpu.set_operating_mode(OperatingMode::System);
+        cpu.set_register(15, base);
+        for (index, opcode) in [
+            0xE3A0_0000, // MOV r0, #0
+            0xE350_0000, // CMP r0, #0
+            0x0F00_0000, // SWIEQ
+            0x0A00_0000, // BEQ base+20: the Classic NES wait-loop pattern
+            0xE3A0_1063, // MOV r1, #99 (must be skipped)
+            0xE3A0_2007, // MOV r2, #7
+        ].iter().enumerate() {
+            bus.write_u32(base + index as u32 * 4, *opcode);
+        }
+        bus.mem_map.write_block(8, &0xE1B0_F00Eu32.to_le_bytes().to_vec()); // MOVS pc, lr
+        for _ in 0..6 {
+            cpu.fetch(&mut bus, &mut dma, &mut irq);
+        }
+        assert_eq!(cpu.get_register(1), 0);
+        assert_eq!(cpu.get_register(2), 7);
+        assert!(cpu.cpsr.flags.zero);
     }
 
     #[test]

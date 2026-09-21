@@ -127,8 +127,8 @@ pub struct GPU {
     pub bg_affine_components: [BgAffineComponent; 2],
     pub windows: [Window; 2],
 
-    #[serde_as(as = "[_; WINDOW_SIZE]")]
-    pub obj_window: [bool; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)],
+    #[serde(with = "super::window_mask")]
+    pub obj_window: Box<[bool]>,
 
     #[serde_as(as = "[_; 128]")]
     pub objects: [Object; 128],
@@ -222,7 +222,7 @@ impl GPU {
                     vertical_dimensions: WindowVerticalDimension::new(1)
                 }
             ],
-            obj_window: [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)],
+            obj_window: vec![false; WINDOW_SIZE].into_boxed_slice(),
 
             // Registers
             display_control: DisplayControl::new(),
@@ -281,13 +281,11 @@ impl GPU {
     }
 
     pub fn step(&mut self, cycles: usize, mem_map: &mut MemoryMap, irq_ctl: &mut Interrupts, dma_ctl: &mut DMAController) {
-        let temp_cycles: i64 = self.cycles_to_next_state - (cycles as i64);
-
-        if temp_cycles <= 0 {
+        self.cycles_to_next_state -= cycles as i64;
+        while self.cycles_to_next_state <= 0 {
+            let remainder = self.cycles_to_next_state;
             self.transition_state(mem_map, irq_ctl, dma_ctl);
-            self.cycles_to_next_state += temp_cycles;       
-        } else {
-            self.cycles_to_next_state = temp_cycles;
+            self.cycles_to_next_state += remainder;
         }
     }
 
@@ -344,6 +342,11 @@ impl GPU {
         let mut current_scanline = self.vertical_count.get_current_scanline() as u32;
         match self.current_state {
             GpuState::HDraw => {
+                // Finish visible pixels before HBlank DMA/IRQ changes the next line.
+                if current_scanline < DISPLAY_HEIGHT {
+                    self.render_scanline(mem_map);
+                    self.composite_background(mem_map);
+                }
                 self.display_status.set_hblank_flag(1);
 
                 if self.display_status.get_hblank_irq_enable() == 1 {
@@ -358,10 +361,6 @@ impl GPU {
             GpuState::HBlank => {
                 self.display_status.set_hblank_flag(0);
 
-                if current_scanline < DISPLAY_HEIGHT {
-                    self.render_scanline(mem_map);
-                    self.composite_background(mem_map);
-                }
 
                 self.update_vcount((current_scanline + 1) as u8, irq_ctl);
                 current_scanline += 1;
@@ -430,7 +429,10 @@ impl GPU {
                 self.update_vcount((current_scanline + 1) as u8, irq_ctl);
                 current_scanline += 1;
 
-                if current_scanline < DISPLAY_HEIGHT + VBLANK_LENGTH - 1 {
+                if current_scanline == DISPLAY_HEIGHT + VBLANK_LENGTH - 1 {
+                    self.display_status.set_vblank_flag(0);
+                }
+                if current_scanline < DISPLAY_HEIGHT + VBLANK_LENGTH {
                     self.current_state = GpuState::VBlank;
                     self.cycles_to_next_state = HDRAW_CYCLES;
                 } else {

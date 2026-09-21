@@ -63,7 +63,12 @@ impl GamePack {
         let title = GamePack::parse_header_str(&rom_bytes, 0xA0, 0xAC, "Title");
         let game_code = GamePack::parse_header_str(&rom_bytes, 0xAC, 0xB0, "Game Code");
         let maker_code = GamePack::parse_header_str(&rom_bytes, 0xB0, 0xB2, "Maker Code");
-        let backup_type = GamePack::detect_backup_type(&rom_bytes);
+        // Classic NES / Famicom Mini deliberately probe SRAM, but use EEPROM.
+        let backup_type = if game_code.starts_with('F') {
+            BackupType::Eeprom
+        } else {
+            GamePack::detect_backup_type(&rom_bytes)
+        };
 
         GamePack {
             rom: rom_bytes,
@@ -149,36 +154,51 @@ impl GamePack {
         Ok(())
     }
 
-    pub fn detect_backup_type(rom: &Vec<u8>) -> BackupType {
-        for i in 0..5 {
-            let mem_string_bytes = MEM_STRINGS[i].as_bytes();
-            let result = rom.windows(mem_string_bytes.len()).position(|window| window == mem_string_bytes);
-            match result {
-                Some(_) => {
-                    // string exists
-                    log::info!("Found backup type: {}", MEM_STRINGS[i]);
-                    match MEM_STRINGS[i] {
-                        "SRAM" => return BackupType::Sram,
-                        "EEPROM" => return BackupType::Eeprom,
-                        "FLASH_" => return BackupType::Flash64K,
-                        "FLASH512_" => return BackupType::Flash64K,
-                        "FLASH1M_" => return BackupType::Flash128K,
-                        _ => return BackupType::Error
-                    }
-                },
-                None => {
-                    // string doesn't exist
+    pub fn detect_backup_type(rom: &[u8]) -> BackupType {
+        // Preserve marker priority, regardless of its position in the cartridge.
+        let mut best = MEM_STRINGS.len();
+        for offset in memchr::memchr3_iter(b'S', b'E', b'F', rom) {
+            let tail = &rom[offset..];
+            for (i, marker) in MEM_STRINGS[..best].iter().enumerate() {
+                if tail.starts_with(marker.as_bytes()) {
+                    best = i;
+                    break;
                 }
             }
+            if best == 0 { break; }
         }
-
-        return BackupType::Error;
+        match best {
+            0 => BackupType::Sram,
+            1 => BackupType::Eeprom,
+            2 | 3 => BackupType::Flash64K,
+            4 => BackupType::Flash128K,
+            _ => BackupType::Error,
+        }
     }
+
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn backup_detection_preserves_priority_and_handles_edges() {
+        for (marker, expected) in MEM_STRINGS.iter().zip([
+            BackupType::Sram, BackupType::Eeprom, BackupType::Flash64K,
+            BackupType::Flash64K, BackupType::Flash128K,
+        ]) {
+            let mut rom = vec![0; 4093];
+            rom.extend_from_slice(marker.as_bytes());
+            assert_eq!(GamePack::detect_backup_type(&rom), expected);
+            assert_eq!(GamePack::detect_backup_type(marker.as_bytes()), expected);
+        }
+        assert_eq!(GamePack::detect_backup_type(b"FLASH1M_EEPROM_SRAM"), BackupType::Sram);
+        assert_eq!(GamePack::detect_backup_type(b"FLASH1M_FLASH512_FLASH_"), BackupType::Flash64K);
+        assert_eq!(GamePack::detect_backup_type(b""), BackupType::Error);
+        assert_eq!(GamePack::detect_backup_type(b"SRAMEEPROFLASH"), BackupType::Sram);
+        assert_eq!(GamePack::detect_backup_type(b"SRAEEPROFLAS"), BackupType::Error);
+    }
 
     #[test]
     fn from_bytes_never_panics_on_short_rom() {

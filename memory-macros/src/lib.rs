@@ -204,6 +204,8 @@ fn create_bit_field(name: Ident, segment_size: Lit, segment_type: proc_macro2::T
         pub struct #name {
             #[serde(skip)]
             pub memory: Option<Rc<GbaMem>>,
+            #[serde(skip)]
+            memory_index: usize,
         }
 
         impl #name {
@@ -213,10 +215,12 @@ fn create_bit_field(name: Ident, segment_size: Lit, segment_type: proc_macro2::T
             pub fn new() -> #name {
                 return #name {
                     memory: None,
+                    memory_index: 0,
                 };
             }
 
             pub fn register(&mut self, mem: &Rc<GbaMem>) {
+                self.memory_index = mem.resolve(#name::SEGMENT_INDEX);
                 self.memory = Some(mem.clone());
             }
 
@@ -224,7 +228,7 @@ fn create_bit_field(name: Ident, segment_size: Lit, segment_type: proc_macro2::T
                 let mut value: #segment_type = 0;
                 if let Some(mem) = &self.memory {
                     for i in 0..#name::SEGMENT_SIZE {
-                        value |= (mem[#name::SEGMENT_INDEX + (i as usize)].get() as #segment_type) <<  (i * 8);
+                        value |= (mem.cell_at(self.memory_index + i).get() as #segment_type) <<  (i * 8);
                     }
                 } else {
                     panic!("IO register was accessed without being registered");
@@ -236,7 +240,7 @@ fn create_bit_field(name: Ident, segment_size: Lit, segment_type: proc_macro2::T
             pub fn set_register(&self, value: u32) {
                 if let Some(mem) = &self.memory {
                     for i in 0..#name::SEGMENT_SIZE {
-                        mem[#name::SEGMENT_INDEX + (i as usize)].set(((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8);
+                        mem.cell_at(self.memory_index + i).set(((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8);
                     }
                 } else {
                     panic!("IO register was accessed without being registered");
@@ -263,6 +267,8 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, segment_type: proc_
         pub struct #name {
             #[serde(skip)]
             pub memory: Option<Rc<GbaMem>>,
+            #[serde(skip)]
+            memory_index: usize,
             pub index: usize
         }
 
@@ -273,11 +279,13 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, segment_type: proc_
             pub fn new(index: usize) -> #name {
                 return #name {
                     memory: None,
+                    memory_index: 0,
                     index: index
                 };
             }
 
             pub fn register(&mut self, mem: &Rc<GbaMem>) {
+                self.memory_index = mem.resolve(#name::SEGMENT_INDICIES[self.index]);
                 self.memory = Some(mem.clone());
             }
 
@@ -285,7 +293,7 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, segment_type: proc_
                 let mut value: #segment_type = 0;
                 if let Some(mem) = &self.memory {
                     for i in 0..#name::SEGMENT_SIZE {
-                        value |= (mem[#name::SEGMENT_INDICIES[self.index] + (i as usize)].get() as #segment_type) <<  (i * 8);
+                        value |= (mem.cell_at(self.memory_index + i).get() as #segment_type) <<  (i * 8);
                     }
                 }
 
@@ -295,7 +303,7 @@ fn create_multiple_bit_field(name: Ident, segment_size: Lit, segment_type: proc_
             pub fn set_register(&self, value: u32) {
                 if let Some(mem) = &self.memory {
                     for i in 0..#name::SEGMENT_SIZE {
-                        mem[#name::SEGMENT_INDICIES[self.index] + (i as usize)].set(((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8);
+                        mem.cell_at(self.memory_index + i).set(((value & (0xFFu32 << (i * 8))) >> (i * 8)) as u8);
                     }
                 }
             }

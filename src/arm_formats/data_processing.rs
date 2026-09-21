@@ -363,13 +363,14 @@ impl Instruction for DataProcessing {
             }
         }
 
-        // TODO check 4.5.4 and make sure this logic is okay
         if self.set_condition {
             if self.destination_register == 15 {
-                cpu.cpsr = cpu.get_spsr();  // Arm docs 4.5.4
-            }
-
-            if logical_op {
+                // Exception return restores the whole CPSR. Do not then
+                // replace its flags with N/Z/C derived from the return PC.
+                // Classic NES uses SWIEQ Halt / BEQ to wait before reusing a
+                // display buffer; corrupting Z lets it overwrite a live one.
+                cpu.cpsr = cpu.get_spsr();
+            } else if logical_op {
                 match carry_out {
                     Some(new_c_val) => {
                         cpu.cpsr.flags.carry = new_c_val != 0;
@@ -381,9 +382,7 @@ impl Instruction for DataProcessing {
                 cpu.cpsr.flags.negative = n;
                 cpu.cpsr.flags.zero = z;
 
-                if self.destination_register != 15 {
-                    cpu.cpsr.flags.signed_overflow = current_v; // Arm docs 4.5.1
-                }
+                cpu.cpsr.flags.signed_overflow = current_v; // Arm docs 4.5.1
             }
         }
 
@@ -409,6 +408,23 @@ impl Instruction for DataProcessing {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn logical_exception_return_preserves_all_saved_flags_and_control_bits() {
+        for (opcode, link) in [(0xE1B0_F00E, 0x0300_0100), (0xE1B0_F08E, 0x0180_0080)] {
+            let mut cpu = CPU::new();
+            let mut bus = MemoryBus::new_stub();
+            cpu.set_operating_mode(OperatingMode::Supervisor);
+            cpu.set_register(14, link);
+            // N/Z/C/V set, return to Thumb System mode. Neither the return
+            // address nor the shifter carry is allowed to replace these flags.
+            let saved = 0xF000_003F;
+            cpu.set_spsr(ProgramStatusRegister::from(saved));
+            DataProcessing::from(opcode).execute(&mut cpu, &mut bus);
+            assert_eq!(u32::from(cpu.cpsr), saved);
+            assert_eq!(cpu.get_pc(), 0x0300_0100);
+        }
+    }
     
     #[test]
     fn dataprocessing_zero() {

@@ -64,14 +64,13 @@ impl Apu {
         self.sound_control_high.register(mem);
         self.sound_control_x.register(mem);
         self.sound_bias.register(mem);
-        self.sound_bias.set_bias_level(0x100);
         self.square1.register(mem);
         self.square2.register(mem);
         self.wave.register(mem);
         self.noise.register(mem);
     }
 
-    pub fn step(&mut self, cycles: usize, timer_periods: [usize; 4], mem_bus: &mut MemoryBus) {
+    pub fn step(&mut self, cycles: usize, timer_overflows: [usize; 4], mem_bus: &mut MemoryBus) -> [bool; 2] {
         let triggers = mem_bus.mem_map.trigger_flags;
         mem_bus.mem_map.trigger_flags = 0;
         if triggers & 0x1 != 0 { self.square1.on_trigger(); }
@@ -81,19 +80,19 @@ impl Apu {
 
         let timer_a = self.sound_control_high.get_dma_sound_a_timer_select() as usize;
         let timer_b = self.sound_control_high.get_dma_sound_b_timer_select() as usize;
-        let period_a = timer_periods[timer_a];
-        let period_b = timer_periods[timer_b];
 
+        // Reset empties the queue; it does not force the current DAC latch to zero.
         if self.sound_control_high.get_dma_sound_a_reset_fifo() != 0 {
             mem_bus.mem_map.fifo_a.clear();
-            self.direct_sound_a.current_sample = 0;
             self.sound_control_high.set_dma_sound_a_reset_fifo(0);
         }
         if self.sound_control_high.get_dma_sound_b_reset_fifo() != 0 {
             mem_bus.mem_map.fifo_b.clear();
-            self.direct_sound_b.current_sample = 0;
             self.sound_control_high.set_dma_sound_b_reset_fifo(0);
         }
+
+        let request_a = self.direct_sound_a.clock(timer_overflows[timer_a], &mut mem_bus.mem_map.fifo_a);
+        let request_b = self.direct_sound_b.clock(timer_overflows[timer_b], &mut mem_bus.mem_map.fifo_b);
 
         let cycles_i32 = cycles as i32;
         self.frame_sequencer_cycles -= cycles_i32;
@@ -110,10 +109,9 @@ impl Apu {
             self.square2.step(step_cycles);
             self.wave.step(step_cycles);
             self.noise.step(step_cycles);
-            self.direct_sound_a.step(CYCLES_PER_SAMPLE, period_a, &mut mem_bus.mem_map.fifo_a);
-            self.direct_sound_b.step(CYCLES_PER_SAMPLE, period_b, &mut mem_bus.mem_map.fifo_b);
             self.mix_and_emit_sample(mem_bus);
         }
+        [request_a, request_b]
     }
 
     fn clock_frame_sequencer(&mut self) {
@@ -182,8 +180,11 @@ impl Apu {
 
         let master_right = (self.sound_control_low.get_sound_master_volume_right() as i32) + 1;
         let master_left = (self.sound_control_low.get_sound_master_volume_left() as i32) + 1;
-        let psg_right = psg_right_raw * master_right / 8;
-        let psg_left = psg_left_raw * master_left / 8;
+        let psg_shift = match self.sound_control_high.get_sound_volume() {
+            0 => 2, 1 => 1, _ => 0,
+        };
+        let psg_right = (psg_right_raw * master_right / 8) >> psg_shift;
+        let psg_left = (psg_left_raw * master_left / 8) >> psg_shift;
 
         left += psg_left;
         right += psg_right;
@@ -206,15 +207,19 @@ mod tests {
     use crate::gba::GBA;
 
     #[test]
-    fn fifo_reset_also_silences_the_channel() {
+    fn fifo_reset_clears_queue_without_forcing_a_dac_transition() {
         let mut gba = GBA::default();
         gba.apu.direct_sound_a.current_sample = 100;
         gba.apu.direct_sound_b.current_sample = -100;
+        gba.memory_bus.mem_map.fifo_a.extend([1, 2]);
+        gba.memory_bus.mem_map.fifo_b.extend([3, 4]);
         gba.apu.sound_control_high.set_dma_sound_a_reset_fifo(1);
         gba.apu.sound_control_high.set_dma_sound_b_reset_fifo(1);
         gba.apu.step(0, [0, 0, 0, 0], &mut gba.memory_bus);
-        assert_eq!(gba.apu.direct_sound_a.current_sample, 0);
-        assert_eq!(gba.apu.direct_sound_b.current_sample, 0);
+        assert_eq!(gba.apu.direct_sound_a.current_sample, 100);
+        assert_eq!(gba.apu.direct_sound_b.current_sample, -100);
+        assert!(gba.memory_bus.mem_map.fifo_a.is_empty());
+        assert!(gba.memory_bus.mem_map.fifo_b.is_empty());
     }
 
     #[test]

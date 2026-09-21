@@ -11,7 +11,11 @@ pub struct MemoryBus {
 
 impl MemoryBus {
     pub fn new(backup_type: BackupType) -> MemoryBus {
-        let mem_map = MemoryMap::new(backup_type);
+        Self::with_rom_size(backup_type, 0x2000000)
+    }
+
+    pub fn with_rom_size(backup_type: BackupType, rom_size: usize) -> MemoryBus {
+        let mem_map = MemoryMap::with_rom_size(backup_type, rom_size);
         let mut cycle_clock = CycleClock::new();
         cycle_clock.register(&mem_map.memory);
         return MemoryBus {

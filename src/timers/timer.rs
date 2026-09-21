@@ -42,6 +42,14 @@ impl Timer {
         self.frequency() * (0x10000 - self.timer.get_reload() as usize)
     }
 
+    pub fn cycles_until_overflow(&self) -> Option<usize> {
+        if self.controller.get_enable() == 0 || self.controller.get_cascade() != 0 { return None; }
+        if self.previously_disabled {
+            return Some(TIMER_START_DELAY_CYCLES + (0x10000 - self.timer.get_reload() as usize) * self.frequency());
+        }
+        Some(self.start_delay_remaining + (0x10000 - self.timer.get_data() as usize) * self.frequency() - self.cycles)
+    }
+
     pub fn cycles_until_irq_overflow(&self) -> Option<usize> {
         if self.controller.get_enable() == 0 || self.controller.get_irq_enable() == 0 || self.controller.get_cascade() == 1 {
             return None;
@@ -59,26 +67,26 @@ impl Timer {
             current_cycles -= absorbed;
         }
         self.cycles += current_cycles;
-        let mut overflows = 0;
         let freq = self.frequency();
-        let mut timer_data = self.timer.get_data();
-
-        while self.cycles >= freq {
-            self.cycles -= freq;
-            timer_data = timer_data.wrapping_add(1);
-            if timer_data == 0 {
-                if self.controller.get_irq_enable() == 1 {
-                    match self.timer.index {
-                        0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
-                        1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
-                        2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
-                        3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
-                        _ => panic!("Error in processing timer")
-                    }
-                }
-
-                timer_data = self.timer.get_reload();
-                overflows+=1;
+        let ticks = self.cycles / freq;
+        self.cycles %= freq;
+        let current = self.timer.get_data() as usize;
+        let until_overflow = 0x10000 - current;
+        let (timer_data, overflows) = if ticks < until_overflow {
+            ((current + ticks) as u16, 0)
+        } else {
+            let reload = self.timer.get_reload() as usize;
+            let period = 0x10000 - reload;
+            let remaining = ticks - until_overflow;
+            ((reload + remaining % period) as u16, 1 + remaining / period)
+        };
+        if overflows != 0 && self.controller.get_irq_enable() == 1 {
+            match self.timer.index {
+                0 => irq_ctrl.if_interrupt.set_timer_zero_overflow(1),
+                1 => irq_ctrl.if_interrupt.set_timer_one_overflow(1),
+                2 => irq_ctrl.if_interrupt.set_timer_two_overflow(1),
+                3 => irq_ctrl.if_interrupt.set_timer_three_overflow(1),
+                _ => unreachable!(),
             }
         }
         self.timer.set_data(timer_data);
@@ -166,7 +174,7 @@ impl TimerHandler {
         let mut overflows = 0usize;
         let mut per_timer_overflows = [0usize; 4];
         for id in 0..4 {
-            let mut timer = &mut self.timers[id];
+            let timer = &mut self.timers[id];
             if timer.controller.get_enable() == 1 {
                 if timer.previously_disabled {
                     timer.reload_data();

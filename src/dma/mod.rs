@@ -128,6 +128,11 @@ impl DMAChannel {
     }
 
     fn reload_wordcount(&mut self) {
+        // FIFO DMA transfers four words regardless of CNT_L.
+        if (self.id == 1 || self.id == 2) && self.control.get_dma_start_timing() == 3 {
+            self.internal_word_count = 4;
+            return;
+        }
         self.internal_word_count = if self.id != 3 {
             self.word_count.get_word_count() & 0x7FFF
         } else {
@@ -185,7 +190,7 @@ impl DMAChannel {
         }
 
         // if we aren't repeating reset the enable bit
-        if self.control.get_dma_repeat() == 0 {
+        if self.control.get_dma_repeat() == 0 || self.control.get_dma_start_timing() == 0 {
             self.control.set_dma_enable(0);
             self.previously_disabled = true;
         } else {
@@ -360,13 +365,14 @@ impl DMAController {
         self.sound_control_high.register(mem);
     }
 
-    pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts, timer_overflows: [usize; 4]) {
+    pub fn update(&mut self, mem_map: &mut MemoryBus, irq_ctl: &mut Interrupts, fifo_requests: [bool; 2]) {
         let vblanking = self.vblanking;
         let hblanking = self.hblanking;
 
         for i in 0..4 {
             if self.dma_channels[i].control.get_dma_enable() == 1 {
-                if self.dma_channels[i].previously_disabled {
+                let just_enabled = self.dma_channels[i].previously_disabled;
+                if just_enabled {
                     self.dma_channels[i].reload_data();
                     self.dma_channels[i].previously_disabled = false;
                 }
@@ -376,7 +382,12 @@ impl DMAController {
                         if self.dma_channels[i].pending_immediate {
                             self.dma_channels[i].pending_immediate = false;
                             self.dma_channels[i].transfer(mem_map, irq_ctl);
-                        } else {
+                        } else if just_enabled {
+                            // Immediate DMA is requested by the enable edge,
+                            // not by changing timing on an already live channel.
+                            // Classic NES switches FIFO DMA to immediate before
+                            // disabling it; a new transfer here reads past the
+                            // PCM buffer and injects code bytes into the audio.
                             self.dma_channels[i].pending_immediate = true;
                         }
                     },
@@ -398,13 +409,7 @@ impl DMAController {
                         let is_fifo_a = (i == 1 || i == 2) && destination == FIFO_A_ADDRESS;
                         let is_fifo_b = (i == 1 || i == 2) && destination == FIFO_B_ADDRESS;
                         if is_fifo_a || is_fifo_b {
-                            let timer = if is_fifo_a {
-                                self.sound_control_high.get_dma_sound_a_timer_select() as usize
-                            } else {
-                                self.sound_control_high.get_dma_sound_b_timer_select() as usize
-                            };
-                            let fifo_len = if is_fifo_a { mem_map.mem_map.fifo_a.len() } else { mem_map.mem_map.fifo_b.len() };
-                            if timer_overflows[timer] > 0 && fifo_len <= 16 {
+                            if fifo_requests[if is_fifo_a { 0 } else { 1 }] {
                                 self.dma_channels[i].refill_sound_fifo(mem_map, is_fifo_a);
                             }
                         }

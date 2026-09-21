@@ -1,4 +1,4 @@
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::rc::Rc;
 use crate::gamepak::BackupType;
 use crate::gamepak::flash::Flash;
@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::ser::SerializeStruct;
 use serde::de::{self, Visitor, MapAccess, SeqAccess};
 use std::fmt;
-use std::marker::PhantomData;
+use super::backing::MemorySnapshot;
 
 thread_local! {
     pub static CURRENT_INSTR_PC: std::cell::Cell<u32> = std::cell::Cell::new(0);
@@ -59,10 +59,11 @@ pub struct MemoryMap {
 impl MemoryMap {
 
     pub fn new(backup_type: BackupType) -> MemoryMap {
-        let mut memory: GbaMem = vec![Cell::new(0u8); 0x1000_00F0];
-        let backup_start = SRAM_START as usize;
-        let backup_end = backup_start + 0x20000;
-        memory[backup_start..backup_end].fill(Cell::new(0xFF));
+        Self::with_rom_size(backup_type, 0x2000000)
+    }
+
+    pub fn with_rom_size(backup_type: BackupType, rom_size: usize) -> MemoryMap {
+        let memory = GbaMem::new(rom_size);
 
         return MemoryMap {
             memory: Rc::new(memory),
@@ -74,7 +75,7 @@ impl MemoryMap {
             fifo_a: std::collections::VecDeque::new(),
             fifo_b: std::collections::VecDeque::new(),
             trigger_flags: 0,
-            rom_size: ROM_SIZE + 1,
+            rom_size: rom_size as u32,
             rom_undersize_mirror_mask: None,
             wave_ram_banks: [[0; 16]; 2],
         }
@@ -154,12 +155,12 @@ impl MemoryMap {
                 }else if (0x0400_0090..=0x0400_009F).contains(&address) {
                     let bank = self.cpu_visible_wave_ram_bank();
                     self.write_wave_ram_byte(bank, address - 0x0400_0090, value);
-                }else if (0x4000_00A0..=0x4000_00A3).contains(&address) {
+                }else if (0x0400_00A0..=0x0400_00A3).contains(&address) {
                     if self.fifo_a.len() < 32 {
                         self.fifo_a.push_back(value);
                     }
                     self.memory[address as usize].set(value);
-                }else if (0x4000_00A4..=0x4000_00A7).contains(&address) {
+                }else if (0x0400_00A4..=0x0400_00A7).contains(&address) {
                     if self.fifo_b.len() < 32 {
                         self.fifo_b.push_back(value);
                     }
@@ -291,6 +292,13 @@ impl MemoryMap {
     }
 
     pub fn write_u16(&mut self, address: u32, value: u16) {
+        // FIFO writes enqueue exactly the addressed bytes, low byte first.
+        if (0x0400_00A0..=0x0400_00A6).contains(&address) {
+            for (i, byte) in value.to_le_bytes().iter().enumerate() {
+                self.write_u8(address + i as u32, *byte);
+            }
+            return;
+        }
         if let Some(idx) = MemoryMap::fast_region_index(address, 2) {
             let bytes = value.to_le_bytes();
             self.memory[idx].set(bytes[0]);
@@ -315,6 +323,12 @@ impl MemoryMap {
     }
 
     pub fn write_u32(&mut self, address: u32, value: u32) {
+        if address == 0x0400_00A0 || address == 0x0400_00A4 {
+            for (i, byte) in value.to_le_bytes().iter().enumerate() {
+                self.write_u8(address + i as u32, *byte);
+            }
+            return;
+        }
         if let Some(idx) = MemoryMap::fast_region_index(address, 4) {
             let bytes = value.to_le_bytes();
             for i in 0..4 {
@@ -338,12 +352,7 @@ impl MemoryMap {
     }
 
     pub fn write_block(&mut self, address: u32, block: &Vec<u8>) {
-        let mut offset: u32 = 0;
-
-        for byte in block {
-            self.memory[(address + offset) as usize].set(*byte);
-            offset += 1;
-        }
+        self.memory.write_block(address as usize, block);
     }
 
     pub fn read_block(&self, address: u32, bytes: u32) -> Vec<u8> {
@@ -363,6 +372,13 @@ impl MemoryMap {
     }
 
     pub fn read_u32(&self, address: u32) -> u32 {
+        if (0x08..=0x0D).contains(&(address >> 24))
+            && !(self.backup_type == BackupType::Eeprom && address >> 24 == 0x0D) {
+            let offset = self.rom_mirrored_address(address) - ROM_START;
+            if offset + 4 <= self.rom_size {
+                if let Some(word) = self.memory.rom_word(offset as usize) { return word; }
+            }
+        }
         if let Some(idx) = MemoryMap::fast_region_index(address, 4) {
             let result = u32::from_le_bytes([
                 self.memory[idx].get(), self.memory[idx + 1].get(),
@@ -385,6 +401,13 @@ impl MemoryMap {
     }
 
     pub fn read_u16(&self, address: u32) -> u16 {
+        if (0x08..=0x0D).contains(&(address >> 24))
+            && !(self.backup_type == BackupType::Eeprom && address >> 24 == 0x0D) {
+            let offset = self.rom_mirrored_address(address) - ROM_START;
+            if offset + 2 <= self.rom_size {
+                if let Some(word) = self.memory.rom_halfword(offset as usize) { return word; }
+            }
+        }
         if let Some(idx) = MemoryMap::fast_region_index(address, 2) {
             let result = u16::from_le_bytes([self.memory[idx].get(), self.memory[idx + 1].get()]);
             return result;
@@ -504,7 +527,7 @@ impl Serialize for MemoryMap {
         // Determine how many fields we're serializing
         let mut state = serializer.serialize_struct("MemoryMap", 9)?;
 
-        state.serialize_field("memory", &*self.memory)?;
+        state.serialize_field("memory", &self.memory.snapshot(self.rom_size, self.rom_undersize_mirror_mask, &self.wave_ram_banks))?;
 
         // Serialize the rest of the fields normally
         state.serialize_field("halt_state", &self.halt_state)?;
@@ -580,7 +603,7 @@ impl<'de> Deserialize<'de> for MemoryMap {
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
                 where
                     A: SeqAccess<'de>, {
-                let mem_vec: GbaMem = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let snapshot: MemorySnapshot = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let halt_state = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let backup_type = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let backed_up = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
@@ -590,7 +613,7 @@ impl<'de> Deserialize<'de> for MemoryMap {
                 let fifo_b = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let trigger_flags = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
 
-                let memory = Rc::new(mem_vec);
+                let memory = Rc::new(snapshot.memory);
                 Ok(MemoryMap {
                     memory,
                     halt_state,
@@ -601,9 +624,9 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     fifo_a,
                     fifo_b,
                     trigger_flags,
-                    rom_size: ROM_SIZE + 1,
-                    rom_undersize_mirror_mask: None,
-                    wave_ram_banks: [[0; 16]; 2],
+                    rom_size: snapshot.rom_size,
+                    rom_undersize_mirror_mask: snapshot.mirror,
+                    wave_ram_banks: snapshot.wave,
                 })
             }
 
@@ -628,8 +651,8 @@ impl<'de> Deserialize<'de> for MemoryMap {
                             if memory.is_some() {
                                 return Err(de::Error::duplicate_field("memory"));
                             }
-                            let mem_vec: GbaMem = map.next_value()?;
-                            memory = Some(Rc::new(mem_vec));
+                            let snapshot: MemorySnapshot = map.next_value()?;
+                            memory = Some(snapshot);
                         }
                         Field::HaltState => {
                             if halt_state.is_some() {
@@ -683,7 +706,8 @@ impl<'de> Deserialize<'de> for MemoryMap {
                 }
 
                 // Ensure all fields were provided
-                let memory = memory.ok_or_else(|| de::Error::missing_field("memory"))?;
+                let snapshot = memory.ok_or_else(|| de::Error::missing_field("memory"))?;
+                let memory = Rc::new(snapshot.memory);
                 let halt_state = halt_state.ok_or_else(|| de::Error::missing_field("halt_state"))?;
                 let backup_type = backup_type.ok_or_else(|| de::Error::missing_field("backup_type"))?;
                 let backed_up = backed_up.ok_or_else(|| de::Error::missing_field("backed_up"))?;
@@ -704,9 +728,9 @@ impl<'de> Deserialize<'de> for MemoryMap {
                     fifo_a,
                     fifo_b,
                     trigger_flags,
-                    rom_size: ROM_SIZE + 1,
-                    rom_undersize_mirror_mask: None,
-                    wave_ram_banks: [[0; 16]; 2],
+                    rom_size: snapshot.rom_size,
+                    rom_undersize_mirror_mask: snapshot.mirror,
+                    wave_ram_banks: snapshot.wave,
                 })
             }
         }
@@ -724,6 +748,41 @@ impl<'de> Deserialize<'de> for MemoryMap {
 mod fast_path_tests {
     use super::*;
     use crate::gamepak::BackupType;
+
+    #[test]
+    fn compact_snapshot_preserves_mutable_regions_and_device_metadata() {
+        let mut mem = MemoryMap::with_rom_size(BackupType::Flash128K, 0x10000);
+        mem.configure_rom(0x10000, "FABC");
+        for address in [0x0203FFFF, 0x03007FFF, 0x04000300, 0x050003FF, 0x06017FFF, 0x070003FF, 0x0E000000, 0x0E01FFFF, 0x1000000C] {
+            mem.memory[address].set(0xAB);
+        }
+        mem.write_wave_ram_byte(0, 15, 0x12);
+        mem.write_wave_ram_byte(1, 15, 0x34);
+        let bytes = bincode::serialize(&mem).unwrap();
+        assert!(bytes.len() < 600_000);
+        let restored: MemoryMap = bincode::deserialize(&bytes).unwrap();
+        for address in [0x0203FFFF, 0x03007FFF, 0x04000300, 0x050003FF, 0x06017FFF, 0x070003FF, 0x0E000000, 0x0E01FFFF, 0x1000000C] {
+            assert_eq!(restored.memory[address].get(), 0xAB);
+        }
+        assert_eq!(restored.rom_size, 0x10000);
+        assert_eq!(restored.rom_undersize_mirror_mask, Some(0xFFFF));
+        assert_eq!(restored.read_wave_ram_byte(0, 15), 0x12);
+        assert_eq!(restored.read_wave_ram_byte(1, 15), 0x34);
+    }
+
+    #[test]
+    fn rom_fast_reads_match_byte_reads_at_mirrors_and_boundaries() {
+        let mut mem = MemoryMap::with_rom_size(BackupType::Sram, 0x10000);
+        mem.configure_rom(0x10000, "FABC");
+        mem.memory[0x08000000].set(0x11);
+        mem.memory[0x08000001].set(0x22);
+        mem.memory[0x0800FFFF].set(0x33);
+        for address in [0x08000000, 0x0A000000, 0x0C000000, 0x0800FFFD, 0x0800FFFF, 0x08010000, 0x09FFFFFF] {
+            let expected = (0..4).fold(0u32, |v, i| v | ((mem.read_u8(address + i) as u32) << (i * 8)));
+            assert_eq!(mem.read_u32(address), expected);
+            assert_eq!(mem.read_u16(address), expected as u16);
+        }
+    }
 
     #[test]
     fn word_access_round_trips_in_wram() {
