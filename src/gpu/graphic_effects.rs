@@ -110,10 +110,15 @@ impl GPU {
     fn sort_backgrounds(&self) -> ([u8;4], usize){
         let mut bg_list: [u8; 4] = [0; 4];
         let mut bg_count: usize = 0;
+        let bitmap_mode = self.display_control.get_bg_mode() >= 3;
 
         for priority in (0..4).rev() {
             for bg in (0..4).rev() {
-                if self.display_control.should_display(bg) && 
+                if bitmap_mode && bg != 2 {
+                    continue;
+                }
+
+                if self.display_control.should_display(bg) &&
                    self.backgrounds[bg as usize].control.get_bg_priority() == priority {
 
                     bg_list[bg_count] = bg;
@@ -204,5 +209,53 @@ impl GPU {
             let frame_buffer_index = ((DISPLAY_WIDTH as u32) * (current_scanline as u32) + (x as u32)) as usize;
             self.frame_buffer[frame_buffer_index] = pixel.0.to_0rgb();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gpu::gpu::GPU;
+    use crate::gamepak::BackupType;
+    use crate::memory::memory_map::MemoryMap;
+
+    fn setup() -> GPU {
+        let mem_map = MemoryMap::new(BackupType::Sram);
+        let mut gpu = GPU::new();
+        gpu.register(&mem_map.memory);
+        gpu
+    }
+
+    #[test]
+    fn bitmap_mode_only_composites_bg2_even_when_others_are_enabled() {
+        let mut gpu = setup();
+        gpu.display_control.set_bg_mode(4);
+        gpu.display_control.set_screen_display_bg0(1);
+        gpu.display_control.set_screen_display_bg1(1);
+        gpu.display_control.set_screen_display_bg2(1);
+        gpu.display_control.set_screen_display_bg3(1);
+        gpu.backgrounds[0].control.set_bg_priority(2);
+        gpu.backgrounds[1].control.set_bg_priority(3);
+        gpu.backgrounds[2].control.set_bg_priority(0);
+        gpu.backgrounds[3].control.set_bg_priority(1);
+
+        let (bg_list, bg_count) = gpu.sort_backgrounds();
+
+        assert_eq!(bg_count, 1);
+        assert_eq!(bg_list[0], 2);
+    }
+
+    #[test]
+    fn tile_mode_composites_every_enabled_background() {
+        let mut gpu = setup();
+        gpu.display_control.set_bg_mode(0);
+        gpu.display_control.set_screen_display_bg0(1);
+        gpu.display_control.set_screen_display_bg1(1);
+        gpu.display_control.set_screen_display_bg2(1);
+        gpu.display_control.set_screen_display_bg3(1);
+
+        let (_, bg_count) = gpu.sort_backgrounds();
+
+        assert_eq!(bg_count, 4);
     }
 }

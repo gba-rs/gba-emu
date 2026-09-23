@@ -72,6 +72,13 @@ impl fmt::Debug for ALU {
     }
 }
 
+fn multiplier_extra_cycles(rs: u32) -> u32 {
+    if rs & 0xFFFF_FF00 == 0 || rs & 0xFFFF_FF00 == 0xFFFF_FF00 { 0 }
+    else if rs & 0xFFFF_0000 == 0 || rs & 0xFFFF_0000 == 0xFFFF_0000 { 1 }
+    else if rs & 0xFF00_0000 == 0 || rs & 0xFF00_0000 == 0xFF00_0000 { 2 }
+    else { 3 }
+}
+
 impl Instruction for ALU {
     fn execute(&self, cpu: &mut CPU, _mem_bus: &mut MemoryBus) -> u32 {
         let op1 = cpu.get_register(self.rd);
@@ -214,6 +221,7 @@ impl Instruction for ALU {
                 let (value, flags) = arm_arithmetic::mul(op1, op2);
                 cpu.set_register(self.rd, value);
                 cpu.cpsr.flags = flags;
+                _mem_bus.cycle_clock.add_internal_cycles(multiplier_extra_cycles(op2));
             },
             OpCodes::BIC=>{
                 let (value, (n, z)) = logical::bic(op1, op2);
@@ -237,7 +245,9 @@ impl Instruction for ALU {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 1;} // 1s
+    fn cycles(&self) -> u32 {
+        if self.opcode == OpCodes::MUL { 1 } else { 0 }
+    }
 
 }
 //Unit Tests

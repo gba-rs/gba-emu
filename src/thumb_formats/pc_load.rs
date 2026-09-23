@@ -36,7 +36,7 @@ impl Instruction for LDR {
     fn asm(&self) -> String {
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;} // 1s + 1n + 1l
+    fn cycles(&self) -> u32 {return 1;}
 
 }
 

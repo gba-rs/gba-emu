@@ -108,6 +108,9 @@ impl From<u32> for SingleDataTransferOperand {
 
 impl Instruction for SingleDataTransfer {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32{
+        if self.load {
+            mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
+        }
         let address_with_offset;
         let base;
         if self.op1_register == 15 {
@@ -140,7 +143,9 @@ impl Instruction for SingleDataTransfer {
         return format!("{:?}", self);
     }
 
-    fn cycles(&self) -> u32 {return 3;}
+    fn cycles(&self) -> u32 {
+        if self.load { 1 } else { 0 }
+    }
 }
 
 #[cfg(test)]

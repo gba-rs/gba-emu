@@ -30,6 +30,9 @@ impl From<u16> for MultipleLoadStore {
 
 impl Instruction for MultipleLoadStore {
     fn execute(&self, cpu: &mut CPU, mem_bus: &mut MemoryBus) -> u32 {
+        if self.load {
+            mem_bus.cycle_clock.mark_prefetch_disable_bug_opcode();
+        }
         let base = cpu.get_register(self.rb);
         let mut offset = 0;
         if self.load {
@@ -73,8 +76,9 @@ impl Instruction for MultipleLoadStore {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;} // Normal LDM instructions take nS + 1N + 1I and LDM PC takes (n+1)S + 2N + 1I
-    //STM instructions take (n-1)S + 2N incremental cycles to execute, where n is the number of words transferred.
+    fn cycles(&self) -> u32 {
+        if self.load { 1 } else { 0 }
+    }
 
 }
 

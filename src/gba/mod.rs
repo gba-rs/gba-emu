@@ -1,5 +1,5 @@
 use crate::cpu::{cpu::CPU, cpu::OperatingMode, cpu::ARM_SP, cpu::ARM_PC};
-use crate::gpu::{gpu::GPU, gpu::DISPLAY_WIDTH, gpu::DISPLAY_HEIGHT};
+use crate::gpu::gpu::GPU;
 use crate::gpu::rgb15::Rgb15;
 use crate::memory::{key_input_registers::*};
 use crate::memory::{memory_bus::MemoryBus, memory_map::HaltState};
@@ -37,7 +37,7 @@ impl GBA {
         let mut temp: GBA = GBA {
             cpu: CPU::new(),
             gpu: GPU::new(),
-            memory_bus: MemoryBus::new(game_pack.backup_type),
+            memory_bus: MemoryBus::with_rom_size(game_pack.backup_type, game_pack.rom.len().max(0x4000)),
             key_status: KeyStatus::new(),
             ket_interrupt_control: KeyInterruptControl::new(),
             interrupt_handler: Interrupts::new(),
@@ -47,6 +47,7 @@ impl GBA {
         };
 
         temp.register_memory();
+        temp.apu.sound_bias.set_bias_level(0x100);
 
         // setup the PC
         temp.cpu.set_register(ARM_PC, pc_address);
@@ -73,7 +74,7 @@ impl GBA {
 
         temp.cpu.set_operating_mode(OperatingMode::Supervisor);
 
-        temp.key_status.set_register(0xFFFF);
+        temp.key_status.set_register(0x03FF);
 
         for i in 0..2 {
             temp.gpu.bg_affine_components[i].rotation_scaling_param_a.set_register(0x100);
@@ -86,6 +87,7 @@ impl GBA {
         // General INternal Memory
         temp.load_bios(&game_pack.bios);
         temp.load_rom(&game_pack.rom);
+        temp.memory_bus.mem_map.configure_rom(game_pack.rom.len(), &game_pack.game_code);
 
         return temp;
     }
@@ -132,7 +134,13 @@ impl GBA {
     }
 
     pub fn load_rom(&mut self, rom: &Vec<u8>) {
-        self.memory_bus.mem_map.write_block(0x08000000, rom)
+        if !rom.is_empty() && self.memory_bus.mem_map.memory.rom_capacity() != rom.len() {
+            self.memory_bus.mem_map.memory = std::rc::Rc::new(self.memory_bus.mem_map.memory.resized_rom(rom.len()));
+            self.register_memory();
+        }
+        self.memory_bus.mem_map.write_block(0x08000000, rom);
+        let code = rom.get(0xAC..0xB0).and_then(|b| std::str::from_utf8(b).ok()).unwrap_or("");
+        self.memory_bus.mem_map.configure_rom(rom.len(), code);
     }
 
     pub fn load_save_file(&mut self, save_data: &Vec<u8>) {
@@ -174,29 +182,48 @@ impl GBA {
 
         self.gpu.frame_ready = false;
         self.gpu.obj_buffer.iter_mut().for_each(|m|{*m = (Rgb15::new(0x8000), 4, 0)});
-        self.gpu.obj_window = [false; (DISPLAY_WIDTH as usize) * (DISPLAY_HEIGHT as usize)];
+        self.gpu.obj_window.fill(false);
+    }
+
+    pub fn frame_until_breakpoint(&mut self, breakpoints: &std::collections::HashSet<u32>, max_steps: u32) -> bool {
+        for _ in 0..max_steps {
+            if breakpoints.contains(&self.cpu.get_pc()) {
+                return false;
+            }
+
+            self.single_step();
+
+            if self.gpu.frame_ready {
+                self.gpu.frame_ready = false;
+                self.gpu.obj_buffer.iter_mut().for_each(|m| { *m = (Rgb15::new(0x8000), 4, 0) });
+                self.gpu.obj_window.fill(false);
+                return true;
+            }
+        }
+
+        true
     }
 
     pub fn single_step(&mut self) {
         // log::info!("Single stepping");
         let cycles = if self.memory_bus.mem_map.halt_state == HaltState::Running {
             // log::info!("Stepping cpu");
-            self.cpu.fetch(&mut self.memory_bus)
+            self.cpu.fetch(&mut self.memory_bus, &mut self.dma_control, &mut self.interrupt_handler)
         } else {
             // log::info!("Skippig cpu {:?}", self.memory_bus.mem_map.halt_state);
-            self.gpu.cycles_to_next_state.max(0) as usize
+            let mut skip = (self.gpu.cycles_to_next_state.max(0) as usize).min(512);
+            for timer in self.timer_handler.timers.iter() {
+                if let Some(until_overflow) = timer.cycles_until_overflow() {
+                    skip = skip.min(until_overflow);
+                }
+            }
+            skip.max(1)
         };
 
         self.gpu.step(cycles, &mut self.memory_bus.mem_map, &mut self.interrupt_handler, &mut self.dma_control);
         let timer_overflows = self.timer_handler.update(cycles, &mut self.interrupt_handler);
-        self.dma_control.update(&mut self.memory_bus, &mut self.interrupt_handler, timer_overflows);
-        let timer_periods = [
-            self.timer_handler.timers[0].period_cycles(),
-            self.timer_handler.timers[1].period_cycles(),
-            self.timer_handler.timers[2].period_cycles(),
-            self.timer_handler.timers[3].period_cycles(),
-        ];
-        self.apu.step(cycles, timer_periods, &mut self.memory_bus);
+        let fifo_requests = self.apu.step(cycles, timer_overflows, &mut self.memory_bus);
+        self.dma_control.update(&mut self.memory_bus, &mut self.interrupt_handler, fifo_requests);
 
         if keypad_interrupt_condition_met(self.key_status.get_register(), self.ket_interrupt_control.get_register()) {
             self.interrupt_handler.if_interrupt.set_keypad(1);
@@ -286,6 +313,18 @@ mod single_step_tests {
     use crate::memory::memory_map::HaltState;
 
     #[test]
+    fn attaching_a_larger_rom_rebinds_registers_and_preserves_ram() {
+        let mut gba = GBA::default();
+        gba.key_status.set_register(0x1234);
+        gba.memory_bus.write_u32(0x02000000, 0xDEADBEEF);
+        gba.load_rom(&vec![0xAB; 0x20000]);
+        assert_eq!(gba.memory_bus.mem_map.read_u32(0x08010000), 0xABABABAB);
+        assert_eq!(gba.memory_bus.read_u32(0x02000000), 0xDEADBEEF);
+        gba.key_status.set_register(0x5678);
+        assert_eq!(gba.memory_bus.read_u16(0x04000130), 0x5678);
+    }
+
+    #[test]
     fn halted_with_negative_cycles_to_next_state_does_not_stall() {
         let mut gba = GBA::default();
         gba.memory_bus.mem_map.halt_state = HaltState::Halt;
@@ -294,5 +333,29 @@ mod single_step_tests {
         gba.single_step();
 
         assert!(gba.gpu.cycles_to_next_state.abs() < 1_000_000);
+    }
+
+    #[test]
+    fn frame_until_breakpoint_stops_before_executing_the_breakpointed_instruction() {
+        let mut gba = GBA::default();
+        let pc = gba.cpu.get_pc();
+        let mut breakpoints = std::collections::HashSet::new();
+        breakpoints.insert(pc);
+
+        let completed = gba.frame_until_breakpoint(&breakpoints, 1_000_000);
+
+        assert!(!completed);
+        assert_eq!(gba.cpu.get_pc(), pc);
+    }
+
+    #[test]
+    fn frame_until_breakpoint_runs_a_full_frame_when_no_breakpoint_is_hit() {
+        let mut gba = GBA::default();
+        let breakpoints = std::collections::HashSet::new();
+
+        let completed = gba.frame_until_breakpoint(&breakpoints, 1_000_000);
+
+        assert!(completed);
+        assert!(!gba.gpu.frame_ready);
     }
 }

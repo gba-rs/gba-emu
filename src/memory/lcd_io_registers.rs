@@ -804,6 +804,24 @@ io_register! (
     obj_mosaic_vsize: 12, 4,
 );
 
+impl MosaicSize {
+    pub fn bg_h_block(&self) -> u32 {
+        self.get_bg_mosaic_hsize() as u32 + 1
+    }
+
+    pub fn bg_v_block(&self) -> u32 {
+        self.get_bg_mosaic_vsize() as u32 + 1
+    }
+
+    pub fn obj_h_block(&self) -> u32 {
+        self.get_obj_mosaic_hsize() as u32 + 1
+    }
+
+    pub fn obj_v_block(&self) -> u32 {
+        self.get_obj_mosaic_vsize() as u32 + 1
+    }
+}
+
 io_register! (
     ColorSpecialEffectsSelection => 2, 0x4000050,
     bg0_1st_target_pixel: 0, 1,

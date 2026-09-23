@@ -43,7 +43,7 @@ impl Instruction for LoadStoreRegisterOffset {
             destination: self.rd,
         };
 
-        let target_address = cpu.get_register(self.rb) + cpu.get_register(self.offset_register);
+        let target_address = cpu.get_register(self.rb).wrapping_add(cpu.get_register(self.offset_register));
         let base;
         if self.rb == THUMB_PC {
             base = cpu.get_register(self.rb) + 2;
@@ -70,14 +70,24 @@ impl Instruction for LoadStoreRegisterOffset {
 
         return format!("{}{} r{}, [r{}, r{}]", op, b, self.rd, self.rb, self.offset_register );
     }
-    fn cycles(&self) -> u32 {return 3;} // 1s + 1n + 1l
-    // unless pc then its 5 2s + 2n + 1l but that isn't known till later.
+    fn cycles(&self) -> u32 {if self.load {1} else {0}}
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::gba::GBA;
+
+    #[test]
+    fn register_offset_wraps_at_the_guest_address_width() {
+        let format = LoadStoreRegisterOffset::from(0x58B3);
+        let mut gba = GBA::default();
+        gba.cpu.set_register(6, 0xFFFF_FFFC);
+        gba.cpu.set_register(2, 0x0200_0004);
+        gba.memory_bus.write_u32(0x0200_0000, 0x1234_5678);
+        format.execute(&mut gba.cpu, &mut gba.memory_bus);
+        assert_eq!(gba.cpu.get_register(3), 0x1234_5678);
+    }
 
     #[test]
     fn test_creation_0s() {

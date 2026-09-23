@@ -32,7 +32,7 @@ impl Instruction for ConditionalBranch {
     fn asm(&self) -> String{
         return format!("{:?}", self);
     }
-    fn cycles(&self) -> u32 {return 3;} // 2S + 1N
+    fn cycles(&self) -> u32 {return 0;}
 
 }
 

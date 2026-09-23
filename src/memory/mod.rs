@@ -9,4 +9,5 @@ pub mod dma_registers;
 pub mod timer_registers;
 pub mod sound_registers;
 
-pub type GbaMem = Vec<std::cell::Cell<u8>>;
+mod backing;
+pub use backing::GbaMem;

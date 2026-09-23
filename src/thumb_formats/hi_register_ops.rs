@@ -69,15 +69,8 @@ impl Instruction for HiRegisterOp {
         return format!("{:?}", self);
     }
     fn cycles(&self) -> u32 {
-        match self.op {
-            OpCodes::BX => {
-                return 3; //2s + 1n
-            }
-            _ => {
-                return 1; //1s
-            }
-        }
-    } // 1s or 2s + 1n
+        0
+    }
 
 }
 
@@ -102,7 +95,7 @@ impl HiRegisterOp {
         if self.hi_flag_2 {
             // r8-r15
             source = cpu.get_register_unsafe(self.source_register + 8);
-            if self.source_register == 7 && (self.destination_register != 7 && !self.hi_flag_1) {  // R15 Special case (and nop case)
+            if self.source_register == 7 {
                 source = source + 2;        // Fetch adds the other +2
             }
         } else {
@@ -295,6 +288,24 @@ mod tests {
         }
 
         assert_eq!(10, gba.cpu.get_register_unsafe(12));
+    }
+
+    #[test]
+    fn mov_lr_pc_applies_full_pipeline_offset_even_with_hi_destination() {
+        let mut gba: GBA = GBA::default();
+        gba.cpu.set_instruction_set(InstructionSet::Thumb);
+        gba.cpu.set_register(THUMB_PC, 0x0300_0002);
+
+        match gba.cpu.decode(0x46FE) {
+            Ok(instr) => {
+                instr.execute(&mut gba.cpu, &mut gba.memory_bus);
+            },
+            Err(e) => {
+                panic!("{:?}", e);
+            }
+        }
+
+        assert_eq!(0x0300_0004, gba.cpu.get_register_unsafe(14));
     }
 
     #[test]

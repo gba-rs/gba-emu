@@ -30,10 +30,17 @@ impl Interrupts {
         return (self.ie_interrupt.get_register() & self.if_interrupt.get_register()) != 0;
     }
 
+    fn should_wake_from_stop(&self) -> bool {
+        let pending = (self.ie_interrupt.get_register() & self.if_interrupt.get_register()) as u16;
+        pending & ((1 << 12) | (1 << 13)) != 0
+    }
+
     pub fn service(&mut self, cpu: &mut cpu::CPU, mem_bus: &mut MemoryBus){
-        if self.should_service() && mem_bus.mem_map.halt_state == HaltState::Halt {
+        if mem_bus.mem_map.halt_state == HaltState::Halt && self.should_service() {
             mem_bus.mem_map.halt_state = HaltState::Running;
             // log::info!("Setting state to running");
+        } else if mem_bus.mem_map.halt_state == HaltState::Stop && self.should_wake_from_stop() {
+            mem_bus.mem_map.halt_state = HaltState::Running;
         }
 
         if self.enabled() && self.should_service() {
@@ -46,6 +53,8 @@ impl Interrupts {
                 cpu.set_spsr(old_cpsr);
                 cpu.cpsr.control_bits.irq_disable = true;
                 cpu.set_register(15, 0x18);
+                cpu.flush_prefetch();
+                mem_bus.cycle_clock.cycles += 3;
             }
         }
     }
